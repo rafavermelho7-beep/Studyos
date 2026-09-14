@@ -4,9 +4,44 @@ Last updated: 2026-09-14
 
 ## Fase atual
 
-Todas as fases de produto (1–21) concluídas. Fases 24 (segurança) e 25
-(polimento visual) concluídas. Restam: Fase 23 (mais testes), Fase
-22/26 (Supabase + offline/sync + auditoria final).
+Todas as fases de produto (1–21) concluídas. Fases 24 (segurança), 25
+(polimento visual) e a migração pra Supabase (parte da Fase 22)
+concluídas. Restam: Fase 23 (mais testes), offline/sync de verdade, e
+auditoria final (Fase 26).
+
+## Migração para Supabase (2026-09-14)
+
+Banco trocado de SQLite local para Postgres no Supabase (projeto criado
+pelo usuário, plano gratuito). Resumo:
+
+- `prisma/schema.prisma`: `provider` mudou de `sqlite` para `postgresql`.
+  Nenhum outro campo do schema precisou mudar (foi desenhado desde o
+  início pra ser Postgres-compatível).
+- Migrations SQLite antigas foram apagadas e uma migration `init_postgres`
+  nova foi gerada e aplicada direto no Supabase (sem dado real de usuário
+  pra preservar — só contas de teste).
+- `DATABASE_URL` usa a **connection string direta** (`db.<ref>.supabase.co
+  :5432`), confirmada funcionando neste ambiente — não a do pooler
+  (`*.pooler.supabase.com`), que exigiria saber a região exata do projeto.
+- `SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEY`/`SUPABASE_SECRET_KEY` guardados
+  no `.env` mas **não usados** por nenhum código ainda — o app não usa
+  Auth/Storage/Realtime do Supabase, só Postgres via Prisma.
+- **Testes agora rodam contra o mesmo Supabase real** (sem Postgres local
+  disponível neste ambiente pra isolar). Isso expôs uma corrida genuína
+  que o SQLite local (latência ~0) nunca revelava: navegar pra outra
+  página enquanto uma mutação ainda está em voo aborta o fetch antes do
+  servidor terminar. Três specs (`planning`, `knowledge-map`,
+  `forgetting-curve`) falharam por isso na primeira rodada contra o
+  Supabase real — corrigido adicionando esperas explícitas de confirmação
+  (incluindo `waitForLoadState("networkidle")` para ações com
+  `useOptimistic`, já que o estado otimista aparece antes da confirmação
+  do servidor) antes de cada navegação subsequente. `e2e/global-teardown.ts`
+  limpa os usuários de teste (`*@example.com`) do banco compartilhado após
+  cada rodada.
+- RLS do Postgres **não** foi implementado — Prisma conecta como o role
+  `postgres` (dono das tabelas, ignora RLS de qualquer forma) e a
+  autorização continua 100% na camada de serviço (`userId` em toda query).
+  Documentado em `CLAUDE.md` como trabalho de infra futuro, não bloqueador.
 
 ## Concluído
 
@@ -292,18 +327,17 @@ Todas as fases de produto (1–21) concluídas. Fases 24 (segurança) e 25
 
 1. Fase 23 — mais testes (cobertura unitária além do caso de segurança;
    os 12 specs e2e já cobrem os fluxos principais de cada fase)
-2. Fases 22/26 — migração Supabase (fica pro final, por pedido do
-   usuário), offline/sync, auditoria final
+2. Fase 22 (resto) — offline/sync de verdade (o banco já é Postgres real;
+   falta cache/fila local pra uso desconectado, além do que o service
+   worker básico da Fase 14 já cobre)
+3. Fase 26 — auditoria final
 
 ## Limitações conhecidas / decisões pendentes do usuário
 
-- **Migração para Supabase fica deliberadamente para o final** (decisão
-  explícita do usuário, reconfirmada em 2026-09-14). Banco é SQLite local
-  em `prisma/dev.db` (não versionado) até lá. A migração (Fase 22 —
-  offline/sync — é o ponto natural pra isso) exige que o usuário crie um
-  projeto Supabase e forneça URL + anon key + service role key; a
-  arquitetura já está pronta para o swap.
-- **Sem Docker/Postgres disponíveis** no ambiente de desenvolvimento atual.
+- **Sem Postgres local neste ambiente de desenvolvimento** — por isso os
+  testes (e2e e unitários) rodam contra o mesmo Supabase real usado pelo
+  `npm run dev`, com limpeza automática dos usuários de teste (ver seção
+  "Migração para Supabase" acima).
 - **`connector/sync.mjs` (Fase 16) nunca rodou contra um Anki Desktop
   real** — sem Anki instalado neste ambiente. Escrito contra a API
   documentada do AnkiConnect; o lado servidor que ele fala com
@@ -315,5 +349,6 @@ Todas as fases de produto (1–21) concluídas. Fases 24 (segurança) e 25
 
 ## Bugs conhecidos
 
-Nenhum no momento. `npx tsc --noEmit`, `npm run build` e `npm run
-test:e2e` passam limpos no último commit.
+Nenhum no momento. `npx tsc --noEmit`, `npm run build`, `npm run test:e2e`
+(12 specs) e `npm run test:unit` passam limpos contra o Supabase real no
+último commit.

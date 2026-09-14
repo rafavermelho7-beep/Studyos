@@ -1,20 +1,23 @@
 // StudyOS data model.
 //
-// Datasource is SQLite for local-first development without external
-// dependencies. Every design choice here is Postgres-compatible on purpose
-// (UUID-shaped ids as String/cuid, enums, JSON columns via String) so a
-// future migration to Supabase/Postgres is a `datasource` swap + migration,
-// not a remodel. Authorization is enforced in the service layer (every
-// query scoped by userId) since SQLite has no Row Level Security; the same
-// scoping rules are documented in src/server/services/README.md so they can
-// be re-expressed as Postgres RLS policies later.
+// Datasource is Postgres on Supabase (migrated from a SQLite local-first
+// setup — see git history before this point for the original rationale).
+// Authorization is still enforced entirely in the service layer (every
+// query scoped by userId, see src/server/services/README.md), NOT via
+// Postgres Row Level Security: Prisma connects as the `postgres` role
+// (which bypasses RLS regardless, being the table owner) rather than a
+// per-end-user authenticated Postgres role, since auth is our own
+// session-cookie system, not Supabase Auth's `auth.uid()`. Real RLS would
+// need a restricted app role plus `SET LOCAL` of a session variable per
+// request — a real infra change, not attempted yet; the service layer's
+// userId filters remain the sole authorization boundary for now.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

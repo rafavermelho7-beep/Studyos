@@ -27,6 +27,11 @@ test("knowledge map shows a new topic as not-studied and updates after mastering
   await page.goto("/subjects");
   await page.getByText("Cardiologia").click();
   await page.getByLabel("Status de Arritmias").selectOption("DOMINADO");
+  await expect(page.getByLabel("Status de Arritmias")).toHaveValue("DOMINADO");
+  // Wait for the update request to actually land server-side before
+  // navigating away -- against a real remote Postgres, an abrupt
+  // navigation can abort a still-in-flight mutation.
+  await page.waitForLoadState("networkidle");
 
   await page.goto("/knowledge-map");
   await expect(page.getByRole("link", { name: /Arritmias/ })).toHaveAttribute("title", /Dominado/);

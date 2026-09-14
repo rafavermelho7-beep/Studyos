@@ -21,11 +21,17 @@ test("dashboard recommends the least-prepared topic ahead of an upcoming exam", 
 
   await page.getByPlaceholder("Novo tópico (ex: Insuficiência cardíaca)").fill("Valvopatias");
   await page.getByRole("button", { name: "Adicionar tópico" }).click();
+  await expect(page.getByText("Valvopatias")).toBeVisible();
   await page.getByLabel("Status de Valvopatias").selectOption("DOMINADO");
+  await expect(page.getByLabel("Status de Valvopatias")).toHaveValue("DOMINADO");
 
   await page.getByPlaceholder("Novo tópico (ex: Insuficiência cardíaca)").fill("Arritmias");
   await page.getByRole("button", { name: "Adicionar tópico" }).click();
-  // Arritmias stays NOVO (never studied) -- the higher-priority one.
+  // Arritmias stays NOVO (never studied) -- the higher-priority one. Wait
+  // for it to actually land before navigating away: against a real remote
+  // Postgres (unlike the old local SQLite), navigating while this create
+  // is still in flight can abort the underlying fetch before it commits.
+  await expect(page.getByText("Arritmias")).toBeVisible();
 
   await page.goto("/exams");
   await page.getByRole("button", { name: "Nova prova" }).click();
@@ -38,7 +44,14 @@ test("dashboard recommends the least-prepared topic ahead of an upcoming exam", 
   await page.getByText("Prova de Cardio").click();
 
   await page.getByLabel("Incluir Valvopatias na prova").check();
+  await expect(page.getByLabel("Incluir Valvopatias na prova")).toBeChecked();
   await page.getByLabel("Incluir Arritmias na prova").check();
+  await expect(page.getByLabel("Incluir Arritmias na prova")).toBeChecked();
+  // These checkboxes are optimistic (useOptimistic) -- checked instantly on
+  // the client regardless of whether the server mutation has landed yet.
+  // Wait for the underlying request to actually finish before navigating
+  // away, or the exam-topic link can get aborted mid-flight.
+  await page.waitForLoadState("networkidle");
 
   await page.goto("/dashboard");
   await expect(page.getByText("Seu foco agora")).toBeVisible();

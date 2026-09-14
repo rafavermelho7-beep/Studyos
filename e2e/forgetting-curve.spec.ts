@@ -30,6 +30,11 @@ test("topic detail page shows FSRS state and forgetting curve after grading", as
   await page.goto("/review");
   await page.getByRole("button", { name: "Bom" }).click();
   await expect(page.getByText("Nenhuma revisão pendente agora.")).toBeVisible();
+  // The queue is optimistic (useOptimistic) -- the item vanishes from the
+  // list instantly, client-side, regardless of whether gradeReview has
+  // actually finished writing to the (real, remote) database yet. Wait for
+  // that request to land before navigating to the topic page that reads it.
+  await page.waitForLoadState("networkidle");
 
   await page.goto(topicUrl);
   await expect(page.getByText("Curva de esquecimento (estimativa)")).toBeVisible();

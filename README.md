@@ -7,15 +7,18 @@ você está prestes a esquecer, se você está pronto para a próxima prova.
 
 ## Rodando localmente
 
+O banco é Postgres hospedado no Supabase (plano gratuito). Crie um projeto
+em [supabase.com](https://supabase.com), copie a variável `DATABASE_URL`
+de acordo com `.env.example`, e:
+
 ```bash
 npm install
-npx prisma migrate dev   # cria/atualiza o banco SQLite local (prisma/dev.db)
-npm run dev               # http://localhost:3000
+cp .env.example .env      # preencha DATABASE_URL com a connection string do seu projeto Supabase
+npx prisma migrate deploy  # aplica o schema no seu banco Supabase
+npm run dev                 # http://localhost:3000
 ```
 
-Não é necessária nenhuma conta externa para desenvolver localmente — o
-banco é SQLite local. Veja `CLAUDE.md` para a arquitetura completa e o
-caminho de migração para Postgres/Supabase.
+Veja `CLAUDE.md` para a arquitetura completa.
 
 ## Scripts
 
@@ -26,6 +29,7 @@ caminho de migração para Postgres/Supabase.
 | `npx tsc --noEmit` | checagem de tipos |
 | `npm run lint` | eslint |
 | `npm run test:e2e` | testes end-to-end (Playwright) |
+| `npm run test:unit` | testes de serviço (Vitest) |
 
 ## Documentação
 

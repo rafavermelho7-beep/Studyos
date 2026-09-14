@@ -25,7 +25,17 @@ the working reference for continuing development.
   Supabase's paid dedicated-IPv4 add-on. If you ever change
   `DATABASE_URL`, get the exact string from Supabase's Settings →
   Database → Connection string → "Session pooler" → URI — don't guess
-  the region suffix (`sa-east-1` here, but that's per-project).
+  the region suffix (`sa-east-1` here, but that's per-project). Append
+  `?pgbouncer=true&connection_limit=5` — Prisma's default pool size
+  assumes a long-lived server, not a serverless function, and Supabase's
+  free-tier session pooler caps at 15 total client connections.
+  **The Vercel project's serverless function region must match the
+  Supabase project's region** (both `sa-east-1`/`gru1` here) — a
+  cross-continent function↔database round trip on every query was slow
+  enough to cause intermittent connection failures on the first deploy,
+  not just latency. Set via Vercel's Project Settings → Functions →
+  Function Region (or `PATCH /v9/projects/<id>` with
+  `serverlessFunctionRegion` via the API).
   - **Why not Prisma 7/8**: 7 changed datasource config in a breaking way
     (moved to `prisma.config.ts` + driver adapters) and 8 is an RC as of
     this writing. Pinned to the last stable 6.x. Revisit later.

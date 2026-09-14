@@ -79,6 +79,27 @@ deploy feito no Vercel — `https://studyos-nine-ochre.vercel.app`.
   Corrigido configurando a identidade git deste repositório
   (`git config user.email`/`user.name`, local ao repo, não global) pro
   e-mail correto antes deste commit.
+- **Causa raiz real do erro em produção (achada depois)**: trocar pro
+  session pooler resolveu a conectividade, mas o cadastro continuou
+  falhando de forma intermitente. Investigando via API do Vercel
+  (o usuário gerou um token pessoal em vercel.com/account/tokens pra eu
+  poder inspecionar/corrigir direto, sem precisar navegar no app do
+  Vercel pelo celular) descobri duas coisas:
+  1. A função serverless do projeto estava na região **iad1 (Virgínia,
+     EUA)**, enquanto o banco Supabase está em **sa-east-1 (São Paulo)**
+     — toda consulta cruzava o continente, o que não é só lento, é lento
+     o bastante pra estourar timeout de conexão de forma intermitente.
+     Corrigido via API (`PATCH /v9/projects/studyos` com
+     `serverlessFunctionRegion: "gru1"`, a região do Vercel em São Paulo).
+  2. `connection_limit=1` era baixo demais dado que várias páginas (ex:
+     o dashboard) disparam várias queries em paralelo — subido pra `5`.
+  - Depois dessas duas correções + um redeploy disparado via API, o
+    smoke test de produção passou em ~10s (antes, quando funcionava,
+    levava bem mais e falhava na maioria das tentativas).
+  - Também usei a API do Vercel pra recriar a `DATABASE_URL` direto
+    (variáveis "sensitive" não podem ser lidas de volta pela API depois
+    de criadas, só sobrescritas — então recriar do zero foi mais
+    confiável do que tentar validar o que já estava salvo).
 
 ## Concluído
 

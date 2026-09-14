@@ -71,6 +71,14 @@ deploy feito no Vercel — `https://studyos-nine-ochre.vercel.app`.
   manualmente no painel do Vercel (Vercel detectou os nomes a partir do
   `.env.example` do repositório, mas os valores precisam ser preenchidos
   à mão — não vêm do `.env` local, que não é versionado).
+- **Deploys bloqueados no plano Hobby**: os commits estavam com o e-mail
+  local do agente (`rafaelantinoro@gmail.com`), diferente do e-mail da
+  conta GitHub dona do projeto (`rafavermelho7-beep`) — o Vercel no plano
+  gratuito só aceita deploys de commits cujo autor bate com uma conta
+  colaboradora verificada ("Hobby teams do not support collaboration").
+  Corrigido configurando a identidade git deste repositório
+  (`git config user.email`/`user.name`, local ao repo, não global) pro
+  e-mail correto antes deste commit.
 
 ## Concluído
 

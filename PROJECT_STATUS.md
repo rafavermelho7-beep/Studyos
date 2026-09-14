@@ -4,9 +4,9 @@ Last updated: 2026-09-14
 
 ## Fase atual
 
-Todas as fases de produto (1–21) concluídas. Fase 24 (auditoria de
-segurança) concluída. Restam: Fase 23 (mais testes), Fase 25 (polimento
-visual), Fase 22/26 (Supabase + offline/sync + auditoria final).
+Todas as fases de produto (1–21) concluídas. Fases 24 (segurança) e 25
+(polimento visual) concluídas. Restam: Fase 23 (mais testes), Fase
+22/26 (Supabase + offline/sync + auditoria final).
 
 ## Concluído
 
@@ -243,13 +243,56 @@ visual), Fase 22/26 (Supabase + offline/sync + auditoria final).
     `upsert`) — todas as outras já filtravam corretamente por
     `{id, userId}` ou chave composta incluindo `userId`.
 
+- **Fase 25 — Polimento visual**: a extensão do Chrome não conectou
+  nesta sessão, então fiz a verificação visual com um script Playwright
+  temporário que navegou por todas as telas (populando dados reais no
+  caminho) e tirou screenshots — inclusive mobile (390px) e dark mode —
+  que eu de fato abri e olhei. Achados reais, todos corrigidos:
+  - **Bug de dado real**: formulários de criação rápida (matérias,
+    tópicos, tarefas, provas, fontes, vínculos de deck) resetavam o
+    `<form>` só *depois* da server action resolver. Se o usuário
+    digitasse o próximo item enquanto o anterior ainda estava salvando,
+    o `reset()` tardio apagava o texto novo, e a submissão seguinte ia
+    vazia (rejeitada pela validação, sem aviso nenhum). Corrigido nos 6
+    formulários: resetar (e, onde aplicável, recolher) de forma
+    síncrona no momento do submit — o `FormData` já é um retrato
+    congelado, então isso não perde o que foi enviado.
+  - **Limitação entendida, não "corrigida"**: em testes de automação
+    sem nenhuma espera (bem mais rápido que qualquer uso humano real),
+    ainda dá pra perder uma submissão quando se navega para outra
+    página enquanto uma server action anterior está em voo — o
+    navegador aborta o fetch pendente. Isso é inerente a qualquer app
+    que muta dados via fetch e navega em seguida; o próprio botão
+    "Salvando..." desabilitado já sinaliza pro usuário esperar, e o
+    intervalo real é bem menor que o tempo de reação humano. Não
+    arquitetei uma fila de submissão pra isso agora — custo/benefício
+    não compensa neste estágio.
+  - **Bottom nav mobile quebrada**: 10 itens espremidos numa barra só
+    transbordavam e ficavam ilegíveis em 390px. Redesenhado com 4 itens
+    principais (Início, Sessão, Tarefas, Revisão) + botão "Mais" que
+    abre uma folha com o resto (`nav-items.ts` ganhou um campo
+    `primary`).
+  - **Gráfico de horas-por-dia** mostrava "0h" em todos os ticks do
+    eixo Y quando os dados são poucos minutos (arredondamento pra hora
+    zera tudo) — agora escolhe minutos ou horas com base no valor
+    máximo real dos dados.
+  - **Título do cronograma** saía "Setembro **De** 2026" — a classe CSS
+    `capitalize` maiúsculiza toda palavra, não só a primeira; trocado
+    por capitalizar só a primeira letra em JS.
+  - **Sessões de estudo apareciam riscadas no cronograma** — o
+    `line-through` usado para tarefas concluídas (faz sentido: foi
+    riscada da lista) estava sendo aplicado também a sessões (não faz
+    sentido: uma sessão já é só um registro do que aconteceu, não tem
+    estado "pendente" pra contrastar). Restrito a tarefas.
+  - **Abas de filtro de Tarefas** quebravam linha de forma estranha em
+    390px ("Em" / "andamento" em duas linhas). Trocado para rolagem
+    horizontal.
+
 ## Em andamento / próximos passos (ordem planejada)
 
 1. Fase 23 — mais testes (cobertura unitária além do caso de segurança;
    os 12 specs e2e já cobrem os fluxos principais de cada fase)
-2. Fase 25 — polimento visual (não testado visualmente em navegador
-   real nesta sessão — extensão do Chrome não conectou)
-3. Fases 22/26 — migração Supabase (fica pro final, por pedido do
+2. Fases 22/26 — migração Supabase (fica pro final, por pedido do
    usuário), offline/sync, auditoria final
 
 ## Limitações conhecidas / decisões pendentes do usuário

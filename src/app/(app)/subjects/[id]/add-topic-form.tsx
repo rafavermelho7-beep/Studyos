@@ -13,9 +13,13 @@ export function AddTopicForm({ subjectId, parentId }: { subjectId: string; paren
   return (
     <form
       ref={formRef}
-      action={(formData) =>
-        startTransition(() => createTopicAction(formData).then(() => formRef.current?.reset()))
-      }
+      action={(formData) => {
+        // Reset synchronously at submit time — see quick-create-subject.tsx
+        // for why resetting only after the action resolves is a data-loss
+        // race on fast/repeated submits.
+        formRef.current?.reset();
+        startTransition(() => createTopicAction(formData));
+      }}
       className="flex gap-2"
     >
       <input type="hidden" name="subjectId" value={subjectId} />

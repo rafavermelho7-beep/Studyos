@@ -63,9 +63,13 @@ export function AnkiLinksSection({
 
       <form
         ref={formRef}
-        action={(formData) =>
-          startTransition(() => createAnkiDeckLinkAction(formData).then(() => formRef.current?.reset()))
-        }
+        action={(formData) => {
+          // Reset synchronously at submit time — see
+          // quick-create-subject.tsx for why resetting only after the
+          // action resolves is a data-loss race on fast/repeated submits.
+          formRef.current?.reset();
+          startTransition(() => createAnkiDeckLinkAction(formData));
+        }}
         className="mt-3 flex flex-wrap gap-2"
       >
         <Input name="deckName" placeholder="Nome do deck no Anki" required className="h-8 flex-1 text-xs" />

@@ -35,6 +35,13 @@ function urlFor(view: View, date: Date) {
   return `/schedule?view=${view}&date=${format(date, "yyyy-MM-dd")}`;
 }
 
+// CSS `capitalize` uppercases the first letter of EVERY word ("Setembro De
+// 2026", "Segunda-Feira"), not just the phrase's first letter — wrong for
+// Portuguese month/weekday names, which keep prepositions lowercase.
+function capitalizeFirst(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 export default async function SchedulePage({
   searchParams,
 }: {
@@ -93,7 +100,7 @@ export default async function SchedulePage({
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 md:px-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold capitalize tracking-tight">{title}</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{capitalizeFirst(title)}</h1>
         <div className="flex items-center gap-2">
           <div className="flex gap-1 rounded-[var(--radius-sm)] bg-surface-2 p-1">
             {(["day", "week", "month"] as const).map((v) => (

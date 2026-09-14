@@ -45,13 +45,13 @@ export default async function TasksPage({
 
       <QuickCreateTask subjects={subjects.map((s) => ({ id: s.id, name: s.name }))} />
 
-      <div className="mt-4 flex gap-1 border-b border-border">
+      <div className="mt-4 flex gap-1 overflow-x-auto border-b border-border">
         {filters.map((f) => (
           <Link
             key={f.value}
             href={f.value === "ALL" ? "/tasks" : `/tasks?status=${f.value}`}
             className={cn(
-              "border-b-2 px-3 py-2 text-sm font-medium",
+              "shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium",
               (f.value === "ALL" && !activeFilter) || f.value === activeFilter
                 ? "border-accent text-accent"
                 : "border-transparent text-muted-foreground hover:text-foreground",

@@ -34,6 +34,14 @@ export function DailyBarChart({ data }: { data: { date: string; seconds: number 
   const theme = useChartTheme();
   const skipEvery = Math.max(1, Math.ceil(data.length / 12));
 
+  // Pick one unit for the whole axis from the tallest bar, rather than a
+  // fixed "always hours" formatter — with only a few minutes logged so far
+  // (a new user, or an early day), every tick rounds to "0h" otherwise.
+  const maxSeconds = Math.max(0, ...data.map((d) => d.seconds));
+  const yAxisInMinutes = maxSeconds < 3600;
+  const yAxisFormatter = (s: number) =>
+    s === 0 ? "0" : yAxisInMinutes ? `${Math.round(s / 60)}min` : `${Math.round(s / 3600)}h`;
+
   return (
     <ResponsiveContainer width="100%" height={200}>
       <BarChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
@@ -47,7 +55,7 @@ export function DailyBarChart({ data }: { data: { date: string; seconds: number 
           tickLine={false}
         />
         <YAxis
-          tickFormatter={(s: number) => (s === 0 ? "0" : `${Math.round(s / 3600)}h`)}
+          tickFormatter={yAxisFormatter}
           tick={{ fill: theme.mutedForeground, fontSize: 11 }}
           axisLine={false}
           tickLine={false}

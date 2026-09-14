@@ -33,14 +33,14 @@ export function QuickCreateExam({ subjects }: { subjects: SubjectOption[] }) {
   return (
     <form
       ref={formRef}
-      action={(formData) =>
-        startTransition(() =>
-          createExamAction(formData).then(() => {
-            formRef.current?.reset();
-            setOpen(false);
-          }),
-        )
-      }
+      action={(formData) => {
+        // Reset/collapse synchronously at submit time — see
+        // quick-create-subject.tsx for why resetting only after the action
+        // resolves is a data-loss race on fast/repeated submits.
+        formRef.current?.reset();
+        setOpen(false);
+        startTransition(() => createExamAction(formData));
+      }}
       className="grid grid-cols-1 gap-2 rounded-[var(--radius-lg)] border border-border bg-surface p-4 sm:grid-cols-2"
     >
       <select

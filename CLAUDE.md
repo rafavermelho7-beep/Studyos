@@ -138,6 +138,23 @@ npx prisma studio                   # inspect the local SQLite db
 - **Retention/forgetting-curve numbers must always be labeled as
   estimates**, never presented as measured fact for an individual user
   (brief section 46).
+- **Quick-create `<form>`s reset synchronously, at submit time, not in a
+  `.then()` after the server action resolves.** `formData` is already a
+  frozen snapshot by the time the action function runs, so resetting the
+  DOM form immediately is safe — resetting only after resolution left a
+  window where a fast second submit's typed text got wiped by the first
+  submit's delayed `reset()`, silently no-opping (empty name fails zod's
+  `min(1)`). Every quick-create form (subjects, topics, tasks, exams,
+  sources, Anki deck links) follows this pattern now; keep new ones
+  consistent. See PROJECT_STATUS.md's Fase 25 notes for the full story,
+  including the narrower edge case (rapid-fire automation navigating away
+  mid-save) that's understood but not specifically engineered around.
+- **Mobile bottom nav shows only `primary: true` items from
+  `nav-items.ts` (currently 4) plus a "Mais" button** that opens a sheet
+  with the rest — cramming all ~10 sections into one bottom bar overflows
+  on a phone screen. Adding a new top-level section does NOT need
+  `primary: true`; only mark it if it belongs in that scarce 4-item
+  budget. Desktop sidebar still lists everything.
 - **PWA** (brief §36): `src/app/manifest.ts` + `icon.tsx`/`apple-icon.tsx`
   (rendered with `next/og`, not static image files) + `public/sw.js`. The
   service worker only caches immutable static assets and shows an offline

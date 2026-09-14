@@ -16,9 +16,13 @@ export function QuickCreateTask({ subjects }: { subjects: SubjectOption[] }) {
   return (
     <form
       ref={formRef}
-      action={(formData) =>
-        startTransition(() => createTaskAction(formData).then(() => formRef.current?.reset()))
-      }
+      action={(formData) => {
+        // Reset synchronously at submit time — see quick-create-subject.tsx
+        // for why resetting only after the action resolves is a data-loss
+        // race on fast/repeated submits.
+        formRef.current?.reset();
+        startTransition(() => createTaskAction(formData));
+      }}
       className="rounded-[var(--radius-lg)] border border-border bg-surface p-3"
     >
       <div className="flex gap-2">

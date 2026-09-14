@@ -51,7 +51,12 @@ export function MonthView({
               {items.slice(0, 3).map((item) => (
                 <div key={item.id} className="flex items-center gap-1 truncate text-[11px]">
                   <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className={cn("truncate text-foreground", item.done && "text-muted-foreground line-through")}>
+                  <span
+                    className={cn(
+                      "truncate text-foreground",
+                      item.kind === "task" && item.done && "text-muted-foreground line-through",
+                    )}
+                  >
                     {item.title}
                   </span>
                 </div>

@@ -58,14 +58,14 @@ export function SourcesSection({
       ) : (
         <form
           ref={formRef}
-          action={(formData) =>
-            startTransition(() =>
-              createSourceAction(topicId, subjectId, formData).then(() => {
-                formRef.current?.reset();
-                setOpen(false);
-              }),
-            )
-          }
+          action={(formData) => {
+            // Reset/collapse synchronously at submit time — see
+            // quick-create-subject.tsx for why resetting only after the
+            // action resolves is a data-loss race on fast/repeated submits.
+            formRef.current?.reset();
+            setOpen(false);
+            startTransition(() => createSourceAction(topicId, subjectId, formData));
+          }}
           className="flex flex-wrap gap-2 rounded-[var(--radius-sm)] border border-border bg-surface p-2.5"
         >
           <select

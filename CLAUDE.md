@@ -41,7 +41,14 @@ the working reference for continuing development.
 - **Testing**: Playwright e2e (`e2e/`, config in `playwright.config.ts`,
   runs against a throwaway `prisma/e2e-test.db`, port 3100 to avoid
   clashing with `npm run dev` on 3000). Add a spec per feature slice as it
-  ships — this is how "funciona" gets verified, not just "compila".
+  ships — this is how "funciona" gets verified, not just "compila". Vitest
+  (`vitest.config.ts`, real Prisma against `prisma/vitest-test.db` via
+  `vitest.global-setup.ts`) covers service-layer logic that's awkward to
+  reach through the browser — currently just the `gradeReview` IDOR
+  regression (`src/server/services/reviews.test.ts`). `vitest.config.ts`
+  aliases `server-only` to an empty stub since that package unconditionally
+  throws outside Next's bundler (Next silently swaps in its own no-op for
+  server bundles; Vitest doesn't).
 
 ## Commands
 
@@ -51,6 +58,7 @@ npm run build         # production build (must stay clean, no warnings)
 npx tsc --noEmit       # typecheck
 npm run lint           # eslint
 npm run test:e2e       # playwright e2e (spins its own server on :3100)
+npm run test:unit      # vitest (service-layer logic, real Prisma against vitest-test.db)
 npx prisma migrate dev --name <x>   # after editing schema.prisma
 npx prisma studio                   # inspect the local SQLite db
 ```

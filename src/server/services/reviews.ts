@@ -79,6 +79,14 @@ export async function startReview(userId: string, topicId: string) {
 
 /** 1=Again 2=Hard 3=Good 4=Easy, per ts-fsrs Rating enum. */
 export async function gradeReview(userId: string, topicId: string, rating: Grade) {
+  // Ownership check is load-bearing, not incidental: reviewState.topicId is
+  // globally unique (one row per topic, not per user), so the upsert below
+  // is keyed on `topicId` alone. Without this check, grading a topicId you
+  // don't own would silently overwrite the real owner's FSRS state via the
+  // upsert's `update` branch — an IDOR, not just an empty result.
+  const topic = await db.topic.findFirst({ where: { id: topicId, userId } });
+  if (!topic) throw new Error("Tópico não encontrado.");
+
   const existing = await db.reviewState.findFirst({ where: { userId, topicId } });
   const before = toFsrsCard(existing);
   const now = new Date();

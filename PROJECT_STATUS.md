@@ -4,10 +4,9 @@ Last updated: 2026-09-14
 
 ## Fase atual
 
-Todas as fases de produto (1–21, exceto Fase 15 que já era o modelo
-`StudyEvent` central desde o início) estão concluídas. Restam as fases
-de infraestrutura/operação: 22–26 (offline/sync + Supabase, auditoria
-de testes, segurança, polimento visual, auditoria final).
+Todas as fases de produto (1–21) concluídas. Fase 24 (auditoria de
+segurança) concluída. Restam: Fase 23 (mais testes), Fase 25 (polimento
+visual), Fase 22/26 (Supabase + offline/sync + auditoria final).
 
 ## Concluído
 
@@ -195,11 +194,63 @@ de testes, segurança, polimento visual, auditoria final).
   credenciais só no servidor, aumentando o motor determinístico em vez
   de substituí-lo).
 
+- **Fase 24 — Auditoria de segurança**: não havia repositório remoto
+  configurado (nunca foi dado `git push`), então a skill de review
+  automática (que compara contra `origin/HEAD`) não se aplicava — a
+  auditoria foi manual, cobrindo toda a base de código. Achados reais,
+  todos corrigidos:
+  - **IDOR crítico em `gradeReview`** (`src/server/services/reviews.ts`):
+    a função não verificava se o `topicId` recebido pertencia ao usuário
+    autenticado antes de fazer um `upsert` chaveado só por `topicId`
+    (campo `@unique` no schema, não composto com `userId`). Um usuário
+    mal-intencionado podia corromper o estado de revisão espaçada
+    (FSRS) de OUTRO usuário chamando a server action com o `topicId`
+    de outra pessoa. Corrigido adicionando a checagem de posse que
+    `startReview` já fazia corretamente; agora coberto por um teste
+    Vitest de regressão (`reviews.test.ts`) que prova que os dados da
+    vítima não são alterados.
+  - **Oráculo de timing no login**: quando o e-mail não existia, a
+    action retornava sem chamar `bcrypt.compare`, tornando a resposta
+    mensuravelmente mais rápida que uma senha errada — um jeito de
+    enumerar e-mails cadastrados. Corrigido comparando sempre contra um
+    hash "isca" pré-computado quando o usuário não existe.
+  - **Sem rate limiting no login**: nada impedia força bruta de senha.
+    Adicionado um limitador simples em memória (10 tentativas / 15 min
+    por e-mail) em `src/lib/auth/rate-limit.ts` — documentado como
+    "revisitar com um store compartilhado" quando deixar de ser um
+    processo único.
+  - **URL de fonte de estudo aceitava `javascript:`**: o campo
+    `StudySource.url` (renderizado direto num `<a href>`) só validava
+    sintaxe de URL (`zod .url()`), não o esquema — um valor
+    `javascript:alert(1)` passava e executaria script ao clicar em
+    "Abrir" (XSS armazenado, embora escopado ao próprio usuário que
+    cadastrou). Corrigido restringindo a `http(s)://` explicitamente.
+  - **Sem headers de segurança**: adicionados `X-Content-Type-Options`,
+    `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` em
+    `next.config.ts`. Uma CSP completa foi deliberadamente **não**
+    adicionada agora — exige ajuste fino por diretiva contra cada
+    script/estilo/fonte de terceiro carregado, e isso não dá pra
+    verificar visualmente neste ambiente sem navegador; revisitar antes
+    de um deploy público.
+  - **Revisado e aceito sem mudança**: `npm audit` aponta uma
+    vulnerabilidade alta em `deepmerge-ts` — é dependência transitiva
+    só de build do CLI do Prisma (`@prisma/config`), não roda em
+    produção nem processa entrada não confiável no nosso uso; corrigir
+    exigiria rebaixar o Prisma para uma versão mais antiga que a
+    fixada. Não fiz a troca.
+  - Toda autorização de `updateMany`/`deleteMany` na camada de serviço
+    foi auditada manualmente (grep de todos os `update`/`delete`/
+    `upsert`) — todas as outras já filtravam corretamente por
+    `{id, userId}` ou chave composta incluindo `userId`.
+
 ## Em andamento / próximos passos (ordem planejada)
 
-1. Fases 22–26 — migração Supabase (fica pro final, por pedido do
-   usuário), offline/sync, testes completos, auditoria de segurança,
-   polimento visual, auditoria final
+1. Fase 23 — mais testes (cobertura unitária além do caso de segurança;
+   os 12 specs e2e já cobrem os fluxos principais de cada fase)
+2. Fase 25 — polimento visual (não testado visualmente em navegador
+   real nesta sessão — extensão do Chrome não conectou)
+3. Fases 22/26 — migração Supabase (fica pro final, por pedido do
+   usuário), offline/sync, auditoria final
 
 ## Limitações conhecidas / decisões pendentes do usuário
 

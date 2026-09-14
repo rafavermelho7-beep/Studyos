@@ -2,9 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { hashPassword, verifyPassword } from "@/lib/auth/password";
+import { hashPassword, verifyPassword, DUMMY_PASSWORD_HASH } from "@/lib/auth/password";
 import { createSession, destroySession } from "@/lib/auth/session";
 import { loginSchema, registerSchema } from "@/lib/auth/schemas";
+import { isRateLimited, recordFailedAttempt, clearAttempts } from "@/lib/auth/rate-limit";
 
 export type AuthActionState = {
   error?: string;
@@ -61,16 +62,23 @@ export async function loginAction(
 
   const { email, password } = parsed.data;
 
+  if (isRateLimited(email)) {
+    return { error: "Muitas tentativas. Aguarde alguns minutos e tente novamente." };
+  }
+
   const user = await db.user.findUnique({ where: { email } });
-  if (!user) {
+
+  // Always run bcrypt.compare, even against a decoy hash when the user
+  // doesn't exist, so a nonexistent email doesn't return measurably faster
+  // than a wrong password — that timing gap is an email-enumeration oracle.
+  const valid = await verifyPassword(password, user?.passwordHash ?? DUMMY_PASSWORD_HASH);
+
+  if (!user || !valid) {
+    recordFailedAttempt(email);
     return { error: "E-mail ou senha incorretos." };
   }
 
-  const valid = await verifyPassword(password, user.passwordHash);
-  if (!valid) {
-    return { error: "E-mail ou senha incorretos." };
-  }
-
+  clearAttempts(email);
   await createSession(user.id);
   redirect("/dashboard");
 }

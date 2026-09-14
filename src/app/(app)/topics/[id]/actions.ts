@@ -23,10 +23,21 @@ const sourceTypes = [
   "OTHER",
 ] as const;
 
+// zod's .url() only checks URL syntax, not scheme — "javascript:alert(1)"
+// passes it, since the URL constructor accepts any scheme. This field is
+// rendered straight into an <a href>, so restrict it to http(s) or a click
+// would execute arbitrary script in the viewer's session (stored XSS,
+// scoped to the user who entered it here, but still a real bug to close).
+const httpUrlSchema = z
+  .string()
+  .trim()
+  .url("URL inválida")
+  .refine((url) => /^https?:\/\//i.test(url), "A URL precisa começar com http:// ou https://");
+
 const createSourceSchema = z.object({
   type: z.enum(sourceTypes),
   title: z.string().trim().min(1, "Informe um título").max(160),
-  url: z.string().trim().url("URL inválida").optional().or(z.literal("")),
+  url: httpUrlSchema.optional().or(z.literal("")),
 });
 
 export async function createSourceAction(topicId: string, subjectId: string, formData: FormData) {

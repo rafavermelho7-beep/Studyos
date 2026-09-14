@@ -13,3 +13,14 @@ Framework-agnostic business logic and data access. Rules:
    server actions and route handlers call into services, not the other way
    around, so services stay testable in isolation.
 3. Return plain data (or throw), no HTTP/redirect concerns.
+4. **`updateMany`/`deleteMany` with `{ id, userId }` in `where` is the
+   default-safe pattern** — it silently affects 0 rows for a mismatched
+   owner. Watch out when a model's unique key is something OTHER than its
+   own `id` (e.g. `ReviewState.topicId`, `@unique` on its own): an
+   `upsert`/`update` keyed on just that field, without first checking the
+   *related* row's ownership, can silently mutate another user's data
+   instead of erroring. `gradeReview` in `reviews.ts` had exactly this bug
+   (fixed — see the comment there and `reviews.test.ts`); when a model's
+   unique key isn't `{id, userId}` or a compound including `userId`,
+   explicitly verify ownership of the referenced row(s) before the
+   upsert/update, the way `startReview` and `addExamTopic` do.

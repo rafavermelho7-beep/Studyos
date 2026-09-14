@@ -4,10 +4,10 @@ Last updated: 2026-09-14
 
 ## Fase atual
 
-Fases 1–9 e 11 concluídas (scaffold → auth → design system → dashboard →
-matérias/tópicos → tarefas → sessões/pomodoro → provas → revisão espaçada
-com FSRS). Avançando para Fase 10 (Estatísticas) e Fase 12 (curva do
-esquecimento).
+Fases 1–11 concluídas (scaffold → auth → design system → dashboard →
+matérias/tópicos → tarefas → sessões/pomodoro → provas → estatísticas →
+revisão espaçada com FSRS). Avançando para Fase 12 (curva do
+esquecimento) e Fase 7 (cronograma/calendário).
 
 ## Concluído
 
@@ -82,30 +82,46 @@ esquecimento).
   por design, para não inventar uma regra de negócio não pedida.
   Dashboard agora mostra a contagem de revisões pendentes.
 
+- **Fase 10 — Estatísticas**: seletor de período (7/30/90/180/365 dias +
+  personalizado via `from`/`to`), tiles de horas estudadas/sessões/dias
+  estudados/sequência atual, gráfico de barras horas-por-dia e horas-por-
+  matéria (cor de cada barra = a cor que o usuário escolheu para a
+  matéria — identidade categórica correta, não uma paleta gerada). Segui
+  o skill `dataviz` deste projeto: barras com ponta arredondada de 4px,
+  grades horizontais finas e recessivas, tooltip com valor em destaque e
+  nome em segundo plano. Cores do gráfico resolvidas via
+  `useSyncExternalStore` em cima de `matchMedia`, não via CSS var direto
+  no SVG (Recharts escreve atributos de apresentação, que nem sempre
+  resolvem `var()` de forma confiável) — ver `use-chart-theme.ts`.
+- **Bug de lint pego pela nova regra `react-hooks/set-state-in-effect`**:
+  o hook de tema do gráfico originalmente lia `matchMedia` e chamava
+  `setState` dentro do corpo de um `useEffect` — reescrito com
+  `useSyncExternalStore`, o jeito correto de assinar estado externo do
+  navegador sem o anti-padrão de "efeito que só espelha estado".
+
 ## Em andamento / próximos passos (ordem planejada)
 
 1. Fase 7 — Cronograma/calendário (dia/semana/mês) — ainda não iniciado;
    tarefas e provas já têm campos de data, falta a visualização de
    calendário propriamente dita
-2. Fase 10 — Estatísticas (derivadas de `StudyEvent`, sem números
-   inventados)
-3. Fase 12 — Curva do esquecimento a partir de `ReviewLog`/FSRS (sempre
+2. Fase 12 — Curva do esquecimento a partir de `ReviewLog`/FSRS (sempre
    rotulada como estimativa)
-4. Fase 13 — Mapa de conhecimento
-6. Fase 14 — PWA (manifest, ícones, service worker, offline básico)
-7. Fases 15–21 — Study Events já existe como modelo central; Anki
+3. Fase 13 — Mapa de conhecimento
+4. Fase 14 — PWA (manifest, ícones, service worker, offline básico)
+5. Fases 15–21 — Study Events já existe como modelo central; Anki
    (arquitetura de conector local), hub de fontes, SanarFlix (links
    manuais), motor de planejamento, recomendações, arquitetura de IA
-8. Fases 22–26 — offline/sync, testes completos, auditoria de
+6. Fases 22–26 — offline/sync, testes completos, auditoria de
    segurança, polimento visual, auditoria final
 
 ## Limitações conhecidas / decisões pendentes do usuário
 
-- **Sem Supabase por enquanto** (escolha explícita do usuário). Banco é
-  SQLite local em `prisma/dev.db` (não versionado). Quando o usuário
-  quiser sincronização real entre dispositivos, será necessário criar um
-  projeto Supabase (ou Postgres próprio) e migrar — a arquitetura já está
-  preparada para isso.
+- **Migração para Supabase fica deliberadamente para o final** (decisão
+  explícita do usuário, reconfirmada em 2026-09-14). Banco é SQLite local
+  em `prisma/dev.db` (não versionado) até lá. A migração (Fase 22 —
+  offline/sync — é o ponto natural pra isso) exige que o usuário crie um
+  projeto Supabase e forneça URL + anon key + service role key; a
+  arquitetura já está pronta para o swap.
 - **Sem Docker/Postgres disponíveis** no ambiente de desenvolvimento atual.
 - **Ícones/PWA** ainda não implementados — não existem assets de ícone
   reais ainda; vai ser feito na Fase 14 com ícones de verdade, não

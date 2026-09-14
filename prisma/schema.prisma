@@ -128,11 +128,15 @@ model Topic {
 
 // ─── Tasks ──────────────────────────────────────────────────────────────
 
+// "Overdue" is intentionally not a stored state: it's `dueDate < now &&
+// status != DONE`, computed at read time in the service layer. Storing it
+// would mean either a background job to flip it or stale data the moment
+// midnight passes — see the "events/derivation over redundant aggregates"
+// principle in CLAUDE.md.
 enum TaskStatus {
   TODO
   IN_PROGRESS
   DONE
-  OVERDUE
 }
 
 enum TaskPriority {

@@ -14,13 +14,6 @@ function greeting(hour: number) {
   return "Boa noite";
 }
 
-const statusMeta = {
-  NOVO: { icon: "⚪", label: "não estudados" },
-  APRENDENDO: { icon: "🟡", label: "aprendendo" },
-  REVISANDO: { icon: "🟡", label: "revisando" },
-  DOMINADO: { icon: "🟢", label: "dominados" },
-} as const;
-
 export default async function DashboardPage() {
   const user = await requireUser();
   const subjects = await listSubjects(user.id);

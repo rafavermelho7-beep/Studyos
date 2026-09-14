@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { LayoutDashboard, BookOpen } from "lucide-react";
+import { LayoutDashboard, BookOpen, ListTodo } from "lucide-react";
 
 export type NavItem = {
   href: string;
@@ -12,4 +12,5 @@ export type NavItem = {
 export const navItems: NavItem[] = [
   { href: "/dashboard", label: "Início", icon: LayoutDashboard },
   { href: "/subjects", label: "Matérias", icon: BookOpen },
+  { href: "/tasks", label: "Tarefas", icon: ListTodo },
 ];

@@ -20,9 +20,11 @@ pelo usuário, plano gratuito). Resumo:
 - Migrations SQLite antigas foram apagadas e uma migration `init_postgres`
   nova foi gerada e aplicada direto no Supabase (sem dado real de usuário
   pra preservar — só contas de teste).
-- `DATABASE_URL` usa a **connection string direta** (`db.<ref>.supabase.co
-  :5432`), confirmada funcionando neste ambiente — não a do pooler
-  (`*.pooler.supabase.com`), que exigiria saber a região exata do projeto.
+- `DATABASE_URL` usa a **session pooler** (`postgres.<ref>@aws-0-sa-east-1
+  .pooler.supabase.com:5432`) — não a conexão direta (`db.<ref>.supabase.co
+  :5432`) nem o transaction pooler (porta 6543). Motivo: ver "Deploy em
+  produção" abaixo — a conexão direta funciona neste ambiente de dev mas
+  quebra em produção no Vercel.
 - `SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEY`/`SUPABASE_SECRET_KEY` guardados
   no `.env` mas **não usados** por nenhum código ainda — o app não usa
   Auth/Storage/Realtime do Supabase, só Postgres via Prisma.
@@ -42,6 +44,33 @@ pelo usuário, plano gratuito). Resumo:
   `postgres` (dono das tabelas, ignora RLS de qualquer forma) e a
   autorização continua 100% na camada de serviço (`userId` em toda query).
   Documentado em `CLAUDE.md` como trabalho de infra futuro, não bloqueador.
+
+## Deploy em produção (2026-09-14)
+
+Repositório publicado no GitHub (`rafavermelho7-beep/Studyos`, privado) e
+deploy feito no Vercel — `https://studyos-nine-ochre.vercel.app`.
+
+- **Bug real pego logo após o primeiro deploy**: criar conta em produção
+  dava "A server error occurred" (erro genérico do Next, sem detalhe).
+  Rodei um smoke test do Playwright direto contra a URL de produção
+  (`register` → `dashboard` → criar matéria) pra confirmar antes de
+  declarar "pronto" — e ele falhou. Causa: a `DATABASE_URL` usava a
+  conexão direta do Supabase, que é **só IPv6** por padrão; o Vercel só
+  tem saída IPv4, então a função serverless nunca conseguia abrir a
+  conexão com o banco. Funcionava neste ambiente de dev (que tem IPv6),
+  por isso não foi pego antes do deploy.
+  - Corrigido trocando `DATABASE_URL` pro **session pooler** do Supabase
+    (porta 5432), que é IPv4-compatível nativamente — confirmado com
+    `prisma db execute` contra várias regiões até achar a certa
+    (`sa-east-1`) e depois validado que resolve o erro.
+  - O transaction pooler (porta 6543) também é IPv6 por padrão no
+    Supabase (só fica IPv4 com um add-on pago) — não é a opção certa
+    aqui.
+- Variáveis de ambiente (`DATABASE_URL`, `SUPABASE_URL`,
+  `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`) configuradas
+  manualmente no painel do Vercel (Vercel detectou os nomes a partir do
+  `.env.example` do repositório, mas os valores precisam ser preenchidos
+  à mão — não vêm do `.env` local, que não é versionado).
 
 ## Concluído
 

@@ -12,12 +12,20 @@ the working reference for continuing development.
 - **Prisma 6.19 + Postgres on Supabase.** Started as local-first SQLite,
   migrated once the user created a Supabase project (2026-09-14) — see
   `prisma/schema.prisma` header comment for exactly what did and didn't
-  change. `DATABASE_URL` is the **direct connection** string (`db.<ref>
-  .supabase.co:5432`, not the pooler) — that's the one confirmed to work
-  from this dev environment; if it ever needs the pooler (e.g. serverless/
-  edge deployment with many concurrent short-lived connections), get the
-  exact pooler host+region from Supabase's Settings → Database rather than
-  guessing the region.
+  change. `DATABASE_URL` is the **session pooler** string
+  (`postgres.<ref>@aws-0-<region>.pooler.supabase.com:5432`) — NOT the
+  direct connection (`db.<ref>.supabase.co:5432`) and NOT the transaction
+  pooler (port 6543). Both of those are IPv6-only by default on Supabase;
+  they connect fine from this dev machine (which has IPv6) but **fail
+  silently in production on Vercel** (IPv4-only egress) with a generic
+  "A server error occurred" — no useful client-side error, since Next
+  strips server error details from the response. Found by smoke-testing
+  the live Vercel deploy right after shipping it (see PROJECT_STATUS.md).
+  Session pooler is the one IPv4-compatible option that doesn't need
+  Supabase's paid dedicated-IPv4 add-on. If you ever change
+  `DATABASE_URL`, get the exact string from Supabase's Settings →
+  Database → Connection string → "Session pooler" → URI — don't guess
+  the region suffix (`sa-east-1` here, but that's per-project).
   - **Why not Prisma 7/8**: 7 changed datasource config in a breaking way
     (moved to `prisma.config.ts` + driver adapters) and 8 is an RC as of
     this writing. Pinned to the last stable 6.x. Revisit later.

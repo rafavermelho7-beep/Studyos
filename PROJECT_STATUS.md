@@ -4,7 +4,8 @@ Last updated: 2026-09-14
 
 ## Fase atual
 
-Fases 1–13 concluídas. Avançando para Fase 14 (PWA).
+Fases 1–14 concluídas. Avançando para as integrações (fases 15–21):
+hub de fontes, Anki, SanarFlix, motor de planejamento.
 
 ## Concluído
 
@@ -124,13 +125,26 @@ Fases 1–13 concluídas. Avançando para Fase 14 (PWA).
   antigo. ⚪ não estudado só quando o tópico nunca entrou em revisão E
   está com status NOVO. Cada tile leva para `/topics/[id]`.
 
+- **Fase 14 — PWA**: `manifest.webmanifest` via `src/app/manifest.ts`
+  (convenção nativa do App Router, sem arquivo estático). Ícones reais
+  gerados com `next/og` `ImageResponse` (favicon 32px, apple-touch-icon
+  180px, e os PNGs 192/512 do manifest incluindo uma variante
+  maskable) — nada de placeholder, todos verificados abrindo a imagem
+  de verdade. Service worker (`public/sw.js`) com escopo deliberadamente
+  limitado: cache-first só para assets estáticos imutáveis
+  (`_next/static`, `/icons`), network-first com fallback pra
+  `offline.html` em navegações, e **nunca** cacheia dado autenticado —
+  cachear página dinâmica por usuário seria um bug de correção/
+  privacidade (dado de outra sessão aparecendo offline). Registrado só
+  em produção (evita atrito com HMR do `next dev`). Isso é o "offline
+  básico" pedido nesta fase — offline com dados reais e sync é Fase 22.
+
 ## Em andamento / próximos passos (ordem planejada)
 
-1. Fase 14 — PWA (manifest, ícones, service worker, offline básico)
-2. Fases 15–21 — Study Events já existe como modelo central; Anki
+1. Fases 15–21 — Study Events já existe como modelo central; Anki
    (arquitetura de conector local), hub de fontes, SanarFlix (links
    manuais), motor de planejamento, recomendações, arquitetura de IA
-3. Fases 22–26 — migração Supabase (fica pro final, por pedido do
+2. Fases 22–26 — migração Supabase (fica pro final, por pedido do
    usuário), offline/sync, testes completos, auditoria de segurança,
    polimento visual, auditoria final
 

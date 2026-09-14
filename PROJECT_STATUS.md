@@ -4,8 +4,7 @@ Last updated: 2026-09-14
 
 ## Fase atual
 
-Fases 1–12 e 7 concluídas. Avançando para Fase 13 (mapa de
-conhecimento) e Fase 14 (PWA).
+Fases 1–13 concluídas. Avançando para Fase 14 (PWA).
 
 ## Concluído
 
@@ -117,14 +116,21 @@ conhecimento) e Fase 14 (PWA).
   não foi implementada (é um adicional de UX, não a visualização em si);
   por ora a forma de reagendar é editar a tarefa/prova diretamente.
 
+- **Fase 13 — Mapa de conhecimento**: `/knowledge-map`, uma grade por
+  matéria de "tiles" coloridos por tópico. Status combina dois eixos
+  reais: o `status` manual do tópico E o estado da revisão espaçada —
+  um tópico DOMINADO cuja revisão venceu aparece 🔴 (revisão atrasada),
+  não 🟢, porque uma revisão vencida é mais urgente que o rótulo manual
+  antigo. ⚪ não estudado só quando o tópico nunca entrou em revisão E
+  está com status NOVO. Cada tile leva para `/topics/[id]`.
+
 ## Em andamento / próximos passos (ordem planejada)
 
-1. Fase 13 — Mapa de conhecimento
-2. Fase 14 — PWA (manifest, ícones, service worker, offline básico)
-3. Fases 15–21 — Study Events já existe como modelo central; Anki
+1. Fase 14 — PWA (manifest, ícones, service worker, offline básico)
+2. Fases 15–21 — Study Events já existe como modelo central; Anki
    (arquitetura de conector local), hub de fontes, SanarFlix (links
    manuais), motor de planejamento, recomendações, arquitetura de IA
-4. Fases 22–26 — migração Supabase (fica pro final, por pedido do
+3. Fases 22–26 — migração Supabase (fica pro final, por pedido do
    usuário), offline/sync, testes completos, auditoria de segurança,
    polimento visual, auditoria final
 

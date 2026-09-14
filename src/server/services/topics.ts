@@ -51,6 +51,14 @@ export async function deleteTopic(userId: string, topicId: string) {
   if (result.count === 0) throw new Error("Tópico não encontrado.");
 }
 
+export function listTopicsForUser(userId: string) {
+  return db.topic.findMany({
+    where: { userId },
+    select: { id: true, name: true, subjectId: true, parentId: true },
+    orderBy: { name: "asc" },
+  });
+}
+
 export function getTopic(userId: string, topicId: string) {
   return db.topic.findFirst({
     where: { id: topicId, userId },

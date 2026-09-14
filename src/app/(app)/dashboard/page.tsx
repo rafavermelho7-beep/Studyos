@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
 import { listSubjects } from "@/server/services/subjects";
+import { listTasks } from "@/server/services/tasks";
+import { getTodayStudySeconds } from "@/server/services/study-events";
 import { Card, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -14,13 +16,26 @@ function greeting(hour: number) {
   return "Boa noite";
 }
 
+function formatStudySeconds(sec: number) {
+  if (sec < 60) return "0 min";
+  const h = Math.floor(sec / 3600);
+  const m = Math.round((sec % 3600) / 60);
+  return h > 0 ? `${h}h${String(m).padStart(2, "0")}` : `${m} min`;
+}
+
 export default async function DashboardPage() {
   const user = await requireUser();
-  const subjects = await listSubjects(user.id);
+  const [subjects, tasks, todaySeconds] = await Promise.all([
+    listSubjects(user.id),
+    listTasks(user.id),
+    getTodayStudySeconds(user.id),
+  ]);
   const firstName = (user.name ?? "").split(" ")[0] || undefined;
   const hour = new Date().getHours();
 
   const totalTopics = subjects.reduce((sum, s) => sum + s._count.topics, 0);
+  const pendingTasks = tasks.filter((t) => t.status !== "DONE").length;
+  const overdueTasks = tasks.filter((t) => t.overdue).length;
 
   if (subjects.length === 0) {
     return (
@@ -49,6 +64,33 @@ export default async function DashboardPage() {
         {subjects.length} matéria{subjects.length === 1 ? "" : "s"} · {totalTopics} tópico
         {totalTopics === 1 ? "" : "s"} cadastrados
       </p>
+
+      <div className="mt-4 grid grid-cols-3 gap-3">
+        <Card>
+          <CardContent className="p-3">
+            <p className="text-xs text-muted-foreground">Hoje</p>
+            <p className="mt-0.5 text-lg font-semibold text-foreground">
+              {formatStudySeconds(todaySeconds)}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3">
+            <p className="text-xs text-muted-foreground">Tarefas pendentes</p>
+            <p className="mt-0.5 text-lg font-semibold text-foreground">{pendingTasks}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3">
+            <p className="text-xs text-muted-foreground">Atrasadas</p>
+            <p
+              className={`mt-0.5 text-lg font-semibold ${overdueTasks > 0 ? "text-danger" : "text-foreground"}`}
+            >
+              {overdueTasks}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {subjects.map((subject) => (

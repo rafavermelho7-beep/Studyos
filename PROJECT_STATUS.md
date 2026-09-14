@@ -4,7 +4,9 @@ Last updated: 2026-09-14
 
 ## Fase atual
 
-Fase 5 concluída (Matérias + Tópicos), avançando para Fase 6 (Tarefas).
+Fases 1–8 concluídas (scaffold → auth → design system → dashboard →
+matérias/tópicos → tarefas → sessões/pomodoro). Avançando para Fase 9
+(Provas/deadlines).
 
 ## Concluído
 
@@ -28,30 +30,46 @@ Fase 5 concluída (Matérias + Tópicos), avançando para Fase 6 (Tarefas).
   prioridade, cor). Tópicos e subtópicos (um nível de aninhamento),
   status (NOVO/APRENDENDO/REVISANDO/DOMINADO), exclusão. Autorização
   sempre escopada por `userId` na camada de serviço.
-- **Testes**: Playwright configurado (`e2e/core-flow.spec.ts`) cobrindo o
-  fluxo completo registro → criar matéria → criar tópico → mudar status →
-  logout → login → persistência. Passando.
+- **Fase 6 — Tarefas**: CRUD completo, criação rápida (só título) +
+  detalhes opcionais (matéria, prioridade, prazo), filtros por status
+  (Todas/A fazer/Em andamento/Concluídas), "atrasada" derivado em tempo de
+  leitura (não armazenado). Checkbox de concluir usa `useOptimistic`.
+- **Fase 8 — Sessões de estudo + Pomodoro**: modo Livre (cronômetro
+  contínuo, com pausar/retomar) e modo Pomodoro (25/5, 50/10, 90/15 ou
+  customizado, com transição automática foco↔pausa; só o tempo de foco
+  conta como `StudyEvent`, pausas não). Cada sessão finalizada grava um
+  `StudyEvent` real via server action. Tela mostra atividade recente
+  (dados reais). Dashboard agora mostra minutos estudados hoje, tarefas
+  pendentes e atrasadas — todos derivados de `StudyEvent`/`Task` reais.
+  Nota técnica: o timer foi implementado sem `ref` nem `Date.now()`
+  lidos durante o render (exigência das novas regras `react-hooks/purity`
+  e `react-hooks/refs` do ESLint no Next 16/React 19) — toda leitura de
+  relógio acontece dentro do callback do `setInterval`, nunca no corpo
+  do componente.
+- **Testes**: Playwright cobrindo três fluxos completos —
+  `core-flow.spec.ts` (matérias/tópicos + persistência entre sessões),
+  `tasks.spec.ts` (CRUD + filtros + conclusão), `sessions.spec.ts`
+  (sessão de foco ponta a ponta). Todos passando.
 
 ## Em andamento / próximos passos (ordem planejada)
 
-1. Fase 6 — Tarefas (CRUD, status, filtros/ordenação)
-2. Fase 7 — Cronograma/calendário (dia/semana/mês)
-3. Fase 8 — Sessões de estudo + modo foco + Pomodoro (alimentando
-   `StudyEvent`)
-4. Fase 9 — Provas/deadlines (`Exam` + `ExamTopic`, contagem regressiva,
+1. Fase 7 — Cronograma/calendário (dia/semana/mês) — ainda não iniciado;
+   tarefas e provas já têm campos de data, falta a visualização de
+   calendário propriamente dita
+2. Fase 9 — Provas/deadlines (`Exam` + `ExamTopic`, contagem regressiva,
    % de preparação)
-5. Fase 10 — Estatísticas (derivadas de `StudyEvent`, sem números
+3. Fase 10 — Estatísticas (derivadas de `StudyEvent`, sem números
    inventados)
-6. Fase 11 — Revisão espaçada com `ts-fsrs` (já instalado, ainda não
+4. Fase 11 — Revisão espaçada com `ts-fsrs` (já instalado, ainda não
    usado) sobre `ReviewState`/`ReviewLog`
-7. Fase 12 — Curva do esquecimento (sempre rotulada como estimativa)
-8. Fase 13 — Mapa de conhecimento
-9. Fase 14 — PWA (manifest, ícones, service worker, offline básico)
-10. Fases 15–21 — Study Events já existe como modelo central; Anki
-    (arquitetura de conector local), hub de fontes, SanarFlix (links
-    manuais), motor de planejamento, recomendações, arquitetura de IA
-11. Fases 22–26 — offline/sync, testes completos, auditoria de
-    segurança, polimento visual, auditoria final
+5. Fase 12 — Curva do esquecimento (sempre rotulada como estimativa)
+6. Fase 13 — Mapa de conhecimento
+7. Fase 14 — PWA (manifest, ícones, service worker, offline básico)
+8. Fases 15–21 — Study Events já existe como modelo central; Anki
+   (arquitetura de conector local), hub de fontes, SanarFlix (links
+   manuais), motor de planejamento, recomendações, arquitetura de IA
+9. Fases 22–26 — offline/sync, testes completos, auditoria de
+   segurança, polimento visual, auditoria final
 
 ## Limitações conhecidas / decisões pendentes do usuário
 

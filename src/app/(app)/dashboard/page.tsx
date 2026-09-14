@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth/session";
 import { listSubjects } from "@/server/services/subjects";
 import { listTasks } from "@/server/services/tasks";
 import { getTodayStudySeconds } from "@/server/services/study-events";
+import { countDueReviews } from "@/server/services/reviews";
 import { Card, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -25,10 +26,11 @@ function formatStudySeconds(sec: number) {
 
 export default async function DashboardPage() {
   const user = await requireUser();
-  const [subjects, tasks, todaySeconds] = await Promise.all([
+  const [subjects, tasks, todaySeconds, dueReviews] = await Promise.all([
     listSubjects(user.id),
     listTasks(user.id),
     getTodayStudySeconds(user.id),
+    countDueReviews(user.id),
   ]);
   const firstName = (user.name ?? "").split(" ")[0] || undefined;
   const hour = new Date().getHours();
@@ -65,7 +67,7 @@ export default async function DashboardPage() {
         {totalTopics === 1 ? "" : "s"} cadastrados
       </p>
 
-      <div className="mt-4 grid grid-cols-3 gap-3">
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Card>
           <CardContent className="p-3">
             <p className="text-xs text-muted-foreground">Hoje</p>
@@ -87,6 +89,16 @@ export default async function DashboardPage() {
               className={`mt-0.5 text-lg font-semibold ${overdueTasks > 0 ? "text-danger" : "text-foreground"}`}
             >
               {overdueTasks}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3">
+            <p className="text-xs text-muted-foreground">Revisões</p>
+            <p
+              className={`mt-0.5 text-lg font-semibold ${dueReviews > 0 ? "text-accent" : "text-foreground"}`}
+            >
+              {dueReviews}
             </p>
           </CardContent>
         </Card>

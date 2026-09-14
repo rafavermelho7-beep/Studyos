@@ -271,18 +271,19 @@ enum ReviewCardState {
 }
 
 model ReviewState {
-  id                 String          @id @default(cuid())
-  userId             String
-  topicId            String          @unique
-  state              ReviewCardState @default(NEW)
-  due                DateTime        @default(now())
-  stability          Float           @default(0)
-  difficulty         Float           @default(0)
-  elapsedDays        Float           @default(0)
-  scheduledDays      Float           @default(0)
-  reps               Int             @default(0)
-  lapses             Int             @default(0)
-  lastReview         DateTime?
+  id            String          @id @default(cuid())
+  userId        String
+  topicId       String          @unique
+  state         ReviewCardState @default(NEW)
+  due           DateTime        @default(now())
+  stability     Float           @default(0)
+  difficulty    Float           @default(0)
+  elapsedDays   Float           @default(0)
+  scheduledDays Float           @default(0)
+  learningSteps Int             @default(0)
+  reps          Int             @default(0)
+  lapses        Int             @default(0)
+  lastReview    DateTime?
 
   updatedAt DateTime @updatedAt
 

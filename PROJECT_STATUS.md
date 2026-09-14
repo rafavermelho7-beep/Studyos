@@ -4,9 +4,10 @@ Last updated: 2026-09-14
 
 ## Fase atual
 
-Fases 1–9 concluídas (scaffold → auth → design system → dashboard →
-matérias/tópicos → tarefas → sessões/pomodoro → provas). Avançando para
-Fase 10 (Estatísticas) ou Fase 11 (Revisão espaçada/FSRS).
+Fases 1–9 e 11 concluídas (scaffold → auth → design system → dashboard →
+matérias/tópicos → tarefas → sessões/pomodoro → provas → revisão espaçada
+com FSRS). Avançando para Fase 10 (Estatísticas) e Fase 12 (curva do
+esquecimento).
 
 ## Concluído
 
@@ -65,6 +66,22 @@ Fase 10 (Estatísticas) ou Fase 11 (Revisão espaçada/FSRS).
   construtor nativo — ver nota em `CLAUDE.md`. Tarefa "atrasada" agora
   compara contra `endOfDay(dueDate)`, não o instante da meia-noite.
 
+- **Fase 11 — Revisão espaçada (FSRS)**: `ts-fsrs` real (não um algoritmo
+  inventado) via `src/server/services/reviews.ts`. Um `ReviewState` por
+  (usuário, tópico) espelha um FSRS `Card`; cada avaliação gera também um
+  `ReviewLog` (histórico completo, necessário para a curva de
+  esquecimento na Fase 12). Curto-prazo (steps de minutos) desabilitado
+  de propósito — revisão é por tópico, não por flashcard individual, então
+  todo intervalo proposto é de pelo menos um dia. Fila de revisão em
+  `/review`: tópicos vencidos mostram % de retenção estimada
+  (`get_retrievability`, sempre rotulado como estimativa), avaliação em
+  4 botões (Errei/Difícil/Bom/Fácil), e uma lista separada para
+  "iniciar revisão" em tópicos que ainda não entraram no sistema.
+  Deliberadamente **não** sincroniza automaticamente com o `status`
+  manual do tópico (NOVO/APRENDENDO/...) — são dois eixos independentes
+  por design, para não inventar uma regra de negócio não pedida.
+  Dashboard agora mostra a contagem de revisões pendentes.
+
 ## Em andamento / próximos passos (ordem planejada)
 
 1. Fase 7 — Cronograma/calendário (dia/semana/mês) — ainda não iniciado;
@@ -72,10 +89,9 @@ Fase 10 (Estatísticas) ou Fase 11 (Revisão espaçada/FSRS).
    calendário propriamente dita
 2. Fase 10 — Estatísticas (derivadas de `StudyEvent`, sem números
    inventados)
-3. Fase 11 — Revisão espaçada com `ts-fsrs` (já instalado, ainda não
-   usado) sobre `ReviewState`/`ReviewLog`
-4. Fase 12 — Curva do esquecimento (sempre rotulada como estimativa)
-5. Fase 13 — Mapa de conhecimento
+3. Fase 12 — Curva do esquecimento a partir de `ReviewLog`/FSRS (sempre
+   rotulada como estimativa)
+4. Fase 13 — Mapa de conhecimento
 6. Fase 14 — PWA (manifest, ícones, service worker, offline básico)
 7. Fases 15–21 — Study Events já existe como modelo central; Anki
    (arquitetura de conector local), hub de fontes, SanarFlix (links

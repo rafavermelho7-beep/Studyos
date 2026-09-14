@@ -1,0 +1,98 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { requireUser } from "@/lib/auth/session";
+import {
+  createSubject,
+  updateSubject,
+  deleteSubject,
+} from "@/server/services/subjects";
+import { createTopic, updateTopic, deleteTopic } from "@/server/services/topics";
+
+const quickCreateSchema = z.object({
+  name: z.string().trim().min(1, "Informe um nome").max(120),
+});
+
+export async function quickCreateSubjectAction(formData: FormData) {
+  const user = await requireUser();
+  const parsed = quickCreateSchema.safeParse({ name: formData.get("name") });
+  if (!parsed.success) return;
+
+  await createSubject(user.id, { name: parsed.data.name });
+  revalidatePath("/subjects");
+  revalidatePath("/dashboard");
+}
+
+const subjectSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  description: z.string().trim().max(2000).optional(),
+  professor: z.string().trim().max(120).optional(),
+  semester: z.string().trim().max(60).optional(),
+  priority: z.coerce.number().int().min(1).max(3).optional(),
+  color: z
+    .string()
+    .trim()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional(),
+});
+
+export async function updateSubjectAction(subjectId: string, formData: FormData) {
+  const user = await requireUser();
+  const parsed = subjectSchema.partial({ name: true }).safeParse({
+    name: formData.get("name") || undefined,
+    description: formData.get("description") || undefined,
+    professor: formData.get("professor") || undefined,
+    semester: formData.get("semester") || undefined,
+    priority: formData.get("priority") || undefined,
+    color: formData.get("color") || undefined,
+  });
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Dados inválidos.");
+
+  await updateSubject(user.id, subjectId, parsed.data);
+  revalidatePath(`/subjects/${subjectId}`);
+  revalidatePath("/subjects");
+  revalidatePath("/dashboard");
+}
+
+export async function deleteSubjectAction(subjectId: string) {
+  const user = await requireUser();
+  await deleteSubject(user.id, subjectId);
+  revalidatePath("/subjects");
+  revalidatePath("/dashboard");
+}
+
+const topicSchema = z.object({
+  subjectId: z.string().min(1),
+  parentId: z.string().optional(),
+  name: z.string().trim().min(1).max(160),
+});
+
+export async function createTopicAction(formData: FormData) {
+  const user = await requireUser();
+  const parsed = topicSchema.safeParse({
+    subjectId: formData.get("subjectId"),
+    parentId: formData.get("parentId") || undefined,
+    name: formData.get("name"),
+  });
+  if (!parsed.success) return;
+
+  await createTopic(user.id, parsed.data);
+  revalidatePath(`/subjects/${parsed.data.subjectId}`);
+  revalidatePath("/dashboard");
+}
+
+export async function updateTopicStatusAction(topicId: string, subjectId: string, status: string) {
+  const user = await requireUser();
+  const parsedStatus = z.enum(["NOVO", "APRENDENDO", "REVISANDO", "DOMINADO"]).parse(status);
+  await updateTopic(user.id, topicId, { status: parsedStatus });
+  revalidatePath(`/subjects/${subjectId}`);
+  revalidatePath("/dashboard");
+}
+
+export async function deleteTopicAction(topicId: string, subjectId: string) {
+  const user = await requireUser();
+  await deleteTopic(user.id, topicId);
+  revalidatePath(`/subjects/${subjectId}`);
+  revalidatePath("/dashboard");
+}

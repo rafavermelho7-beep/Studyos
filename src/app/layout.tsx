@@ -27,6 +27,10 @@ export const viewport: Viewport = {
     { media: "(prefers-color-scheme: light)", color: "#fbfbfa" },
     { media: "(prefers-color-scheme: dark)", color: "#0b0b0d" },
   ],
+  // Needed for env(safe-area-inset-*) to report real values on notched /
+  // gesture-bar phones instead of 0 — otherwise the fixed bottom nav sits
+  // under the home-indicator area.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

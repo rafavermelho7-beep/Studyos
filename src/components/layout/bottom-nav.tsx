@@ -28,7 +28,8 @@ export function BottomNav() {
 
       <div
         className={cn(
-          "fixed inset-x-0 bottom-14 z-30 mx-3 rounded-[var(--radius-lg)] border border-border bg-surface p-2 shadow-lg transition-[opacity,transform] md:hidden",
+          "fixed inset-x-0 z-30 mx-3 rounded-[var(--radius-lg)] border border-border bg-surface p-2 shadow-lg transition-[opacity,transform] md:hidden",
+          "bottom-[calc(3.5rem+env(safe-area-inset-bottom))]",
           moreOpen ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0",
         )}
       >
@@ -54,7 +55,7 @@ export function BottomNav() {
         </div>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border bg-surface/95 backdrop-blur md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
         {primaryItems.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
           const Icon = item.icon;

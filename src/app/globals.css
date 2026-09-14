@@ -9,6 +9,7 @@
   --foreground: #17171a;
   --muted-foreground: #6b6b6f;
   --accent: #5b5bd6;
+  --accent-2: #d6479c;
   --accent-foreground: #ffffff;
   --accent-soft: #eeeefb;
   --danger: #dc2626;
@@ -22,6 +23,12 @@
   --radius-sm: 0.375rem;
   --radius-md: 0.625rem;
   --radius-lg: 0.875rem;
+  --radius-xl: 1.25rem;
+
+  --shadow-sm: 0 1px 2px rgba(23, 23, 26, 0.04);
+  --shadow-md: 0 4px 16px -4px rgba(23, 23, 26, 0.08), 0 1px 2px rgba(23, 23, 26, 0.04);
+  --shadow-lg: 0 16px 40px -12px rgba(23, 23, 26, 0.18);
+  --shadow-accent: 0 8px 24px -8px color-mix(in srgb, var(--accent) 50%, transparent);
 }
 
 @theme inline {
@@ -33,6 +40,7 @@
   --color-foreground: var(--foreground);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent-soft: var(--accent-soft);
   --color-danger: var(--danger);
@@ -48,6 +56,7 @@
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -60,6 +69,7 @@
     --foreground: #f2f2f3;
     --muted-foreground: #9a9aa0;
     --accent: #8181ec;
+    --accent-2: #ec6bb8;
     --accent-foreground: #0b0b0d;
     --accent-soft: #1e1e42;
     --danger: #f87171;
@@ -69,6 +79,11 @@
     --success: #4ade80;
     --success-soft: #10241a;
     --focus-ring: #8181ec;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 16px -4px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 16px 40px -12px rgba(0, 0, 0, 0.6);
+    --shadow-accent: 0 8px 24px -8px color-mix(in srgb, var(--accent) 35%, transparent);
   }
 }
 
@@ -90,4 +105,25 @@ body {
 :focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up {
+    animation: none;
+  }
 }

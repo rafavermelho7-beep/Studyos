@@ -39,7 +39,7 @@ export default async function SubjectsPage() {
             <Link
               key={subject.id}
               href={`/subjects/${subject.id}`}
-              className="group rounded-[var(--radius-lg)] border border-border bg-surface p-4 transition-colors hover:border-border-strong"
+              className="group rounded-[var(--radius-lg)] border border-border bg-surface p-4 shadow-[var(--shadow-sm)] transition-[box-shadow,border-color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:border-border-strong hover:shadow-[var(--shadow-md)]"
             >
               <div className="flex items-start gap-3">
                 <span

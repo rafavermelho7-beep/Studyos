@@ -121,7 +121,7 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {subjects.map((subject) => (
           <Link key={subject.id} href={`/subjects/${subject.id}`}>
-            <Card className="transition-colors hover:border-border-strong">
+            <Card className="hover:-translate-y-0.5 hover:border-border-strong hover:shadow-[var(--shadow-md)]">
               <CardContent className="flex items-center gap-3">
                 <span
                   className="h-2.5 w-2.5 shrink-0 rounded-full"

@@ -18,10 +18,10 @@ export function SidebarNavLinks() {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium transition-colors",
+              "flex items-center gap-2.5 rounded-[var(--radius-sm)] border-l-2 py-2 pr-3 pl-2.5 text-sm font-medium transition-colors duration-150",
               active
-                ? "bg-accent-soft text-accent"
-                : "text-muted-foreground hover:bg-surface-2 hover:text-foreground",
+                ? "border-accent bg-accent-soft text-accent"
+                : "border-transparent text-muted-foreground hover:bg-surface-2 hover:text-foreground",
             )}
           >
             <Icon className="h-4 w-4" strokeWidth={2} />

@@ -12,7 +12,10 @@ export function RegisterForm() {
   const [state, formAction, pending] = useActionState(registerAction, initialState);
 
   return (
-    <form action={formAction} className="space-y-4 rounded-[var(--radius-lg)] border border-border bg-surface p-6">
+    <form
+      action={formAction}
+      className="space-y-4 rounded-[var(--radius-xl)] border border-border bg-surface p-6 shadow-[var(--shadow-lg)]"
+    >
       <div className="space-y-1.5">
         <Label htmlFor="name">Nome</Label>
         <Input id="name" name="name" type="text" autoComplete="name" required />

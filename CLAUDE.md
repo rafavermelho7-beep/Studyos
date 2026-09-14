@@ -26,9 +26,12 @@ the working reference for continuing development.
   `DATABASE_URL`, get the exact string from Supabase's Settings →
   Database → Connection string → "Session pooler" → URI — don't guess
   the region suffix (`sa-east-1` here, but that's per-project). Append
-  `?pgbouncer=true&connection_limit=5` — Prisma's default pool size
-  assumes a long-lived server, not a serverless function, and Supabase's
-  free-tier session pooler caps at 15 total client connections.
+  `?pgbouncer=true&connection_limit=1&pool_timeout=30` — Prisma's default
+  pool size assumes a long-lived server, not a serverless function, and
+  Supabase's free-tier session pooler caps at 15 total client connections
+  (each idle session still holds a slot, not just active queries).
+  `connection_limit=1` keeps each function instance to one connection;
+  `pool_timeout=30` waits for a free slot instead of failing immediately.
   **The Vercel project's serverless function region must match the
   Supabase project's region** (both `sa-east-1`/`gru1` here) — a
   cross-continent function↔database round trip on every query was slow

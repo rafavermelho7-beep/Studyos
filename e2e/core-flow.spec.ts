@@ -50,5 +50,5 @@ test("register, create subject/topic, change status, persists across sessions", 
   await page.getByRole("button", { name: "Entrar" }).click();
 
   await expect(page).toHaveURL(/\/dashboard/);
-  await expect(page.getByText("Cardiologia")).toBeVisible();
+  await expect(page.getByText("Cardiologia").first()).toBeVisible();
 });

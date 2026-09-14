@@ -37,14 +37,18 @@ function formatDuration(totalSeconds: number) {
 export function FocusSession({
   subjects,
   topics,
+  initialSubjectId = "",
+  initialTopicId = "",
 }: {
   subjects: SubjectOption[];
   topics: TopicOption[];
+  initialSubjectId?: string;
+  initialTopicId?: string;
 }) {
   const [mode, setMode] = useState<Mode>("free");
   const [phase, setPhase] = useState<Phase>("setup");
-  const [subjectId, setSubjectId] = useState("");
-  const [topicId, setTopicId] = useState("");
+  const [subjectId, setSubjectId] = useState(initialSubjectId);
+  const [topicId, setTopicId] = useState(initialTopicId);
   const [goal, setGoal] = useState("");
   const [workMin, setWorkMin] = useState(25);
   const [breakMin, setBreakMin] = useState(5);

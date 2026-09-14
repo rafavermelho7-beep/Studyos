@@ -4,8 +4,9 @@ Last updated: 2026-09-14
 
 ## Fase atual
 
-Fases 1–14, 17 e 18 concluídas. Avançando para o motor de planejamento
-(Fase 19) e recomendações (Fase 20) — o coração do produto.
+Fases 1–14, 17, 18, 19 e 20 concluídas — o coração do produto (motor de
+planejamento + recomendações) está funcionando com dados reais.
+Avançando para Fase 16 (arquitetura Anki) e Fase 21 (arquitetura de IA).
 
 ## Concluído
 
@@ -149,16 +150,29 @@ Fases 1–14, 17 e 18 concluídas. Avançando para o motor de planejamento
   Outro bug de checkbox controlado sem `useOptimistic` (mesma classe do
   bug já visto em Tarefas) foi pego pelo teste e2e e corrigido.
 
+- **Fases 19/20 — Motor de planejamento + Recomendações**: a peça
+  central da missão do produto. `src/server/services/planning.ts`
+  isola toda a lógica de priorização (nunca espalhada no frontend,
+  como pede o brief) num score aditivo combinando sinais reais:
+  proximidade de prova vinculada (`ExamTopic`), domínio manual do
+  tópico, revisão FSRS atrasada ou retenção estimada baixa, e
+  prioridade da matéria. Testado replicando o próprio exemplo do brief
+  (`e2e/planning.spec.ts`): prova em 5 dias, um tópico dominado e um
+  nunca estudado — o motor corretamente prioriza o não estudado. Score
+  é deliberadamente **não** calibrado como uma "porcentagem de
+  prontidão" (seria precisão falsa) — só precisa produzir a ordem
+  certa. Dashboard agora tem o card "Seu foco agora" (matéria + tópico
+  + motivos + botão "Começar sessão" que já pré-seleciona
+  matéria/tópico na tela de sessão via query params), lista "Depois
+  disso" com as próximas recomendações, e um alerta de "matérias
+  negligenciadas" (sem `StudyEvent` nos últimos 7 dias).
+
 ## Em andamento / próximos passos (ordem planejada)
 
-1. Fase 19 — Motor de planejamento (prioridade combinando prova
-   próxima, domínio, retenção, atraso — dados já existem, falta o
-   algoritmo + expor no dashboard)
-2. Fase 20 — Recomendações (dado → interpretação → recomendação → ação)
-3. Fase 16 — Anki: arquitetura do conector local (StudyOS Web não pode
+1. Fase 16 — Anki: arquitetura do conector local (StudyOS Web não pode
    acessar Anki Desktop direto) + gestão de `AnkiDeckLink`
-4. Fase 21 — Arquitetura de IA (preparar terreno, sem IA falsa)
-5. Fases 22–26 — migração Supabase (fica pro final, por pedido do
+2. Fase 21 — Arquitetura de IA (preparar terreno, sem IA falsa)
+3. Fases 22–26 — migração Supabase (fica pro final, por pedido do
    usuário), offline/sync, testes completos, auditoria de segurança,
    polimento visual, auditoria final
 

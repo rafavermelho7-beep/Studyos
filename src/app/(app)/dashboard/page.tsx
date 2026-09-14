@@ -6,8 +6,11 @@ import { listSubjects } from "@/server/services/subjects";
 import { listTasks } from "@/server/services/tasks";
 import { getTodayStudySeconds } from "@/server/services/study-events";
 import { countDueReviews } from "@/server/services/reviews";
+import { getFocusRecommendations, getNeglectedSubjects } from "@/server/services/planning";
 import { Card, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
+import { FocusCard } from "./focus-card";
+import { NeglectedSubjects } from "./neglected-subjects";
 
 export const metadata: Metadata = { title: "Início · StudyOS" };
 
@@ -26,11 +29,13 @@ function formatStudySeconds(sec: number) {
 
 export default async function DashboardPage() {
   const user = await requireUser();
-  const [subjects, tasks, todaySeconds, dueReviews] = await Promise.all([
+  const [subjects, tasks, todaySeconds, dueReviews, recommendations, neglected] = await Promise.all([
     listSubjects(user.id),
     listTasks(user.id),
     getTodayStudySeconds(user.id),
     countDueReviews(user.id),
+    getFocusRecommendations(user.id, 5),
+    getNeglectedSubjects(user.id),
   ]);
   const firstName = (user.name ?? "").split(" ")[0] || undefined;
   const hour = new Date().getHours();
@@ -104,7 +109,16 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {recommendations.length > 0 && (
+        <div className="mt-6">
+          <FocusCard top={recommendations[0]} rest={recommendations.slice(1)} />
+        </div>
+      )}
+
+      <NeglectedSubjects subjects={neglected} />
+
+      <h2 className="mb-2 mt-8 text-sm font-semibold text-foreground">Matérias</h2>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {subjects.map((subject) => (
           <Link key={subject.id} href={`/subjects/${subject.id}`}>
             <Card className="transition-colors hover:border-border-strong">
@@ -123,10 +137,12 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      <p className="mt-8 text-xs text-muted-foreground">
-        À medida que você registrar tarefas, provas e sessões de estudo, este painel vai
-        mostrar recomendações de foco baseadas nos seus dados reais.
-      </p>
+      {recommendations.length === 0 && (
+        <p className="mt-8 text-xs text-muted-foreground">
+          À medida que você cadastrar tópicos, provas e revisões, este painel vai mostrar
+          recomendações de foco baseadas nos seus dados reais.
+        </p>
+      )}
     </div>
   );
 }

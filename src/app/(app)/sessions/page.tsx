@@ -18,7 +18,12 @@ function formatEventDuration(sec: number) {
   return `${Math.floor(m / 60)}h${String(m % 60).padStart(2, "0")}`;
 }
 
-export default async function SessionsPage() {
+export default async function SessionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ subjectId?: string; topicId?: string }>;
+}) {
+  const { subjectId, topicId } = await searchParams;
   const user = await requireUser();
   const [subjects, topics, recentEvents] = await Promise.all([
     listSubjects(user.id),
@@ -33,6 +38,8 @@ export default async function SessionsPage() {
       <FocusSession
         subjects={subjects.map((s) => ({ id: s.id, name: s.name, color: s.color }))}
         topics={topics.map((t) => ({ id: t.id, name: t.name, subjectId: t.subjectId }))}
+        initialSubjectId={subjectId}
+        initialTopicId={topicId}
       />
 
       <div className="mt-8">

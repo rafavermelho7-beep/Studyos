@@ -27,7 +27,13 @@ export function AddTopicForm({ subjectId, parentId }: { subjectId: string; paren
         maxLength={160}
         className="text-sm"
       />
-      <Button type="submit" size="sm" variant="secondary" disabled={pending}>
+      <Button
+        type="submit"
+        size="sm"
+        variant="secondary"
+        disabled={pending}
+        aria-label={parentId ? "Adicionar subtópico" : "Adicionar tópico"}
+      >
         <Plus className="h-3.5 w-3.5" />
       </Button>
     </form>

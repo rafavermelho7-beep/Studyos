@@ -13,7 +13,7 @@ export function DeleteSubjectButton({ subjectId }: { subjectId: string }) {
 
   if (!confirming) {
     return (
-      <Button variant="ghost" size="sm" onClick={() => setConfirming(true)}>
+      <Button variant="ghost" size="sm" onClick={() => setConfirming(true)} aria-label="Excluir matéria">
         <Trash2 className="h-4 w-4" />
       </Button>
     );

@@ -56,6 +56,7 @@ function TopicRow({ subjectId, topic }: { subjectId: string; topic: TopicWithChi
         </button>
         <span className="flex-1 truncate text-sm font-medium text-foreground">{topic.name}</span>
         <select
+          aria-label={`Status de ${topic.name}`}
           value={topic.status}
           disabled={pending}
           onChange={(e) =>

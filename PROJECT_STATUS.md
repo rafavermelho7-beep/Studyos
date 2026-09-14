@@ -4,9 +4,10 @@ Last updated: 2026-09-14
 
 ## Fase atual
 
-Fases 1–14, 17, 18, 19 e 20 concluídas — o coração do produto (motor de
-planejamento + recomendações) está funcionando com dados reais.
-Avançando para Fase 16 (arquitetura Anki) e Fase 21 (arquitetura de IA).
+Todas as fases de produto (1–21, exceto Fase 15 que já era o modelo
+`StudyEvent` central desde o início) estão concluídas. Restam as fases
+de infraestrutura/operação: 22–26 (offline/sync + Supabase, auditoria
+de testes, segurança, polimento visual, auditoria final).
 
 ## Concluído
 
@@ -167,12 +168,36 @@ Avançando para Fase 16 (arquitetura Anki) e Fase 21 (arquitetura de IA).
   disso" com as próximas recomendações, e um alerta de "matérias
   negligenciadas" (sem `StudyEvent` nos últimos 7 dias).
 
+- **Fase 16 — Anki**: `Configurações` (nova página, acessível pelo menu
+  do usuário) tem geração de chave de API (`sk_live_<id>_<secret>`,
+  mostrada uma única vez, só o hash bcrypt do segredo é armazenado) e
+  gestão de `AnkiDeckLink` (nome do deck → matéria/tópico, com fallback
+  hierárquico por "::" — vínculo num deck "pai" cobre os subdecks).
+  `POST /api/anki/sync` autentica pela chave (nunca cookie de sessão,
+  já que quem chama é um processo local, não o navegador) e faz
+  replace-for-day dos `StudyEvent` de origem ANKI daquele dia, tornando
+  ressincronizar idempotente. Lado servidor 100% real e testado
+  (`e2e/anki-sync.spec.ts`, inclusive rejeição de chave inválida e
+  resolução de subdeck). `connector/sync.mjs` é o processo local que o
+  usuário roda na própria máquina — código real contra a API
+  documentada do AnkiConnect, mas **nunca rodado contra um Anki Desktop
+  de verdade** neste ambiente (não há Anki instalado aqui). Ver aviso
+  em `connector/README.md`.
+- **Fase 21 — Arquitetura de IA**: deliberadamente sem IA implementada
+  (sem chave de provedor fornecida, e o brief é explícito que IA
+  falsa é pior que nenhuma). O que existe é a base de dados que uma
+  IA precisaria: `StudyEvent`/`ReviewLog` são histórico completo, não
+  agregados. Duas das funcionalidades de IA propostas no brief já têm
+  versão determinística (não-IA) funcionando: "identificar matérias
+  negligenciadas" e "sugerir prioridades", ambas em `planning.ts`.
+  Documentado em `CLAUDE.md` onde uma integração de IA real deveria
+  entrar (`src/server/services/ai/`, lendo pelos serviços existentes,
+  credenciais só no servidor, aumentando o motor determinístico em vez
+  de substituí-lo).
+
 ## Em andamento / próximos passos (ordem planejada)
 
-1. Fase 16 — Anki: arquitetura do conector local (StudyOS Web não pode
-   acessar Anki Desktop direto) + gestão de `AnkiDeckLink`
-2. Fase 21 — Arquitetura de IA (preparar terreno, sem IA falsa)
-3. Fases 22–26 — migração Supabase (fica pro final, por pedido do
+1. Fases 22–26 — migração Supabase (fica pro final, por pedido do
    usuário), offline/sync, testes completos, auditoria de segurança,
    polimento visual, auditoria final
 
@@ -185,12 +210,14 @@ Avançando para Fase 16 (arquitetura Anki) e Fase 21 (arquitetura de IA).
   projeto Supabase e forneça URL + anon key + service role key; a
   arquitetura já está pronta para o swap.
 - **Sem Docker/Postgres disponíveis** no ambiente de desenvolvimento atual.
-- **Ícones/PWA** ainda não implementados — não existem assets de ícone
-  reais ainda; vai ser feito na Fase 14 com ícones de verdade, não
-  placeholders.
-- **Anki e SanarFlix**: nenhuma integração implementada ainda (fases 16 e
-  18). O modelo de dados (`AnkiDeckLink`, `StudySource`) já existe para
-  suportar isso sem remodelagem.
+- **`connector/sync.mjs` (Fase 16) nunca rodou contra um Anki Desktop
+  real** — sem Anki instalado neste ambiente. Escrito contra a API
+  documentada do AnkiConnect; o lado servidor que ele fala com
+  (`/api/anki/sync`) é real e testado. Precisa de validação manual do
+  usuário na primeira vez que rodar.
+- **IA (Fase 21)**: arquitetura documentada, nada implementado — sem
+  chave de provedor de LLM fornecida, e por instrução explícita contra
+  IA falsa.
 
 ## Bugs conhecidos
 

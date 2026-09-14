@@ -31,10 +31,13 @@ the working reference for continuing development.
   `src/proxy.ts` (Next 16's renamed `middleware.ts`) only does a cheap
   cookie-presence redirect for UX; it is never the source of truth.
 - **Validation**: Zod, colocated with each feature's server actions.
-- **Charts**: Recharts (planned — not used yet as of the last commit).
+- **Charts**: Recharts, following this repo's `dataviz` skill (load it
+  before touching any chart code) — see `src/app/(app)/stats/`.
 - **Spaced repetition**: `ts-fsrs` (real FSRS implementation, not a
-  hand-rolled "looks scientific" algorithm) — wire into `ReviewState` /
-  `ReviewLog` models when building Phase 11.
+  hand-rolled "looks scientific" algorithm), wired into `ReviewState` /
+  `ReviewLog` via `src/server/services/reviews.ts`. Short-term (minutes-
+  level) learning steps are disabled — this is topic-level review, not
+  per-flashcard, so every proposed interval is >= 1 day.
 - **Testing**: Playwright e2e (`e2e/`, config in `playwright.config.ts`,
   runs against a throwaway `prisma/e2e-test.db`, port 3100 to avoid
   clashing with `npm run dev` on 3000). Add a spec per feature slice as it
@@ -69,10 +72,51 @@ npx prisma studio                   # inspect the local SQLite db
   that are fully functional. Add the link in the same change that ships
   the page — never link to a stub.
 - **Anki integration** (brief section 26): a hosted web app cannot reach
-  Anki Desktop directly. The eventual architecture is StudyOS Web →
-  local connector process → AnkiConnect → Anki Desktop. Not started yet.
-- **SanarFlix**: no scraping, ever. Only manual link/title/completion
-  tracking via `StudySource`. Not started yet.
+  Anki Desktop directly. Architecture: `StudyOS Web ← POST /api/anki/sync ←
+  connector/sync.mjs (runs locally, reads AnkiConnect) ← Anki Desktop`.
+  The connector authenticates with a per-user API key (Settings page,
+  `src/lib/auth/api-key.ts`: `sk_live_<id>_<secret>`, only the bcrypt hash
+  of the secret is stored, `apiKeyId` is indexed for O(1) lookup) — never
+  a session cookie, since it's not a browser. Deck → subject/topic
+  mapping is `AnkiDeckLink`, resolved with "::" hierarchy fallback
+  (`resolveDeckLink` in `src/server/services/anki-links.ts`) so a link on
+  a parent deck covers its subdecks. The sync endpoint does a full
+  replace-for-day of that user's `ANKI`-sourced `StudyEvent`s, which makes
+  re-syncing the same day idempotent without row-level reconciliation.
+  The server side (API key, deck resolution, sync endpoint) is real and
+  e2e-tested (`e2e/anki-sync.spec.ts`); `connector/sync.mjs` is real code
+  against AnkiConnect's documented API but **was never run against a live
+  Anki Desktop** in this environment — see `connector/README.md`'s status
+  note before trusting it blindly.
+- **SanarFlix**: no scraping, ever. Manual link/title/completion tracking
+  via `StudySource` (`src/server/services/sources.ts`), managed from a
+  topic's detail page; "Registrar tempo" is the one place a source logs
+  minutes into `StudyEvent` (source: `MANUAL`) — toggling "completed"
+  alone never creates an event, to avoid double-counting.
+- **Motor de planejamento / recomendações** (brief §19-20, the product's
+  actual thesis): `src/server/services/planning.ts`. A single, isolated,
+  additive priority score over real signals (linked exam proximity,
+  manual topic status, FSRS overdue/low-retention, subject priority) —
+  never spread into components. Deliberately not normalized into a 0-100
+  "readiness %"; it only needs to produce the right ORDER, not a
+  calibrated confidence number. Dashboard's "Seu foco agora" card is a
+  thin render of this — see `e2e/planning.spec.ts`, which replays the
+  brief's own worked example.
+- **AI (brief §21/§34)**: intentionally not implemented. No provider key
+  was supplied and the brief is explicit that a fake/scripted "AI" is
+  worse than none. What exists instead is the data foundation an AI
+  feature would need: `StudyEvent`/`ReviewLog` are append-only history,
+  not aggregates, specifically so a future model has real signal to work
+  from (brief §48). Deterministic (non-AI) versions of two of the
+  brief's proposed AI features already ship: "identify neglected
+  subjects" and "suggest priorities" both live in `planning.ts` today.
+  When an LLM integration is actually wanted: add a `src/server/services/ai/`
+  namespace that *reads* through the existing services (never a parallel
+  data path), keep provider credentials server-side only (never in a
+  client component or a public env var), and keep the deterministic
+  planning engine as the fallback/baseline rather than replacing it —
+  an AI suggestion should augment `getFocusRecommendations`, not replace
+  its reasoning with an opaque one.
 - **Date-only form inputs (`<input type="date">`) must be parsed with
   `date-fns`'s `parseISO`, never `new Date(dateString)`.** The native
   constructor treats a bare `"YYYY-MM-DD"` as UTC midnight, so in any
@@ -86,19 +130,34 @@ npx prisma studio                   # inspect the local SQLite db
 - **Retention/forgetting-curve numbers must always be labeled as
   estimates**, never presented as measured fact for an individual user
   (brief section 46).
+- **PWA** (brief §36): `src/app/manifest.ts` + `icon.tsx`/`apple-icon.tsx`
+  (rendered with `next/og`, not static image files) + `public/sw.js`. The
+  service worker only caches immutable static assets and shows an offline
+  fallback on failed navigations — it never caches authenticated/dynamic
+  responses (a stale or cross-session cached page would be a correctness
+  and privacy bug, not just a convenience). Registered only in production
+  to avoid fighting `next dev`'s HMR.
 
 ## Where things are
 
 ```
 prisma/schema.prisma          data model (read the header comment)
-src/lib/auth/                 password hashing, session cookies, actions, zod schemas
+src/lib/auth/                 password hashing, session cookies, api keys, actions, zod schemas
 src/lib/db.ts                 Prisma client singleton
-src/server/services/          userId-scoped business logic (see its README)
+src/lib/exam-prep.ts          exam preparation % / status breakdown, shared by exam list + detail
+src/server/services/          userId-scoped business logic (see its README) — one file per domain:
+                               subjects, topics, tasks, exams, study-events, reviews (FSRS),
+                               stats, schedule, knowledge-map, sources, anki-links, planning
 src/app/(auth)/               login/register pages
-src/app/(app)/                authenticated app shell + feature routes
+src/app/(app)/                authenticated app shell + feature routes (one folder per nav item,
+                               plus topics/[id] which isn't in the sidebar — reached via links)
+src/app/api/anki/sync/        connector-facing API route (Bearer API key, not a session cookie)
 src/components/ui/            small hand-built primitives (button, input, card, badge) — no shadcn CLI, no Radix yet
 src/components/layout/        sidebar/bottom-nav/user-menu, shared app chrome
-e2e/                           Playwright specs
+connector/                    standalone Node script + README — NOT part of the Next.js app,
+                               run locally by the user against their own Anki Desktop
+public/sw.js, public/offline.html   PWA service worker (see the PWA note above)
+e2e/                          Playwright specs — one file per feature slice
 ```
 
 ## Current state / what's next

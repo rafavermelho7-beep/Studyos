@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { LogOut } from "lucide-react";
+import Link from "next/link";
+import { LogOut, Settings } from "lucide-react";
 import { logoutAction } from "@/lib/auth/actions";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +38,13 @@ export function UserMenu({ name, email }: { name: string | null; email: string }
           <p className="truncate text-sm font-medium text-foreground">{name ?? "Você"}</p>
           <p className="truncate text-xs text-muted-foreground">{email}</p>
         </div>
+        <Link
+          href="/settings"
+          onClick={() => setOpen(false)}
+          className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-sm text-foreground hover:bg-surface-2"
+        >
+          <Settings className="h-4 w-4" /> Configurações
+        </Link>
         <form action={logoutAction}>
           <button
             type="submit"

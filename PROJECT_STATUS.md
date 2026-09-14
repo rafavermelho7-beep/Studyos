@@ -4,10 +4,8 @@ Last updated: 2026-09-14
 
 ## Fase atual
 
-Fases 1–11 concluídas (scaffold → auth → design system → dashboard →
-matérias/tópicos → tarefas → sessões/pomodoro → provas → estatísticas →
-revisão espaçada com FSRS). Avançando para Fase 12 (curva do
-esquecimento) e Fase 7 (cronograma/calendário).
+Fases 1–12 concluídas. Avançando para Fase 7 (cronograma/calendário) e
+Fase 13 (mapa de conhecimento).
 
 ## Concluído
 
@@ -99,14 +97,24 @@ esquecimento) e Fase 7 (cronograma/calendário).
   `useSyncExternalStore`, o jeito correto de assinar estado externo do
   navegador sem o anti-padrão de "efeito que só espelha estado".
 
+- **Fase 12 — Curva do esquecimento**: nova página `/topics/[id]` (antes
+  os tópicos não tinham rota própria — agora o nome do tópico em
+  Matérias e na fila de Revisão leva pra lá). Mostra o estado FSRS
+  atual, retenção estimada agora, e um gráfico com duas curvas: a atual
+  (usando a estabilidade que a última revisão produziu) e — quando há
+  histórico suficiente — uma linha tracejada mostrando como a retenção
+  teria caído *sem* essa última revisão, usando a estabilidade anterior.
+  Isso responde as duas perguntas do brief ("como minha retenção cai se
+  eu não revisar" e "como as revisões estão mudando essa curva") sem
+  precisar reconstruir o histórico completo em dente-de-serra. Sempre
+  rotulado "(estimativa)" — nunca apresentado como fato medido.
+
 ## Em andamento / próximos passos (ordem planejada)
 
 1. Fase 7 — Cronograma/calendário (dia/semana/mês) — ainda não iniciado;
    tarefas e provas já têm campos de data, falta a visualização de
    calendário propriamente dita
-2. Fase 12 — Curva do esquecimento a partir de `ReviewLog`/FSRS (sempre
-   rotulada como estimativa)
-3. Fase 13 — Mapa de conhecimento
+2. Fase 13 — Mapa de conhecimento
 4. Fase 14 — PWA (manifest, ícones, service worker, offline básico)
 5. Fases 15–21 — Study Events já existe como modelo central; Anki
    (arquitetura de conector local), hub de fontes, SanarFlix (links

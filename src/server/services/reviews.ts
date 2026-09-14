@@ -1,13 +1,21 @@
 import "server-only";
 import { db } from "@/lib/db";
-import { fsrs, generatorParameters, createEmptyCard, type Card, type Grade } from "ts-fsrs";
+import {
+  fsrs,
+  generatorParameters,
+  createEmptyCard,
+  forgetting_curve,
+  type Card,
+  type Grade,
+} from "ts-fsrs";
 import type { ReviewCardState, ReviewState } from "@prisma/client";
 
 // Topic-level review, not Anki-style minute-granularity flashcards, so we
 // disable the short-term (re)learning steps — every interval FSRS proposes
 // is at least a day. `enable_fuzz` spreads due dates so many topics graded
 // together don't all pile up on the exact same future day.
-const scheduler = fsrs(generatorParameters({ enable_fuzz: true, enable_short_term: false }));
+const fsrsParams = generatorParameters({ enable_fuzz: true, enable_short_term: false });
+const scheduler = fsrs(fsrsParams);
 
 const STATE_TO_FSRS: Record<ReviewCardState, number> = { NEW: 0, LEARNING: 1, REVIEW: 2, RELEARNING: 3 };
 const FSRS_TO_STATE: ReviewCardState[] = ["NEW", "LEARNING", "REVIEW", "RELEARNING"];
@@ -135,4 +143,39 @@ export function estimateRetrievability(row: ReviewState, now = new Date()): numb
 
 export function countDueReviews(userId: string, now = new Date()) {
   return db.reviewState.count({ where: { userId, due: { lte: now } } });
+}
+
+export function getTopicReviewHistory(userId: string, topicId: string) {
+  return db.reviewLog.findMany({
+    where: { userId, topicId },
+    orderBy: { reviewedAt: "asc" },
+  });
+}
+
+export function getReviewState(userId: string, topicId: string) {
+  return db.reviewState.findFirst({ where: { userId, topicId } });
+}
+
+/**
+ * Two comparable retention projections, both estimates from the FSRS model
+ * (brief §19/§46 — never presented as a measured fact for this individual):
+ * `current` uses the stability the last review actually produced; `previous`
+ * replays what the curve would have looked like without that last review
+ * (the stability the topic had going into it), when there's enough history
+ * to know that. Both are anchored at day 0 = the last review.
+ */
+export function getForgettingCurve(
+  reviewState: ReviewState,
+  previousStability: number | null,
+  maxDays = 30,
+) {
+  const current: { day: number; retention: number }[] = [];
+  const previous: { day: number; retention: number }[] = [];
+  for (let day = 0; day <= maxDays; day++) {
+    current.push({ day, retention: forgetting_curve(fsrsParams.w, day, reviewState.stability) });
+    if (previousStability !== null) {
+      previous.push({ day, retention: forgetting_curve(fsrsParams.w, day, previousStability) });
+    }
+  }
+  return { current, previous: previousStability !== null ? previous : null };
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { ChevronRight, Trash2 } from "lucide-react";
 import type { ContentStatus, Topic, ReviewState } from "@prisma/client";
 import { updateTopicStatusAction, deleteTopicAction } from "../actions";
@@ -54,7 +55,12 @@ function TopicRow({ subjectId, topic }: { subjectId: string; topic: TopicWithChi
         >
           <ChevronRight className={cn("h-4 w-4 transition-transform", expanded && "rotate-90")} />
         </button>
-        <span className="flex-1 truncate text-sm font-medium text-foreground">{topic.name}</span>
+        <Link
+          href={`/topics/${topic.id}`}
+          className="flex-1 truncate text-sm font-medium text-foreground hover:text-accent hover:underline"
+        >
+          {topic.name}
+        </Link>
         <select
           aria-label={`Status de ${topic.name}`}
           value={topic.status}
@@ -92,7 +98,9 @@ function TopicRow({ subjectId, topic }: { subjectId: string; topic: TopicWithChi
                   key={child.id}
                   className="flex items-center justify-between rounded-[var(--radius-sm)] bg-surface-2 px-2.5 py-1.5 text-sm"
                 >
-                  <span className="truncate text-foreground">{child.name}</span>
+                  <Link href={`/topics/${child.id}`} className="truncate text-foreground hover:text-accent hover:underline">
+                    {child.name}
+                  </Link>
                   <span className={cn("rounded-full px-2 py-0.5 text-xs", statusConfig[child.status].className)}>
                     {statusConfig[child.status].label}
                   </span>

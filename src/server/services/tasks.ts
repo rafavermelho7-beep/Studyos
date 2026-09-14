@@ -1,4 +1,5 @@
 import "server-only";
+import { endOfDay, isAfter } from "date-fns";
 import { db } from "@/lib/db";
 import type { Task, TaskPriority, TaskStatus } from "@prisma/client";
 
@@ -11,7 +12,9 @@ export type TaskWithMeta = Task & {
 function withOverdue(task: Task & { subject: { id: string; name: string; color: string } | null; topic: { id: string; name: string } | null }): TaskWithMeta {
   return {
     ...task,
-    overdue: !!task.dueDate && task.dueDate < new Date() && task.status !== "DONE",
+    // A task due "today" isn't overdue until the whole day has passed —
+    // compare against the end of the due date, not its midnight instant.
+    overdue: !!task.dueDate && isAfter(new Date(), endOfDay(task.dueDate)) && task.status !== "DONE",
   };
 }
 

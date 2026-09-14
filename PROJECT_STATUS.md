@@ -4,9 +4,9 @@ Last updated: 2026-09-14
 
 ## Fase atual
 
-Fases 1–8 concluídas (scaffold → auth → design system → dashboard →
-matérias/tópicos → tarefas → sessões/pomodoro). Avançando para Fase 9
-(Provas/deadlines).
+Fases 1–9 concluídas (scaffold → auth → design system → dashboard →
+matérias/tópicos → tarefas → sessões/pomodoro → provas). Avançando para
+Fase 10 (Estatísticas) ou Fase 11 (Revisão espaçada/FSRS).
 
 ## Concluído
 
@@ -51,24 +51,36 @@ matérias/tópicos → tarefas → sessões/pomodoro). Avançando para Fase 9
   `tasks.spec.ts` (CRUD + filtros + conclusão), `sessions.spec.ts`
   (sessão de foco ponta a ponta). Todos passando.
 
+- **Fase 9 — Provas**: CRUD (matéria, nome, data, local), contagem
+  regressiva ("X dias", cor muda perto do prazo), associação de tópicos
+  da matéria à prova (checklist com `useOptimistic`), % de preparação e
+  breakdown 🔴/🟡/🟢 calculados a partir do `status` real dos tópicos
+  vinculados (sem números inventados — se não há tópicos associados,
+  mostra "Nenhum conteúdo associado ainda" em vez de uma % falsa).
+- **Bug real encontrado e corrigido pelos testes e2e**: `new Date("YYYY-MM-DD")`
+  interpreta a string como UTC meia-noite; comparado com "agora" em
+  timezone atrás de UTC (ex: Brasil), isso subtraía um dia da contagem
+  regressiva de provas e afetava o cálculo de tarefa atrasada. Corrigido
+  usando `date-fns parseISO` (interpreta como meia-noite local) em vez do
+  construtor nativo — ver nota em `CLAUDE.md`. Tarefa "atrasada" agora
+  compara contra `endOfDay(dueDate)`, não o instante da meia-noite.
+
 ## Em andamento / próximos passos (ordem planejada)
 
 1. Fase 7 — Cronograma/calendário (dia/semana/mês) — ainda não iniciado;
    tarefas e provas já têm campos de data, falta a visualização de
    calendário propriamente dita
-2. Fase 9 — Provas/deadlines (`Exam` + `ExamTopic`, contagem regressiva,
-   % de preparação)
-3. Fase 10 — Estatísticas (derivadas de `StudyEvent`, sem números
+2. Fase 10 — Estatísticas (derivadas de `StudyEvent`, sem números
    inventados)
-4. Fase 11 — Revisão espaçada com `ts-fsrs` (já instalado, ainda não
+3. Fase 11 — Revisão espaçada com `ts-fsrs` (já instalado, ainda não
    usado) sobre `ReviewState`/`ReviewLog`
-5. Fase 12 — Curva do esquecimento (sempre rotulada como estimativa)
-6. Fase 13 — Mapa de conhecimento
-7. Fase 14 — PWA (manifest, ícones, service worker, offline básico)
-8. Fases 15–21 — Study Events já existe como modelo central; Anki
+4. Fase 12 — Curva do esquecimento (sempre rotulada como estimativa)
+5. Fase 13 — Mapa de conhecimento
+6. Fase 14 — PWA (manifest, ícones, service worker, offline básico)
+7. Fases 15–21 — Study Events já existe como modelo central; Anki
    (arquitetura de conector local), hub de fontes, SanarFlix (links
    manuais), motor de planejamento, recomendações, arquitetura de IA
-9. Fases 22–26 — offline/sync, testes completos, auditoria de
+8. Fases 22–26 — offline/sync, testes completos, auditoria de
    segurança, polimento visual, auditoria final
 
 ## Limitações conhecidas / decisões pendentes do usuário

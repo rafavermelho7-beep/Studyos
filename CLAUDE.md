@@ -73,6 +73,16 @@ npx prisma studio                   # inspect the local SQLite db
   local connector process → AnkiConnect → Anki Desktop. Not started yet.
 - **SanarFlix**: no scraping, ever. Only manual link/title/completion
   tracking via `StudySource`. Not started yet.
+- **Date-only form inputs (`<input type="date">`) must be parsed with
+  `date-fns`'s `parseISO`, never `new Date(dateString)`.** The native
+  constructor treats a bare `"YYYY-MM-DD"` as UTC midnight, so in any
+  timezone behind UTC it silently shifts a day back once compared against
+  local "now" (`differenceInCalendarDays`, overdue checks, etc.) —
+  `e2e/exams.spec.ts` caught this as a real off-by-one on the exam
+  countdown before the fix. `parseISO` interprets the same string as
+  local midnight instead. Task/Exam due-date "overdue" checks also
+  compare against `endOfDay(dueDate)`, not the date's midnight instant,
+  so a task due "today" isn't overdue until today has actually passed.
 - **Retention/forgetting-curve numbers must always be labeled as
   estimates**, never presented as measured fact for an individual user
   (brief section 46).

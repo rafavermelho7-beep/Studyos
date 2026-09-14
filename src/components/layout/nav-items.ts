@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { LayoutDashboard, BookOpen, ListTodo, Timer } from "lucide-react";
+import { LayoutDashboard, BookOpen, ListTodo, Timer, CalendarClock } from "lucide-react";
 
 export type NavItem = {
   href: string;
@@ -14,4 +14,5 @@ export const navItems: NavItem[] = [
   { href: "/subjects", label: "Matérias", icon: BookOpen },
   { href: "/tasks", label: "Tarefas", icon: ListTodo },
   { href: "/sessions", label: "Sessão", icon: Timer },
+  { href: "/exams", label: "Provas", icon: CalendarClock },
 ];

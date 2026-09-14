@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { parseISO } from "date-fns";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/session";
 import { createTask, setTaskStatus, deleteTask } from "@/server/services/tasks";
@@ -29,7 +30,7 @@ export async function createTaskAction(formData: FormData) {
     title: parsed.data.title,
     subjectId: parsed.data.subjectId,
     priority: parsed.data.priority,
-    dueDate: parsed.data.dueDate ? new Date(parsed.data.dueDate) : undefined,
+    dueDate: parsed.data.dueDate ? parseISO(parsed.data.dueDate) : undefined,
     estimatedMinutes: parsed.data.estimatedMinutes,
   });
   revalidatePath("/tasks");

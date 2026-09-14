@@ -4,8 +4,8 @@ Last updated: 2026-09-14
 
 ## Fase atual
 
-Fases 1–14 concluídas. Avançando para as integrações (fases 15–21):
-hub de fontes, Anki, SanarFlix, motor de planejamento.
+Fases 1–14, 17 e 18 concluídas. Avançando para o motor de planejamento
+(Fase 19) e recomendações (Fase 20) — o coração do produto.
 
 ## Concluído
 
@@ -139,12 +139,26 @@ hub de fontes, Anki, SanarFlix, motor de planejamento.
   em produção (evita atrito com HMR do `next dev`). Isso é o "offline
   básico" pedido nesta fase — offline com dados reais e sync é Fase 22.
 
+- **Fases 17/18 — Hub de fontes + SanarFlix**: `StudySource` por tópico
+  (tipo, título, URL opcional, concluída) gerenciado direto na página do
+  tópico, mais `/sources` como visão global agrupada por matéria.
+  "Registrar tempo" em uma fonte cria um `StudyEvent` real (`source:
+  MANUAL`) — é o único lugar que faz isso, evitando dupla contagem (só
+  marcar "concluída" não gera evento). SanarFlix tratado como link
+  manual comum, sem scraping nem automação — exatamente como pedido.
+  Outro bug de checkbox controlado sem `useOptimistic` (mesma classe do
+  bug já visto em Tarefas) foi pego pelo teste e2e e corrigido.
+
 ## Em andamento / próximos passos (ordem planejada)
 
-1. Fases 15–21 — Study Events já existe como modelo central; Anki
-   (arquitetura de conector local), hub de fontes, SanarFlix (links
-   manuais), motor de planejamento, recomendações, arquitetura de IA
-2. Fases 22–26 — migração Supabase (fica pro final, por pedido do
+1. Fase 19 — Motor de planejamento (prioridade combinando prova
+   próxima, domínio, retenção, atraso — dados já existem, falta o
+   algoritmo + expor no dashboard)
+2. Fase 20 — Recomendações (dado → interpretação → recomendação → ação)
+3. Fase 16 — Anki: arquitetura do conector local (StudyOS Web não pode
+   acessar Anki Desktop direto) + gestão de `AnkiDeckLink`
+4. Fase 21 — Arquitetura de IA (preparar terreno, sem IA falsa)
+5. Fases 22–26 — migração Supabase (fica pro final, por pedido do
    usuário), offline/sync, testes completos, auditoria de segurança,
    polimento visual, auditoria final
 

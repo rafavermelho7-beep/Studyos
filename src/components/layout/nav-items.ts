@@ -9,6 +9,7 @@ import {
   BarChart3,
   Calendar,
   Network,
+  Library,
 } from "lucide-react";
 
 export type NavItem = {
@@ -29,4 +30,5 @@ export const navItems: NavItem[] = [
   { href: "/review", label: "Revisão", icon: Brain },
   { href: "/stats", label: "Estatísticas", icon: BarChart3 },
   { href: "/knowledge-map", label: "Mapa", icon: Network },
+  { href: "/sources", label: "Fontes", icon: Library },
 ];

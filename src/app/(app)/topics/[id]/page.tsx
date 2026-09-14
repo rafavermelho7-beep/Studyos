@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ForgettingCurveChart } from "./forgetting-curve-chart";
 import { StartReviewButton } from "./start-review-button";
+import { SourcesSection } from "./sources-section";
 
 export async function generateMetadata({
   params,
@@ -94,6 +95,11 @@ export default async function TopicDetailPage({
           )}
         </div>
       )}
+
+      <div className="mt-6">
+        <h2 className="mb-2 text-sm font-semibold text-foreground">Fontes</h2>
+        <SourcesSection topicId={topic.id} subjectId={topic.subjectId} sources={topic.studySources} />
+      </div>
 
       {logs.length > 0 && (
         <div className="mt-6">

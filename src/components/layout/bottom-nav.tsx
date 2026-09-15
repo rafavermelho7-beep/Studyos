@@ -22,13 +22,13 @@ export function BottomNav() {
         <button
           aria-label="Fechar menu"
           onClick={() => setMoreOpen(false)}
-          className="fixed inset-0 z-20 bg-black/30 md:hidden"
+          className="animate-fade-in fixed inset-0 z-20 bg-black/30 backdrop-blur-[1px] transition-opacity md:hidden"
         />
       )}
 
       <div
         className={cn(
-          "fixed inset-x-0 z-30 mx-3 rounded-[var(--radius-lg)] border border-border bg-surface p-2 shadow-lg transition-[opacity,transform] md:hidden",
+          "fixed inset-x-0 z-30 mx-3 rounded-[var(--radius-lg)] border border-border bg-surface p-2 shadow-lg transition-[opacity,transform] duration-200 ease-out md:hidden",
           "bottom-[calc(3.5rem+env(safe-area-inset-bottom))]",
           moreOpen ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0",
         )}
@@ -43,7 +43,7 @@ export function BottomNav() {
                 href={item.href}
                 onClick={() => setMoreOpen(false)}
                 className={cn(
-                  "flex flex-col items-center gap-1 rounded-[var(--radius-sm)] py-2.5 text-[11px] font-medium",
+                  "flex flex-col items-center gap-1 rounded-[var(--radius-sm)] py-2.5 text-[11px] font-medium transition-colors duration-150 active:scale-95",
                   active ? "bg-accent-soft text-accent" : "text-muted-foreground hover:bg-surface-2",
                 )}
               >
@@ -65,7 +65,7 @@ export function BottomNav() {
               href={item.href}
               onClick={() => setMoreOpen(false)}
               className={cn(
-                "flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium",
+                "flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-[color,transform] duration-150 active:scale-95",
                 active ? "text-accent" : "text-muted-foreground",
               )}
             >
@@ -78,11 +78,26 @@ export function BottomNav() {
           onClick={() => setMoreOpen((v) => !v)}
           aria-label={moreOpen ? "Fechar mais opções" : "Mais opções"}
           className={cn(
-            "flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium",
+            "flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-[color,transform] duration-150 active:scale-95",
             moreOpen || restActive ? "text-accent" : "text-muted-foreground",
           )}
         >
-          {moreOpen ? <X className="h-5 w-5" strokeWidth={2} /> : <MoreHorizontal className="h-5 w-5" strokeWidth={2} />}
+          <span className="relative flex h-5 w-5 items-center justify-center">
+            <MoreHorizontal
+              className={cn(
+                "absolute h-5 w-5 transition-all duration-150",
+                moreOpen ? "rotate-90 scale-0 opacity-0" : "rotate-0 scale-100 opacity-100",
+              )}
+              strokeWidth={2}
+            />
+            <X
+              className={cn(
+                "absolute h-5 w-5 transition-all duration-150",
+                moreOpen ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-0 opacity-0",
+              )}
+              strokeWidth={2}
+            />
+          </span>
           Mais
         </button>
       </nav>

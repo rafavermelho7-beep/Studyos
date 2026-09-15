@@ -20,7 +20,7 @@ export function DeleteExamButton({ examId }: { examId: string }) {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="animate-scale-in flex items-center gap-2 origin-right">
       <span className="text-xs text-muted-foreground">Excluir prova?</span>
       <Button
         variant="danger"

@@ -36,16 +36,19 @@ export function ReviewQueue({ items }: { items: DueItem[] }) {
 
   if (visibleItems.length === 0) {
     return (
-      <div className="flex flex-col items-center rounded-[var(--radius-lg)] border border-dashed border-border py-12 text-center">
+      <div className="animate-fade-in-up flex flex-col items-center rounded-[var(--radius-lg)] border border-dashed border-border py-12 text-center">
         <p className="text-sm text-muted-foreground">Nenhuma revisão pendente agora. 🎉</p>
       </div>
     );
   }
 
   return (
-    <ul className="space-y-2">
+    <ul className="stagger space-y-2">
       {visibleItems.map((item) => (
-        <li key={item.id} className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
+        <li
+          key={item.id}
+          className="rounded-[var(--radius-lg)] border border-border bg-surface p-3 transition-[border-color,box-shadow] duration-200 hover:border-border-strong hover:shadow-[var(--shadow-sm)]"
+        >
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -68,7 +71,7 @@ export function ReviewQueue({ items }: { items: DueItem[] }) {
                 key={g.rating}
                 disabled={pending}
                 onClick={() => grade(item.topicId, g.rating)}
-                className={`rounded-[var(--radius-sm)] py-1.5 text-xs font-medium transition-opacity disabled:opacity-50 ${g.className}`}
+                className={`rounded-[var(--radius-sm)] py-1.5 text-xs font-medium transition-[opacity,transform] duration-150 active:scale-95 disabled:opacity-50 ${g.className}`}
               >
                 {g.label}
               </button>

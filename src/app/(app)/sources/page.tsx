@@ -46,7 +46,7 @@ export default async function SourcesPage() {
       </p>
 
       {sources.length === 0 ? (
-        <div className="flex flex-col items-center rounded-[var(--radius-lg)] border border-dashed border-border py-16 text-center">
+        <div className="animate-fade-in-up flex flex-col items-center rounded-[var(--radius-lg)] border border-dashed border-border py-16 text-center">
           <Library className="mb-3 h-8 w-8 text-muted-foreground" strokeWidth={1.5} />
           <p className="text-sm text-muted-foreground">
             Nenhuma fonte ainda. Adicione fontes (SanarFlix, Anki, PDFs, aulas...) a partir da
@@ -54,7 +54,7 @@ export default async function SourcesPage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="stagger space-y-6">
           {[...bySubject.values()].map((group) => (
             <div key={group.name}>
               <div className="mb-2 flex items-center gap-1.5 text-sm font-medium text-foreground">
@@ -65,14 +65,14 @@ export default async function SourcesPage() {
                 {group.sources.map((source) => (
                   <li
                     key={source.id}
-                    className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-surface px-3 py-2 text-sm"
+                    className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-surface px-3 py-2 text-sm transition-colors duration-150 hover:border-border-strong"
                   >
                     <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs text-muted-foreground">
                       {typeLabel[source.type]}
                     </span>
                     <Link
                       href={source.topic ? `/topics/${source.topic.id}` : "#"}
-                      className="min-w-0 flex-1 truncate text-foreground hover:text-accent hover:underline"
+                      className="min-w-0 flex-1 truncate text-foreground transition-colors hover:text-accent hover:underline"
                     >
                       {source.title}
                       {source.topic && (
@@ -87,7 +87,7 @@ export default async function SourcesPage() {
                         href={source.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="shrink-0 text-muted-foreground hover:text-accent"
+                        className="shrink-0 text-muted-foreground transition-[color,transform] duration-150 hover:scale-110 hover:text-accent"
                         aria-label={`Abrir ${source.title}`}
                       >
                         <ExternalLink className="h-3.5 w-3.5" />

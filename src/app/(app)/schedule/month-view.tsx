@@ -17,7 +17,7 @@ export function MonthView({
   const today = new Date();
 
   return (
-    <div className="grid grid-cols-7 gap-px overflow-hidden rounded-[var(--radius-lg)] border border-border bg-border">
+    <div className="animate-fade-in grid grid-cols-7 gap-px overflow-hidden rounded-[var(--radius-lg)] border border-border bg-border">
       {weekdayLabels.map((w) => (
         <div key={w} className="bg-surface-2 py-1.5 text-center text-[11px] font-medium uppercase text-muted-foreground">
           {w}
@@ -34,7 +34,7 @@ export function MonthView({
             key={key}
             href={`/schedule?view=day&date=${key}`}
             className={cn(
-              "min-h-[84px] bg-surface p-1.5 transition-colors hover:bg-surface-2",
+              "min-h-[84px] bg-surface p-1.5 transition-colors duration-150 hover:bg-surface-2",
               !inMonth && "bg-surface-2/50",
             )}
           >

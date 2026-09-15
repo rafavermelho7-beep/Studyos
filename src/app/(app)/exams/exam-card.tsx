@@ -59,7 +59,10 @@ export function ExamCard({ exam }: ExamCardProps) {
       {prep.total > 0 ? (
         <div className="mt-3">
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
-            <div className="h-full rounded-full bg-success" style={{ width: `${prep.percent}%` }} />
+            <div
+              className="h-full rounded-full bg-success transition-[width] duration-500 ease-out"
+              style={{ width: `${prep.percent}%` }}
+            />
           </div>
           <div className="mt-1.5 flex gap-3 text-xs text-muted-foreground">
             <span>🔴 {prep.notStarted} não estudados</span>

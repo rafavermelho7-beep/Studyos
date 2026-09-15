@@ -163,7 +163,7 @@ export function FocusSession({
 
   if (phase === "summary" && summary) {
     return (
-      <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-8 text-center">
+      <div className="animate-scale-in rounded-[var(--radius-lg)] border border-border bg-surface p-8 text-center">
         <p className="text-xs font-medium uppercase tracking-wide text-success">Sessão concluída</p>
         {selectedSubject && (
           <p className="mt-3 text-lg font-semibold text-foreground">{selectedSubject.name}</p>
@@ -191,10 +191,10 @@ export function FocusSession({
         : workElapsedSec;
 
     return (
-      <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-8 text-center">
+      <div className="animate-scale-in rounded-[var(--radius-lg)] border border-border bg-surface p-8 text-center">
         <p
           className={cn(
-            "text-xs font-medium uppercase tracking-wide",
+            "text-xs font-medium uppercase tracking-wide transition-colors duration-300",
             isBreak ? "text-warning" : "text-accent",
           )}
         >
@@ -227,15 +227,15 @@ export function FocusSession({
   }
 
   return (
-    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-6">
+    <div className="animate-fade-in-up rounded-[var(--radius-lg)] border border-border bg-surface p-6">
       <div className="mb-4 flex gap-1 rounded-[var(--radius-sm)] bg-surface-2 p-1">
         {(["free", "pomodoro"] as const).map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
             className={cn(
-              "flex-1 rounded-[var(--radius-sm)] py-1.5 text-sm font-medium transition-colors",
-              mode === m ? "bg-surface text-foreground shadow-sm" : "text-muted-foreground",
+              "flex-1 rounded-[var(--radius-sm)] py-1.5 text-sm font-medium transition-[background-color,color,box-shadow] duration-200",
+              mode === m ? "bg-surface text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
             )}
           >
             {m === "free" ? "Livre" : "Pomodoro"}
@@ -244,7 +244,7 @@ export function FocusSession({
       </div>
 
       {mode === "pomodoro" && (
-        <div className="mb-4 flex flex-wrap gap-2">
+        <div className="animate-fade-in-up mb-4 flex flex-wrap gap-2">
           {presets.map((p) => (
             <button
               key={p.label}
@@ -253,7 +253,7 @@ export function FocusSession({
                 setBreakMin(p.brk);
               }}
               className={cn(
-                "rounded-full border px-3 py-1 text-xs font-medium",
+                "rounded-full border px-3 py-1 text-xs font-medium transition-colors duration-150",
                 workMin === p.work && breakMin === p.brk
                   ? "border-accent bg-accent-soft text-accent"
                   : "border-border text-muted-foreground hover:border-border-strong",
@@ -294,7 +294,7 @@ export function FocusSession({
             setSubjectId(e.target.value);
             setTopicId("");
           }}
-          className="h-9 rounded-[var(--radius-sm)] border border-border bg-surface px-2 text-sm text-foreground outline-none focus:border-accent"
+          className="h-9 rounded-[var(--radius-sm)] border border-border bg-surface px-2 text-sm text-foreground outline-none transition-colors focus:border-accent"
         >
           <option value="">Sem matéria específica</option>
           {subjects.map((s) => (
@@ -308,7 +308,7 @@ export function FocusSession({
           value={topicId}
           onChange={(e) => setTopicId(e.target.value)}
           disabled={!subjectId}
-          className="h-9 rounded-[var(--radius-sm)] border border-border bg-surface px-2 text-sm text-foreground outline-none focus:border-accent disabled:opacity-50"
+          className="h-9 rounded-[var(--radius-sm)] border border-border bg-surface px-2 text-sm text-foreground outline-none transition-colors focus:border-accent disabled:opacity-50"
         >
           <option value="">Sem tópico específico</option>
           {filteredTopics.map((t) => (

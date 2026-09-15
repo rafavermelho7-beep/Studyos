@@ -20,7 +20,7 @@ export default async function SettingsPage() {
     <div className="mx-auto max-w-2xl px-4 py-6 md:px-6">
       <h1 className="mb-4 text-xl font-semibold tracking-tight">Configurações</h1>
 
-      <div className="space-y-4">
+      <div className="stagger space-y-4">
         <ApiKeySection hasKey={!!user.apiKeyId} apiKeyId={user.apiKeyId} />
         <AnkiLinksSection
           links={links}

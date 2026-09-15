@@ -56,14 +56,14 @@ export default async function ExamDetailPage({
         <DeleteExamButton examId={exam.id} />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
+      <div className="stagger grid grid-cols-2 gap-3">
+        <div className="hover-lift rounded-[var(--radius-lg)] border border-border bg-surface p-4">
           <p className="text-xs text-muted-foreground">Dias restantes</p>
           <p className="mt-1 text-2xl font-semibold text-foreground">
             {daysRemaining < 0 ? "—" : daysRemaining}
           </p>
         </div>
-        <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
+        <div className="hover-lift rounded-[var(--radius-lg)] border border-border bg-surface p-4">
           <p className="text-xs text-muted-foreground">Preparação</p>
           <p className="mt-1 text-2xl font-semibold text-foreground">
             {prep.percent === null ? "—" : `${prep.percent}%`}

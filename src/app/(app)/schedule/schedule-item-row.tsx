@@ -11,7 +11,7 @@ export function ScheduleItemRow({ item, showTime = true }: { item: ScheduleItem;
   return (
     <Link
       href={item.href}
-      className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-surface px-2.5 py-1.5 text-sm hover:border-border-strong"
+      className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-surface px-2.5 py-1.5 text-sm transition-[border-color,transform] duration-150 hover:-translate-y-px hover:border-border-strong"
     >
       <Icon
         className={cn("h-3.5 w-3.5 shrink-0", item.done ? "text-success" : "text-muted-foreground")}

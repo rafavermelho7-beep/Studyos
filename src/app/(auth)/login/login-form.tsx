@@ -20,23 +20,23 @@ export function LoginForm() {
         <Label htmlFor="email">E-mail</Label>
         <Input id="email" name="email" type="email" autoComplete="email" required />
         {state.fieldErrors?.email && (
-          <p className="text-xs text-danger">{state.fieldErrors.email[0]}</p>
+          <p className="animate-fade-in-up text-xs text-danger">{state.fieldErrors.email[0]}</p>
         )}
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="password">Senha</Label>
         <Input id="password" name="password" type="password" autoComplete="current-password" required />
         {state.fieldErrors?.password && (
-          <p className="text-xs text-danger">{state.fieldErrors.password[0]}</p>
+          <p className="animate-fade-in-up text-xs text-danger">{state.fieldErrors.password[0]}</p>
         )}
       </div>
-      {state.error && <p className="text-sm text-danger">{state.error}</p>}
+      {state.error && <p className="animate-fade-in-up text-sm text-danger">{state.error}</p>}
       <Button type="submit" className="w-full" disabled={pending}>
         {pending ? "Entrando..." : "Entrar"}
       </Button>
       <p className="text-center text-sm text-muted-foreground">
         Não tem conta?{" "}
-        <Link href="/register" className="font-medium text-accent hover:underline">
+        <Link href="/register" className="font-medium text-accent transition-colors hover:underline">
           Criar conta
         </Link>
       </p>

@@ -18,7 +18,7 @@ export function TaskRow({ task }: { task: TaskWithMeta }) {
   return (
     <li
       className={cn(
-        "flex items-center gap-3 rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2.5",
+        "flex items-center gap-3 rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2.5 transition-[opacity,border-color] duration-200 hover:border-border-strong",
         done && "opacity-60",
       )}
     >
@@ -64,7 +64,7 @@ export function TaskRow({ task }: { task: TaskWithMeta }) {
         <button
           onClick={() => startTransition(() => setTaskStatusAction(task.id, "IN_PROGRESS"))}
           disabled={pending}
-          className="text-xs font-medium text-accent hover:underline"
+          className="text-xs font-medium text-accent transition-opacity hover:underline active:opacity-70"
         >
           Iniciar
         </button>
@@ -75,7 +75,7 @@ export function TaskRow({ task }: { task: TaskWithMeta }) {
         onClick={() => startTransition(() => deleteTaskAction(task.id))}
         disabled={pending}
         aria-label={`Excluir tarefa "${task.title}"`}
-        className="text-muted-foreground hover:text-danger"
+        className="text-muted-foreground transition-[color,transform] duration-150 hover:scale-110 hover:text-danger active:scale-95"
       >
         <Trash2 className="h-3.5 w-3.5" />
       </button>

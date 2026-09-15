@@ -51,7 +51,7 @@ export default async function TasksPage({
             key={f.value}
             href={f.value === "ALL" ? "/tasks" : `/tasks?status=${f.value}`}
             className={cn(
-              "shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium",
+              "shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors duration-150",
               (f.value === "ALL" && !activeFilter) || f.value === activeFilter
                 ? "border-accent text-accent"
                 : "border-transparent text-muted-foreground hover:text-foreground",
@@ -63,12 +63,12 @@ export default async function TasksPage({
       </div>
 
       {tasks.length === 0 ? (
-        <div className="mt-6 flex flex-col items-center rounded-[var(--radius-lg)] border border-dashed border-border py-16 text-center">
+        <div className="animate-fade-in-up mt-6 flex flex-col items-center rounded-[var(--radius-lg)] border border-dashed border-border py-16 text-center">
           <ListTodo className="mb-3 h-8 w-8 text-muted-foreground" strokeWidth={1.5} />
           <p className="text-sm text-muted-foreground">Nenhuma tarefa aqui.</p>
         </div>
       ) : (
-        <ul className="mt-4 space-y-1.5">
+        <ul className="stagger mt-4 space-y-1.5">
           {tasks.map((task) => (
             <TaskRow key={task.id} task={task} />
           ))}

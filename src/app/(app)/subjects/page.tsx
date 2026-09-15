@@ -27,14 +27,14 @@ export default async function SubjectsPage() {
       <QuickCreateSubject />
 
       {subjects.length === 0 ? (
-        <div className="mt-6 flex flex-col items-center rounded-[var(--radius-lg)] border border-dashed border-border py-16 text-center">
+        <div className="animate-fade-in-up mt-6 flex flex-col items-center rounded-[var(--radius-lg)] border border-dashed border-border py-16 text-center">
           <BookOpen className="mb-3 h-8 w-8 text-muted-foreground" strokeWidth={1.5} />
           <p className="text-sm text-muted-foreground">
             Nenhuma matéria ainda. Crie a primeira acima para começar.
           </p>
         </div>
       ) : (
-        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="stagger mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {subjects.map((subject) => (
             <Link
               key={subject.id}

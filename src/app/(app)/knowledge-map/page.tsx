@@ -35,14 +35,14 @@ export default async function KnowledgeMapPage() {
       </div>
 
       {totalTopics === 0 ? (
-        <div className="flex flex-col items-center rounded-[var(--radius-lg)] border border-dashed border-border py-16 text-center">
+        <div className="animate-fade-in-up flex flex-col items-center rounded-[var(--radius-lg)] border border-dashed border-border py-16 text-center">
           <Network className="mb-3 h-8 w-8 text-muted-foreground" strokeWidth={1.5} />
           <p className="text-sm text-muted-foreground">
             Cadastre matérias e tópicos para ver seu mapa de conhecimento.
           </p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="stagger space-y-6">
           {subjects
             .filter((s) => s.topics.length > 0)
             .map((subject) => (
@@ -69,7 +69,7 @@ export default async function KnowledgeMapPage() {
                       href={`/topics/${topic.id}`}
                       title={`${topic.name} — ${statusMeta[topic.mapStatus].label}`}
                       className={cn(
-                        "flex h-9 min-w-[2.25rem] max-w-[9rem] items-center justify-center truncate rounded-[var(--radius-sm)] border px-2 text-xs font-medium text-foreground transition-transform hover:scale-105",
+                        "flex h-9 min-w-[2.25rem] max-w-[9rem] items-center justify-center truncate rounded-[var(--radius-sm)] border px-2 text-xs font-medium text-foreground transition-[transform,box-shadow] duration-150 ease-out hover:scale-105 hover:shadow-[var(--shadow-sm)] active:scale-100",
                         statusMeta[topic.mapStatus].className,
                       )}
                     >

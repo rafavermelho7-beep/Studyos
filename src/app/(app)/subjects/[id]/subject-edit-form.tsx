@@ -73,7 +73,7 @@ export function SubjectEditForm({ subject }: { subject: Subject }) {
         <Button type="submit" variant="secondary" size="sm" disabled={pending}>
           {pending ? "Salvando..." : "Salvar alterações"}
         </Button>
-        {saved && <span className="text-xs text-success">Salvo</span>}
+        {saved && <span className="animate-fade-in-up text-xs text-success">✓ Salvo</span>}
       </div>
     </form>
   );

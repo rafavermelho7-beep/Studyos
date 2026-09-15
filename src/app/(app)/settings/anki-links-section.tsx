@@ -37,11 +37,11 @@ export function AnkiLinksSection({
       </p>
 
       {links.length > 0 && (
-        <ul className="mt-3 space-y-1">
+        <ul className="stagger mt-3 space-y-1">
           {links.map((link) => (
             <li
               key={link.id}
-              className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-surface-2 px-2.5 py-1.5 text-sm"
+              className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-surface-2 px-2.5 py-1.5 text-sm transition-colors duration-150 hover:border-border-strong"
             >
               <code className="min-w-0 flex-1 truncate text-xs text-foreground">{link.deckName}</code>
               <span className="shrink-0 text-xs text-muted-foreground">
@@ -52,7 +52,7 @@ export function AnkiLinksSection({
                 onClick={() => startTransition(() => deleteAnkiDeckLinkAction(link.id))}
                 disabled={pending}
                 aria-label={`Remover vínculo de ${link.deckName}`}
-                className="shrink-0 text-muted-foreground hover:text-danger"
+                className="shrink-0 text-muted-foreground transition-[color,transform] duration-150 hover:scale-110 hover:text-danger active:scale-95"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>

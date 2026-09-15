@@ -22,7 +22,7 @@ export function ApiKeySection({ hasKey, apiKeyId }: { hasKey: boolean; apiKeyId:
       </p>
 
       {freshKey ? (
-        <div className="mt-3 rounded-[var(--radius-sm)] border border-warning/40 bg-warning-soft p-3">
+        <div className="animate-scale-in mt-3 origin-top rounded-[var(--radius-sm)] border border-warning/40 bg-warning-soft p-3">
           <p className="mb-1.5 text-xs font-medium text-warning">
             Copie agora — ela não será mostrada de novo.
           </p>
@@ -36,10 +36,17 @@ export function ApiKeySection({ hasKey, apiKeyId }: { hasKey: boolean; apiKeyId:
                 setCopied(true);
                 setTimeout(() => setCopied(false), 1500);
               }}
-              className="shrink-0 rounded-[var(--radius-sm)] border border-border p-1.5 text-muted-foreground hover:text-foreground"
+              className="shrink-0 rounded-[var(--radius-sm)] border border-border p-1.5 text-muted-foreground transition-[color,transform] duration-150 hover:scale-105 hover:text-foreground active:scale-95"
               aria-label="Copiar chave"
             >
-              {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+              <span className="relative flex h-3.5 w-3.5 items-center justify-center">
+                <Copy
+                  className={`absolute h-3.5 w-3.5 transition-all duration-150 ${copied ? "scale-0 opacity-0" : "scale-100 opacity-100"}`}
+                />
+                <Check
+                  className={`absolute h-3.5 w-3.5 text-success transition-all duration-150 ${copied ? "scale-100 opacity-100" : "scale-0 opacity-0"}`}
+                />
+              </span>
             </button>
           </div>
         </div>

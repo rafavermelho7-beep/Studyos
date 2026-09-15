@@ -41,7 +41,7 @@ export function QuickCreateExam({ subjects }: { subjects: SubjectOption[] }) {
         setOpen(false);
         startTransition(() => createExamAction(formData));
       }}
-      className="grid grid-cols-1 gap-2 rounded-[var(--radius-lg)] border border-border bg-surface p-4 sm:grid-cols-2"
+      className="animate-scale-in grid grid-cols-1 gap-2 rounded-[var(--radius-lg)] border border-border bg-surface p-4 origin-top sm:grid-cols-2"
     >
       <select
         name="subjectId"

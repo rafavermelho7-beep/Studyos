@@ -17,7 +17,7 @@ export function PeriodFilter({ active }: { active: string }) {
           key={p.value}
           href={`/stats?period=${p.value}`}
           className={cn(
-            "rounded-full px-3 py-1 text-xs font-medium",
+            "rounded-full px-3 py-1 text-xs font-medium transition-colors duration-150",
             active === p.value
               ? "bg-accent-soft text-accent"
               : "text-muted-foreground hover:bg-surface-2 hover:text-foreground",
@@ -29,7 +29,7 @@ export function PeriodFilter({ active }: { active: string }) {
       <details className="relative">
         <summary
           className={cn(
-            "cursor-pointer list-none rounded-full px-3 py-1 text-xs font-medium",
+            "cursor-pointer list-none rounded-full px-3 py-1 text-xs font-medium transition-colors duration-150",
             active === "custom"
               ? "bg-accent-soft text-accent"
               : "text-muted-foreground hover:bg-surface-2 hover:text-foreground",
@@ -40,7 +40,7 @@ export function PeriodFilter({ active }: { active: string }) {
         <form
           method="GET"
           action="/stats"
-          className="absolute right-0 top-8 z-10 flex flex-col gap-2 rounded-[var(--radius-md)] border border-border bg-surface p-3 shadow-lg"
+          className="animate-scale-in absolute right-0 top-8 z-10 flex flex-col gap-2 origin-top-right rounded-[var(--radius-md)] border border-border bg-surface p-3 shadow-lg"
         >
           <label className="flex flex-col gap-1 text-xs text-muted-foreground">
             De
@@ -62,7 +62,7 @@ export function PeriodFilter({ active }: { active: string }) {
           </label>
           <button
             type="submit"
-            className="rounded-[var(--radius-sm)] bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground"
+            className="rounded-[var(--radius-sm)] bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground transition-[filter,transform] duration-150 hover:brightness-110 active:scale-95"
           >
             Aplicar
           </button>

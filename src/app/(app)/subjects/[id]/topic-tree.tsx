@@ -32,7 +32,7 @@ export function TopicTree({
   }
 
   return (
-    <ul className="space-y-1">
+    <ul className="stagger space-y-1">
       {topics.map((topic) => (
         <TopicRow key={topic.id} subjectId={subjectId} topic={topic} />
       ))}
@@ -46,18 +46,18 @@ function TopicRow({ subjectId, topic }: { subjectId: string; topic: TopicWithChi
   const hasChildren = topic.children.length > 0;
 
   return (
-    <li className="rounded-[var(--radius-md)] border border-border bg-surface">
+    <li className="rounded-[var(--radius-md)] border border-border bg-surface transition-colors duration-150 hover:border-border-strong">
       <div className="flex items-center gap-2 px-3 py-2">
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="flex h-5 w-5 shrink-0 items-center justify-center text-muted-foreground"
+          className="flex h-5 w-5 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
           aria-label="Expandir"
         >
-          <ChevronRight className={cn("h-4 w-4 transition-transform", expanded && "rotate-90")} />
+          <ChevronRight className={cn("h-4 w-4 transition-transform duration-200 ease-out", expanded && "rotate-90")} />
         </button>
         <Link
           href={`/topics/${topic.id}`}
-          className="flex-1 truncate text-sm font-medium text-foreground hover:text-accent hover:underline"
+          className="flex-1 truncate text-sm font-medium text-foreground transition-colors hover:text-accent hover:underline"
         >
           {topic.name}
         </Link>
@@ -69,7 +69,7 @@ function TopicRow({ subjectId, topic }: { subjectId: string; topic: TopicWithChi
             startTransition(() => updateTopicStatusAction(topic.id, subjectId, e.target.value))
           }
           className={cn(
-            "rounded-full border-0 px-2 py-0.5 text-xs font-medium outline-none",
+            "rounded-full border-0 px-2 py-0.5 text-xs font-medium outline-none transition-[filter] duration-150 hover:brightness-95",
             statusConfig[topic.status].className,
           )}
         >
@@ -82,7 +82,7 @@ function TopicRow({ subjectId, topic }: { subjectId: string; topic: TopicWithChi
         <button
           onClick={() => startTransition(() => deleteTopicAction(topic.id, subjectId))}
           disabled={pending}
-          className="text-muted-foreground hover:text-danger"
+          className="text-muted-foreground transition-[color,transform] duration-150 hover:scale-110 hover:text-danger active:scale-95"
           aria-label="Excluir tópico"
         >
           <Trash2 className="h-3.5 w-3.5" />
@@ -90,13 +90,13 @@ function TopicRow({ subjectId, topic }: { subjectId: string; topic: TopicWithChi
       </div>
 
       {expanded && (
-        <div className="border-t border-border px-3 py-2 pl-9">
+        <div className="animate-fade-in-up border-t border-border px-3 py-2 pl-9">
           {hasChildren && (
-            <ul className="mb-2 space-y-1">
+            <ul className="stagger mb-2 space-y-1">
               {topic.children.map((child) => (
                 <li
                   key={child.id}
-                  className="flex items-center justify-between rounded-[var(--radius-sm)] bg-surface-2 px-2.5 py-1.5 text-sm"
+                  className="flex items-center justify-between rounded-[var(--radius-sm)] bg-surface-2 px-2.5 py-1.5 text-sm transition-colors duration-150 hover:bg-surface"
                 >
                   <Link href={`/topics/${child.id}`} className="truncate text-foreground hover:text-accent hover:underline">
                     {child.name}

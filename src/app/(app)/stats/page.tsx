@@ -55,7 +55,7 @@ export default async function StatsPage({
       </div>
 
       {!hasAnyData ? (
-        <div className="flex flex-col items-center rounded-[var(--radius-lg)] border border-dashed border-border py-16 text-center">
+        <div className="animate-fade-in-up flex flex-col items-center rounded-[var(--radius-lg)] border border-dashed border-border py-16 text-center">
           <BarChart3 className="mb-3 h-8 w-8 text-muted-foreground" strokeWidth={1.5} />
           <p className="text-sm text-muted-foreground">
             Sem sessões de estudo registradas neste período.
@@ -63,8 +63,8 @@ export default async function StatsPage({
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Card>
+          <div className="stagger grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Card className="hover-lift">
               <CardContent className="p-3">
                 <p className="text-xs text-muted-foreground">Horas estudadas</p>
                 <p className="mt-0.5 text-lg font-semibold text-foreground">
@@ -72,13 +72,13 @@ export default async function StatsPage({
                 </p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="hover-lift">
               <CardContent className="p-3">
                 <p className="text-xs text-muted-foreground">Sessões</p>
                 <p className="mt-0.5 text-lg font-semibold text-foreground">{stats.sessionCount}</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="hover-lift">
               <CardContent className="p-3">
                 <p className="text-xs text-muted-foreground">Dias estudados</p>
                 <p className="mt-0.5 text-lg font-semibold text-foreground">
@@ -86,7 +86,7 @@ export default async function StatsPage({
                 </p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="hover-lift">
               <CardContent className="p-3">
                 <p className="text-xs text-muted-foreground">Sequência atual</p>
                 <p className="mt-0.5 text-lg font-semibold text-foreground">
@@ -96,14 +96,14 @@ export default async function StatsPage({
             </Card>
           </div>
 
-          <div className="mt-6 rounded-[var(--radius-lg)] border border-border bg-surface p-4">
+          <div className="animate-fade-in-up mt-6 rounded-[var(--radius-lg)] border border-border bg-surface p-4">
             <h2 className="mb-1 text-sm font-semibold text-foreground">Horas por dia</h2>
             <p className="mb-2 text-xs text-muted-foreground">Consistência: {stats.consistencyPercent}%</p>
             <DailyBarChart data={stats.daily} />
           </div>
 
           {stats.bySubject.length > 0 && (
-            <div className="mt-6 rounded-[var(--radius-lg)] border border-border bg-surface p-4">
+            <div className="animate-fade-in-up mt-6 rounded-[var(--radius-lg)] border border-border bg-surface p-4">
               <h2 className="mb-3 text-sm font-semibold text-foreground">Horas por matéria</h2>
               <SubjectBarChart data={stats.bySubject.map((s) => ({ name: s.name, color: s.color, seconds: s.seconds }))} />
             </div>

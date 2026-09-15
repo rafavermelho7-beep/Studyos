@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth/session";
 import { SidebarNavLinks } from "@/components/layout/sidebar-nav";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { UserMenu } from "@/components/layout/user-menu";
+import { PageTransition } from "@/components/layout/page-transition";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
@@ -22,7 +23,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <header className="sticky top-0 z-10 flex h-14 items-center justify-end border-b border-border bg-surface/80 px-4 backdrop-blur-md md:px-6">
           <UserMenu name={user.name} email={user.email} />
         </header>
-        <main className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">{children}</main>
+        <main className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+          <PageTransition>{children}</PageTransition>
+        </main>
       </div>
 
       <BottomNav />

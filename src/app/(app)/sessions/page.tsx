@@ -45,16 +45,16 @@ export default async function SessionsPage({
       <div className="mt-8">
         <h2 className="mb-3 text-sm font-semibold text-foreground">Atividade recente</h2>
         {recentEvents.length === 0 ? (
-          <div className="flex flex-col items-center rounded-[var(--radius-lg)] border border-dashed border-border py-10 text-center">
+          <div className="animate-fade-in-up flex flex-col items-center rounded-[var(--radius-lg)] border border-dashed border-border py-10 text-center">
             <Timer className="mb-2 h-6 w-6 text-muted-foreground" strokeWidth={1.5} />
             <p className="text-sm text-muted-foreground">Nenhuma sessão registrada ainda.</p>
           </div>
         ) : (
-          <ul className="space-y-1.5">
+          <ul className="stagger space-y-1.5">
             {recentEvents.map((event) => (
               <li
                 key={event.id}
-                className="flex items-center justify-between rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2.5 text-sm"
+                className="flex items-center justify-between rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2.5 text-sm transition-colors duration-150 hover:border-border-strong"
               >
                 <div className="min-w-0">
                   <p className="truncate font-medium text-foreground">

@@ -44,15 +44,15 @@ export function ExamTopicsManager({
   }
 
   return (
-    <ul className="space-y-1">
+    <ul className="stagger space-y-1">
       {allTopics.map((topic) => {
         const checked = linked.has(topic.id);
         return (
           <li
             key={topic.id}
             className={cn(
-              "flex items-center gap-2.5 rounded-[var(--radius-sm)] border px-3 py-2 text-sm",
-              checked ? "border-accent bg-accent-soft" : "border-border bg-surface",
+              "flex items-center gap-2.5 rounded-[var(--radius-sm)] border px-3 py-2 text-sm transition-colors duration-150",
+              checked ? "border-accent bg-accent-soft" : "border-border bg-surface hover:border-border-strong",
             )}
           >
             <input

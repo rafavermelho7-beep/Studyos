@@ -20,7 +20,7 @@ export function DeleteSubjectButton({ subjectId }: { subjectId: string }) {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="animate-scale-in flex items-center gap-2 origin-right">
       <span className="text-xs text-muted-foreground">Excluir matéria e todo o conteúdo?</span>
       <Button
         variant="danger"

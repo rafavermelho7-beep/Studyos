@@ -108,8 +108,10 @@ export default async function SchedulePage({
                 key={v}
                 href={urlFor(v, anchor)}
                 className={cn(
-                  "rounded-[var(--radius-sm)] px-2.5 py-1 text-xs font-medium",
-                  view === v ? "bg-surface text-foreground shadow-sm" : "text-muted-foreground",
+                  "rounded-[var(--radius-sm)] px-2.5 py-1 text-xs font-medium transition-[background-color,color,box-shadow] duration-150",
+                  view === v
+                    ? "bg-surface text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 {v === "day" ? "Dia" : v === "week" ? "Semana" : "Mês"}
@@ -117,13 +119,13 @@ export default async function SchedulePage({
             ))}
           </div>
           <div className="flex items-center gap-1">
-            <Link href={prevUrl} className="rounded-[var(--radius-sm)] p-1.5 text-muted-foreground hover:bg-surface-2" aria-label="Anterior">
+            <Link href={prevUrl} className="rounded-[var(--radius-sm)] p-1.5 text-muted-foreground transition-colors duration-150 hover:bg-surface-2 hover:text-foreground" aria-label="Anterior">
               <ChevronLeft className="h-4 w-4" />
             </Link>
-            <Link href={todayUrl} className="rounded-[var(--radius-sm)] px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-surface-2">
+            <Link href={todayUrl} className="rounded-[var(--radius-sm)] px-2 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-surface-2 hover:text-foreground">
               Hoje
             </Link>
-            <Link href={nextUrl} className="rounded-[var(--radius-sm)] p-1.5 text-muted-foreground hover:bg-surface-2" aria-label="Próximo">
+            <Link href={nextUrl} className="rounded-[var(--radius-sm)] p-1.5 text-muted-foreground transition-colors duration-150 hover:bg-surface-2 hover:text-foreground" aria-label="Próximo">
               <ChevronRight className="h-4 w-4" />
             </Link>
           </div>

@@ -46,8 +46,8 @@ export default async function DashboardPage() {
 
   if (subjects.length === 0) {
     return (
-      <div className="mx-auto flex max-w-lg flex-col items-center px-4 py-20 text-center md:px-6">
-        <Sparkles className="mb-4 h-8 w-8 text-accent" strokeWidth={1.5} />
+      <div className="animate-fade-in-up mx-auto flex max-w-lg flex-col items-center px-4 py-20 text-center md:px-6">
+        <Sparkles className="mb-4 h-8 w-8 animate-pulse text-accent" strokeWidth={1.5} />
         <h1 className="text-xl font-semibold tracking-tight">
           {greeting(hour)}{firstName ? `, ${firstName}` : ""}
         </h1>
@@ -72,8 +72,8 @@ export default async function DashboardPage() {
         {totalTopics === 1 ? "" : "s"} cadastrados
       </p>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Card>
+      <div className="stagger mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Card className="hover-lift">
           <CardContent className="p-3">
             <p className="text-xs text-muted-foreground">Hoje</p>
             <p className="mt-0.5 text-lg font-semibold text-foreground">
@@ -81,13 +81,13 @@ export default async function DashboardPage() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="hover-lift">
           <CardContent className="p-3">
             <p className="text-xs text-muted-foreground">Tarefas pendentes</p>
             <p className="mt-0.5 text-lg font-semibold text-foreground">{pendingTasks}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="hover-lift">
           <CardContent className="p-3">
             <p className="text-xs text-muted-foreground">Atrasadas</p>
             <p
@@ -97,7 +97,7 @@ export default async function DashboardPage() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="hover-lift">
           <CardContent className="p-3">
             <p className="text-xs text-muted-foreground">Revisões</p>
             <p
@@ -118,10 +118,10 @@ export default async function DashboardPage() {
       <NeglectedSubjects subjects={neglected} />
 
       <h2 className="mb-2 mt-8 text-sm font-semibold text-foreground">Matérias</h2>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="stagger grid grid-cols-1 gap-3 sm:grid-cols-2">
         {subjects.map((subject) => (
           <Link key={subject.id} href={`/subjects/${subject.id}`}>
-            <Card className="hover:-translate-y-0.5 hover:border-border-strong hover:shadow-[var(--shadow-md)]">
+            <Card className="hover-lift">
               <CardContent className="flex items-center gap-3">
                 <span
                   className="h-2.5 w-2.5 shrink-0 rounded-full"

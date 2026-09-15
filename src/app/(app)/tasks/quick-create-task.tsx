@@ -36,14 +36,14 @@ export function QuickCreateTask({ subjects }: { subjects: SubjectOption[] }) {
       <button
         type="button"
         onClick={() => setAdvanced((v) => !v)}
-        className="mt-2 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+        className="mt-2 flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
       >
-        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${advanced ? "rotate-180" : ""}`} />
+        <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ease-out ${advanced ? "rotate-180" : ""}`} />
         Detalhes
       </button>
 
       {advanced && (
-        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className="animate-fade-in-up mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
           <select
             name="subjectId"
             aria-label="Matéria da tarefa"

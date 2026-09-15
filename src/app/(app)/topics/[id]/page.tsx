@@ -58,7 +58,7 @@ export default async function TopicDetailPage({
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 md:px-6">
-      <Link href={`/subjects/${topic.subjectId}`} className="text-xs text-muted-foreground hover:text-foreground">
+      <Link href={`/subjects/${topic.subjectId}`} className="text-xs text-muted-foreground transition-colors hover:text-foreground">
         ← {topic.subject.name}
       </Link>
       <h1 className="mt-1 text-xl font-semibold tracking-tight">{topic.name}</h1>
@@ -104,11 +104,11 @@ export default async function TopicDetailPage({
       {logs.length > 0 && (
         <div className="mt-6">
           <h2 className="mb-2 text-sm font-semibold text-foreground">Histórico de revisões</h2>
-          <ul className="space-y-1">
+          <ul className="stagger space-y-1">
             {[...logs].reverse().map((log) => (
               <li
                 key={log.id}
-                className="flex items-center justify-between rounded-[var(--radius-sm)] border border-border bg-surface px-3 py-1.5 text-sm"
+                className="flex items-center justify-between rounded-[var(--radius-sm)] border border-border bg-surface px-3 py-1.5 text-sm transition-colors duration-150 hover:border-border-strong"
               >
                 <span className="text-foreground">{ratingLabel[log.rating]}</span>
                 <span className="text-xs text-muted-foreground">

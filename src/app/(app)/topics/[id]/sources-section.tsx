@@ -41,7 +41,7 @@ export function SourcesSection({
   return (
     <div>
       {sources.length > 0 && (
-        <ul className="mb-3 space-y-1.5">
+        <ul className="stagger mb-3 space-y-1.5">
           {sources.map((source) => (
             <SourceRow key={source.id} source={source} topicId={topicId} />
           ))}
@@ -51,7 +51,7 @@ export function SourcesSection({
       {!open ? (
         <button
           onClick={() => setOpen(true)}
-          className="flex items-center gap-1 text-xs font-medium text-accent hover:underline"
+          className="flex items-center gap-1 text-xs font-medium text-accent transition-opacity hover:underline active:opacity-70"
         >
           <Plus className="h-3 w-3" /> Adicionar fonte
         </button>
@@ -66,7 +66,7 @@ export function SourcesSection({
             setOpen(false);
             startTransition(() => createSourceAction(topicId, subjectId, formData));
           }}
-          className="flex flex-wrap gap-2 rounded-[var(--radius-sm)] border border-border bg-surface p-2.5"
+          className="animate-scale-in flex flex-wrap gap-2 rounded-[var(--radius-sm)] border border-border bg-surface p-2.5"
         >
           <select
             name="type"
@@ -101,7 +101,7 @@ function SourceRow({ source, topicId }: { source: StudySource; topicId: string }
   const [completed, setOptimisticCompleted] = useOptimistic(source.completed);
 
   return (
-    <li className="rounded-[var(--radius-sm)] border border-border bg-surface px-2.5 py-1.5">
+    <li className="rounded-[var(--radius-sm)] border border-border bg-surface px-2.5 py-1.5 transition-colors duration-150 hover:border-border-strong">
       <div className="flex items-center gap-2">
         <input
           type="checkbox"
@@ -118,7 +118,7 @@ function SourceRow({ source, topicId }: { source: StudySource; topicId: string }
           className="h-3.5 w-3.5 cursor-pointer accent-[var(--accent)]"
         />
         <span
-          className={`min-w-0 flex-1 truncate text-sm text-foreground ${completed ? "text-muted-foreground line-through" : ""}`}
+          className={`min-w-0 flex-1 truncate text-sm text-foreground transition-colors ${completed ? "text-muted-foreground line-through" : ""}`}
         >
           {source.title}
         </span>
@@ -127,7 +127,7 @@ function SourceRow({ source, topicId }: { source: StudySource; topicId: string }
             href={source.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="shrink-0 text-muted-foreground hover:text-accent"
+            className="shrink-0 text-muted-foreground transition-[color,transform] duration-150 hover:scale-110 hover:text-accent"
             aria-label={`Abrir ${source.title}`}
           >
             <ExternalLink className="h-3.5 w-3.5" />
@@ -135,7 +135,7 @@ function SourceRow({ source, topicId }: { source: StudySource; topicId: string }
         )}
         <button
           onClick={() => setLogging((v) => !v)}
-          className="shrink-0 text-xs font-medium text-accent hover:underline"
+          className="shrink-0 text-xs font-medium text-accent transition-opacity hover:underline active:opacity-70"
         >
           Registrar tempo
         </button>
@@ -143,13 +143,13 @@ function SourceRow({ source, topicId }: { source: StudySource; topicId: string }
           onClick={() => startTransition(() => deleteSourceAction(source.id, topicId))}
           disabled={pending}
           aria-label={`Excluir fonte "${source.title}"`}
-          className="shrink-0 text-muted-foreground hover:text-danger"
+          className="shrink-0 text-muted-foreground transition-[color,transform] duration-150 hover:scale-110 hover:text-danger active:scale-95"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>
       {logging && (
-        <div className="mt-1.5 flex items-center gap-2 pl-5.5">
+        <div className="animate-fade-in-up mt-1.5 flex items-center gap-2 pl-5.5">
           <Input
             type="number"
             min={1}

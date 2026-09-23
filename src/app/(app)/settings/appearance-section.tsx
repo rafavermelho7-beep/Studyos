@@ -1,21 +1,32 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ArrowDown, ArrowUp, Check, Monitor, Moon, Sun } from "lucide-react";
+import Image from "next/image";
+import { ArrowDown, ArrowUp, Check, Monitor, Moon, Sun, Trash2 } from "lucide-react";
 import {
   ACCENTS,
   ACCENT_KEYS,
   HOME_PAGES,
   type AccentColor,
+  type BackgroundStyle,
   type DashboardBlock,
   type HomePage,
   type ThemeMode,
 } from "@/lib/preferences";
 import { applyAppearance } from "@/components/layout/appearance-sync";
+import { PhotoPicker } from "@/components/ui/photo-picker";
+import { imageUrl } from "@/lib/images";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { saveAppearanceAction, saveDashboardLayoutAction, saveMonthlyGoalAction } from "./appearance-actions";
+import {
+  removeBackgroundAction,
+  saveAppearanceAction,
+  saveDashboardLayoutAction,
+  saveMonthlyGoalAction,
+  setBackgroundStyleAction,
+  uploadBackgroundAction,
+} from "./appearance-actions";
 
 type Props = {
   themeMode: ThemeMode;
@@ -23,6 +34,8 @@ type Props = {
   homePage: HomePage;
   monthlyGoalMinutes: number | null;
   dashboard: { id: DashboardBlock; label: string; visible: boolean }[];
+  backgroundStyle: BackgroundStyle;
+  backgroundImageId: string | null;
 };
 
 const themeOptions: { value: ThemeMode; label: string; icon: typeof Sun }[] = [
@@ -40,6 +53,7 @@ export function AppearanceSection(props: Props) {
       <h3 className="text-sm font-semibold text-foreground">Aparência</h3>
       <div className="mt-4 space-y-6">
         <LookAndFeel {...props} />
+        <BackgroundPicker style={props.backgroundStyle} imageId={props.backgroundImageId} />
         <MonthlyGoal initialMinutes={props.monthlyGoalMinutes} />
         <DashboardBlocks initial={props.dashboard} />
       </div>
@@ -121,6 +135,86 @@ function LookAndFeel({ themeMode, accentColor, homePage }: Props) {
         </select>
       </label>
     </>
+  );
+}
+
+const backgroundOptions: { value: BackgroundStyle; label: string }[] = [
+  { value: "plain", label: "Liso" },
+  { value: "gradient", label: "Gradiente" },
+  { value: "photo", label: "Foto" },
+];
+
+// Server state drives this one (no local copy): picking "Foto" before a
+// photo exists opens the picker instead, and the upload itself switches
+// the style — so what's highlighted is always what's actually saved.
+function BackgroundPicker({ style, imageId }: { style: BackgroundStyle; imageId: string | null }) {
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  function choose(value: BackgroundStyle) {
+    setError(null);
+    startTransition(async () => {
+      const result = await setBackgroundStyleAction(value);
+      if (result.error) setError(result.error);
+    });
+  }
+
+  return (
+    <fieldset>
+      <legend className="text-xs font-medium text-muted-foreground">Fundo do app</legend>
+      <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+        {backgroundOptions.map(({ value, label }) => {
+          const className = cn(
+            "flex items-center justify-center rounded-[var(--radius-sm)] border px-2 py-2 text-xs font-medium transition-colors duration-150",
+            style === value ? "border-accent bg-accent-soft text-accent" : "border-border text-foreground hover:border-border-strong",
+          );
+          if (value === "photo" && !imageId) {
+            return (
+              <PhotoPicker key={value} label="Foto" maxDimension={1920} upload={uploadBackgroundAction} className={className}>
+                Foto
+              </PhotoPicker>
+            );
+          }
+          return (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={style === value}
+              disabled={pending}
+              onClick={() => choose(value)}
+              className={className}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+      {imageId && (
+        <div className="mt-2 flex items-center gap-3">
+          <span className="relative h-12 w-20 overflow-hidden rounded-[var(--radius-sm)] border border-border">
+            <Image src={imageUrl(imageId)} alt="Foto de fundo atual" fill unoptimized sizes="80px" className="object-cover" />
+          </span>
+          <PhotoPicker
+            label="Trocar foto de fundo"
+            maxDimension={1920}
+            upload={uploadBackgroundAction}
+            className="text-accent hover:underline"
+          >
+            Trocar foto
+          </PhotoPicker>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => startTransition(() => removeBackgroundAction())}
+            className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-danger"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Remover foto
+          </button>
+        </div>
+      )}
+      {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+    </fieldset>
   );
 }
 

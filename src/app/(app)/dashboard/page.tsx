@@ -12,6 +12,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { FocusCard } from "./focus-card";
 import { NeglectedSubjects } from "./neglected-subjects";
 import { MonthGoalCard } from "./month-goal-card";
+import { SubjectAvatar } from "@/components/ui/subject-avatar";
 import { monthGoalProgress } from "@/lib/month-goal";
 import { readPreferences, type DashboardBlock } from "@/lib/preferences";
 
@@ -130,10 +131,7 @@ export default async function DashboardPage() {
                 <Link key={subject.id} href={`/subjects/${subject.id}`}>
                   <Card className="hover-lift">
                     <CardContent className="flex items-center gap-3">
-                      <span
-                        className="h-2.5 w-2.5 shrink-0 rounded-full"
-                        style={{ backgroundColor: subject.color }}
-                      />
+                      <SubjectAvatar subject={subject} />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium text-foreground">{subject.name}</p>
                         <p className="text-xs text-muted-foreground">{subject._count.topics} tópicos</p>

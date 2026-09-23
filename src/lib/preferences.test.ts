@@ -48,8 +48,15 @@ describe("readPreferences", () => {
       monthlyGoalMinutes: null,
       dashboardOrder: [],
       dashboardHidden: [],
+      backgroundStyle: "photo",
+      backgroundImageId: null,
     });
-    expect(prefs).toMatchObject({ themeMode: "system", accentColor: "indigo", homePage: "dashboard" });
+    expect(prefs).toMatchObject({
+      themeMode: "system",
+      accentColor: "indigo",
+      homePage: "dashboard",
+      backgroundStyle: "plain", // "photo" with no photo saved
+    });
     expect(homePath("/etc/passwd")).toBe("/dashboard");
     expect(homePath("review")).toBe("/review");
   });

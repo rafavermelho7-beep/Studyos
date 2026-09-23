@@ -30,6 +30,8 @@ export default async function SettingsPage() {
           homePage={prefs.homePage}
           monthlyGoalMinutes={prefs.monthlyGoalMinutes}
           dashboard={prefs.dashboard}
+          backgroundStyle={prefs.backgroundStyle}
+          backgroundImageId={prefs.backgroundImageId}
         />
         <ApiKeySection hasKey={!!user.apiKeyId} apiKeyId={user.apiKeyId} />
         <AnkiLinksSection

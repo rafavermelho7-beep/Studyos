@@ -449,10 +449,31 @@ deploy feito no Vercel — `https://studyos-nine-ochre.vercel.app`.
     fuso do servidor (UTC no Vercel), então sessões entre 21h e 0h do
     último dia do mês (horário de Brasília) contam pro mês seguinte.
 
+- **Fase 28 — Personalização, etapa B: fotos (2026-09-23)**:
+  - **Capa da matéria**: "Adicionar capa" na página da matéria (câmera ou
+    galeria no celular), com Trocar/Remover; aparece como banner na
+    página e como miniatura em Matérias e no Início.
+  - **Fundo do app**: Liso, Gradiente (na cor de destaque) ou Foto, com
+    véu na cor do tema pra manter tudo legível; a foto fica guardada ao
+    alternar pra Gradiente e volta sem novo upload.
+  - **Decisão: fotos no Postgres, não no Supabase Storage** (o plano
+    original era o Storage). Motivos: escala pessoal (poucas fotos de
+    ~100-400 KB depois de comprimidas no celular), a autorização continua
+    sendo o mesmo filtro por `userId` de todo o resto, nenhuma chave nova
+    ou bucket pra configurar, e — principal — dá pra testar de ponta a
+    ponta aqui; com o Storage, o upload iria pro ar sem nunca ter rodado
+    contra o serviço real. Revisitar se o app virar multiusuário em escala.
+  - Segurança: tipo detectado pelos bytes (SVG/HTML recusados), limite de
+    2 MB, 401 deslogado / 404 pra foto de outra conta, sem cache
+    compartilhável; foto substituída/removida/matéria excluída não deixa
+    lixo no banco.
+  - Testes: `e2e/photos.spec.ts` (upload real com compressão, privacidade
+    entre contas, fundo), `images.test.ts` (validação, acesso de outro
+    usuário, limpeza). 22/22 e2e, 26/26 unitários, build limpo. Visual
+    conferido em 390px claro/escuro.
+
 ## Em andamento / próximos passos (ordem planejada)
 
-0. **Personalização, etapa B** (aprovada): foto/capa por matéria e fundo
-   do app com foto (Supabase Storage, bucket privado criado pelo app).
 1. Fase 23 — mais testes (cobertura unitária além do caso de segurança;
    os 12 specs e2e já cobrem os fluxos principais de cada fase)
 2. Fase 22 (resto) — offline/sync de verdade (o banco já é Postgres real;

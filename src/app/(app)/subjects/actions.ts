@@ -10,6 +10,8 @@ import {
   deleteSubject,
 } from "@/server/services/subjects";
 import { createTopic, updateTopic, deleteTopic } from "@/server/services/topics";
+import { removeSubjectCover, setSubjectCover } from "@/server/services/images";
+import { readUploadedImage } from "@/lib/upload";
 
 const quickCreateSchema = z.object({
   name: z.string().trim().min(1, "Informe um nome").max(120),
@@ -108,4 +110,29 @@ export async function deleteTopicFromDetailAction(topicId: string) {
   revalidatePath(`/subjects/${subjectId}`);
   revalidatePath("/dashboard");
   redirect(`/subjects/${subjectId}`);
+}
+
+export async function setSubjectCoverAction(subjectId: string, formData: FormData) {
+  const user = await requireUser();
+  const upload = await readUploadedImage(formData);
+  if ("error" in upload) return upload;
+  try {
+    await setSubjectCover(user.id, subjectId, upload.bytes);
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Não foi possível salvar a foto." };
+  }
+  revalidateSubjectCover(subjectId);
+  return { error: null };
+}
+
+export async function removeSubjectCoverAction(subjectId: string) {
+  const user = await requireUser();
+  await removeSubjectCover(user.id, subjectId);
+  revalidateSubjectCover(subjectId);
+}
+
+function revalidateSubjectCover(subjectId: string) {
+  revalidatePath(`/subjects/${subjectId}`);
+  revalidatePath("/subjects");
+  revalidatePath("/dashboard");
 }

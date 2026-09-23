@@ -26,6 +26,9 @@ export const ACCENTS = {
 export type AccentColor = keyof typeof ACCENTS;
 export const ACCENT_KEYS = Object.keys(ACCENTS) as AccentColor[];
 
+export const BACKGROUND_STYLES = ["plain", "gradient", "photo"] as const;
+export type BackgroundStyle = (typeof BACKGROUND_STYLES)[number];
+
 export const HOME_PAGES = {
   dashboard: { label: "Início", path: "/dashboard" },
   sessions: { label: "Sessão de estudo", path: "/sessions" },
@@ -55,8 +58,14 @@ export function readPreferences(user: {
   monthlyGoalMinutes: number | null;
   dashboardOrder: string[];
   dashboardHidden: string[];
+  backgroundStyle: string;
+  backgroundImageId: string | null;
 }) {
+  const backgroundStyle = pick(user.backgroundStyle, BACKGROUND_STYLES, "plain");
   return {
+    // "photo" without a photo (e.g. it failed to save) degrades to plain.
+    backgroundStyle: backgroundStyle === "photo" && !user.backgroundImageId ? "plain" : backgroundStyle,
+    backgroundImageId: user.backgroundImageId,
     themeMode: pick(user.themeMode, THEME_MODES, "system"),
     accentColor: pick(user.accentColor, ACCENT_KEYS, "indigo"),
     homePage: pick(user.homePage, Object.keys(HOME_PAGES) as HomePage[], "dashboard"),
@@ -102,3 +111,5 @@ export const dashboardLayoutSchema = z
   .array(z.object({ id: z.enum(DEFAULT_ORDER as [DashboardBlock, ...DashboardBlock[]]), visible: z.boolean() }))
   .refine((blocks) => new Set(blocks.map((b) => b.id)).size === blocks.length, "Bloco repetido")
   .refine((blocks) => blocks.some((b) => b.visible), "Deixe pelo menos um bloco visível");
+
+export const backgroundStyleSchema = z.enum(BACKGROUND_STYLES);

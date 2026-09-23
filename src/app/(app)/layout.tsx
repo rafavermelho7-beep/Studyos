@@ -5,6 +5,7 @@ import { UserMenu } from "@/components/layout/user-menu";
 import { PageTransition } from "@/components/layout/page-transition";
 import { UndoToastProvider } from "@/components/ui/undo-toast";
 import { AppearanceSync } from "@/components/layout/appearance-sync";
+import { AppBackground } from "@/components/layout/app-background";
 import { readPreferences } from "@/lib/preferences";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -14,6 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <UndoToastProvider>
       <AppearanceSync themeMode={prefs.themeMode} accentColor={prefs.accentColor} />
+      <AppBackground style={prefs.backgroundStyle} imageId={prefs.backgroundImageId} />
       <div className="flex min-h-dvh">
         <aside className="hidden w-56 shrink-0 flex-col border-r border-border bg-surface p-3 md:flex">
           <div className="mb-4 flex items-center gap-2 px-1 py-1.5">

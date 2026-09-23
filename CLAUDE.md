@@ -44,9 +44,13 @@ the working reference for continuing development.
     this writing. Pinned to the last stable 6.x. Revisit later.
   - **Supabase's own Auth/Storage/Realtime client is NOT used anywhere.**
     `SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEY`/`SUPABASE_SECRET_KEY` in
-    `.env` are stored for possible future use (e.g. file storage) but
-    nothing reads them today — the app talks to Postgres directly through
-    Prisma, with its own auth (below).
+    `.env` are stored for possible future use but nothing reads them
+    today — the app talks to Postgres directly through Prisma, with its
+    own auth (below). **Photos (subject covers, app background) are NOT in
+    Supabase Storage either** — they're `Image` rows (bytea) in Postgres,
+    served only by `GET /api/images/[id]` after a session + ownership
+    check. Deliberate at personal scale; see the `Image` model comment
+    for the reasoning and when to revisit.
 - **Auth**: hand-rolled, not next-auth (still in beta after a long time)
   and not Supabase Auth either. bcrypt password hash
   (`src/lib/auth/password.ts`) + opaque DB-backed session token in an
@@ -235,6 +239,19 @@ npx prisma studio                   # inspect the Supabase database
   up for existing users automatically (`resolveDashboardLayout`).
   Monthly goal progress is summed from `StudyEvent` at read time
   (`getStudySecondsThisMonth` + pure `lib/month-goal.ts`).
+- **Photos**: pick → `compressImage` in the browser (resize + WebP/JPEG,
+  `lib/image-compress.ts`) → server action with FormData field `image`
+  (`lib/upload.ts`) → `services/images.ts`, which re-validates by magic
+  bytes (never the client's MIME type — no SVG/HTML ever stored) and a
+  2 MB cap (`serverActions.bodySizeLimit` is 3mb in `next.config.ts` for
+  headroom). Replacing or removing a photo, or deleting its subject,
+  deletes the `Image` row in the same transaction — never leave orphans.
+  `/api/images/[id]` answers 401 logged out, 404 for someone else's id
+  (not 403, so ids can't be probed), and uses `no-cache` + ETag so the
+  ownership check runs on every view but repeats cost only a 304.
+  Render with `next/image` + `unoptimized` (the optimizer can't fetch a
+  session-protected URL). UI: `PhotoPicker`, `SubjectAvatar`,
+  `AppBackground`.
 - **Migrations run on every Vercel build** (`vercel-build` script:
   `prisma migrate deploy && next build`) — including preview deploys of
   unmerged branches, against the one shared Supabase database. So every
@@ -270,6 +287,7 @@ src/app/(auth)/               login/register pages
 src/app/(app)/                authenticated app shell + feature routes (one folder per nav item,
                                plus topics/[id] which isn't in the sidebar — reached via links)
 src/app/api/anki/sync/        connector-facing API route (Bearer API key, not a session cookie)
+src/app/api/images/[id]/      serves stored photos to their owner (session cookie)
 src/components/ui/            small hand-built primitives (button, input, card, badge) — no shadcn CLI, no Radix yet
 src/components/layout/        sidebar/bottom-nav/user-menu, shared app chrome
 connector/                    standalone Node script + README — NOT part of the Next.js app,

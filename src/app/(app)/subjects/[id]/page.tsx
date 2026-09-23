@@ -5,6 +5,7 @@ import { getSubject, getSubjectDeletionImpact } from "@/server/services/subjects
 import { SubjectEditForm } from "./subject-edit-form";
 import { TopicTree } from "./topic-tree";
 import { AddTopicForm } from "./add-topic-form";
+import { SubjectCover } from "./subject-cover";
 import { ConfirmDeleteButton } from "@/components/ui/delete-buttons";
 import { subjectDeletionDetails } from "@/lib/deletion-copy";
 import { deleteSubjectAction } from "../actions";
@@ -33,6 +34,7 @@ export default async function SubjectDetailPage({
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 md:px-6">
+      <SubjectCover subjectId={subject.id} subjectName={subject.name} coverImageId={subject.coverImageId} />
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <span

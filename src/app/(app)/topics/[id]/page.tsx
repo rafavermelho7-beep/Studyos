@@ -9,6 +9,7 @@ import {
   getTopicReviewHistory,
   getForgettingCurve,
   estimateRetrievability,
+  stabilityBeforeLastReview,
 } from "@/server/services/reviews";
 import { Badge } from "@/components/ui/badge";
 import { ForgettingCurveChart } from "./forgetting-curve-chart";
@@ -49,7 +50,7 @@ export default async function TopicDetailPage({
   if (!topic) notFound();
 
   const logs = topic.reviewState ? await getTopicReviewHistory(user.id, topic.id) : [];
-  const previousStability = logs.length >= 2 ? logs[logs.length - 2].stability : null;
+  const previousStability = stabilityBeforeLastReview(logs);
 
   const hasCurve = topic.reviewState && topic.reviewState.lastReview;
   const curve = hasCurve

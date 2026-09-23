@@ -232,6 +232,18 @@ export function getReviewState(userId: string, topicId: string) {
 }
 
 /**
+ * The stability the topic had going INTO its most recent review — the
+ * input for the "sem a última revisão" curve. ts-fsrs logs capture the
+ * card before each grade, so that's simply the newest log's stability.
+ * (This used to read the second-newest log, which is the stability before
+ * the review two grades back.) Null until there are two reviews: before
+ * the first one there's no memory state to draw a curve from.
+ */
+export function stabilityBeforeLastReview(logsOldestFirst: { stability: number }[]): number | null {
+  return logsOldestFirst.length >= 2 ? logsOldestFirst[logsOldestFirst.length - 1].stability : null;
+}
+
+/**
  * Two comparable retention projections, both estimates from the FSRS model
  * (brief §19/§46 — never presented as a measured fact for this individual):
  * `current` uses the stability the last review actually produced; `previous`

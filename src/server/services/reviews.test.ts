@@ -1,6 +1,13 @@
 import { describe, it, expect, afterAll } from "vitest";
 import { db } from "@/lib/db";
-import { startReview, gradeReview, undoLastReview, removeFromReview } from "./reviews";
+import {
+  startReview,
+  gradeReview,
+  undoLastReview,
+  removeFromReview,
+  getTopicReviewHistory,
+  stabilityBeforeLastReview,
+} from "./reviews";
 
 const createdUserIds: string[] = [];
 
@@ -114,5 +121,26 @@ describe("undoLastReview", () => {
     expect(memory(after)).toEqual(memory(before));
     expect(after.due.getTime()).toBe(before.due.getTime());
     expect(await db.reviewLog.count({ where: { topicId: topic.id } })).toBe(1);
+  });
+});
+
+describe("stabilityBeforeLastReview", () => {
+  it("is the stability the previous grade left behind, not the one before that", async () => {
+    const user = await makeUser("curve");
+    const topic = await makeTopic(user.id);
+    await startReview(user.id, topic.id);
+
+    await gradeReview(user.id, topic.id, 3);
+    expect(stabilityBeforeLastReview(await getTopicReviewHistory(user.id, topic.id))).toBeNull();
+    const afterFirst = await db.reviewState.findUniqueOrThrow({ where: { topicId: topic.id } });
+
+    // Again (a lapse) — unlike a same-day Good/Easy, it always moves stability,
+    // so the old off-by-one would be visible.
+    await gradeReview(user.id, topic.id, 1);
+    const afterSecond = await db.reviewState.findUniqueOrThrow({ where: { topicId: topic.id } });
+    expect(afterSecond.stability).not.toBe(afterFirst.stability);
+
+    const logs = await getTopicReviewHistory(user.id, topic.id);
+    expect(stabilityBeforeLastReview(logs)).toBe(afterFirst.stability);
   });
 });

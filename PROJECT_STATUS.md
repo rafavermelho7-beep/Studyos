@@ -417,6 +417,13 @@ deploy feito no Vercel — `https://studyos-nine-ochre.vercel.app`.
     Supabase): 17/17 e2e + 9/9 unitários passando, `tsc`/`lint`/`build`
     limpos. Visual conferido em 390px, claro e escuro.
 
+- **Correção — curva "sem a última revisão" (2026-09-23)**: a linha
+  tracejada da curva de esquecimento (`/topics/[id]`) usava a estabilidade
+  de duas revisões atrás, porque o código lia o penúltimo `ReviewLog`
+  achando que o log guarda o estado *depois* da avaliação (guarda o de
+  *antes*). Agora é `stabilityBeforeLastReview` em `reviews.ts`, com teste
+  unitário que falharia na lógica antiga.
+
 ## Em andamento / próximos passos (ordem planejada)
 
 0. **Personalização** (pedido do usuário, plano aguardando aprovação):
@@ -446,13 +453,6 @@ deploy feito no Vercel — `https://studyos-nine-ochre.vercel.app`.
 
 ## Bugs conhecidos
 
-- **Curva "sem a última revisão" usa a estabilidade errada** (pré-existente,
-  achado na Fase 27, ainda não corrigido): `topics/[id]/page.tsx` pega
-  `logs[length - 2].stability` achando que o log guarda o estado *depois*
-  da avaliação; como guarda o de *antes*, a estabilidade anterior à última
-  revisão é `logs[length - 1].stability`. A linha tracejada hoje mostra a
-  curva de duas revisões atrás. Correção de uma linha, aguardando o ok do
-  usuário.
 - `e2e/global-teardown.ts` não lê o `.env` (só funciona com
   `DATABASE_URL` exportada no shell).
 

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./accents.css";
 
 :root {
   --background: #fbfbfa;
@@ -59,8 +60,19 @@
   --radius-xl: var(--radius-xl);
 }
 
+/* Theme: "system" (no data-theme on <html>) follows the OS; the user can
+   force either one from Settings → Aparência, which sets
+   <html data-theme="light|dark"> (see AppearanceSync). The dark values are
+   written twice — once behind the media query for "system", once for an
+   explicit "dark" — because a selector can't be conditional on a media
+   query any other way. Keep the two blocks identical. */
+:root {
+  color-scheme: light;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
     --background: #0b0b0d;
     --surface: #131316;
     --surface-2: #1a1a1e;
@@ -85,6 +97,33 @@
     --shadow-lg: 0 16px 40px -12px rgba(0, 0, 0, 0.6);
     --shadow-accent: 0 8px 24px -8px color-mix(in srgb, var(--accent) 35%, transparent);
   }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #0b0b0d;
+  --surface: #131316;
+  --surface-2: #1a1a1e;
+  --border: #26262b;
+  --border-strong: #333338;
+  --foreground: #f2f2f3;
+  --muted-foreground: #9a9aa0;
+  --accent: #8181ec;
+  --accent-2: #ec6bb8;
+  --accent-foreground: #0b0b0d;
+  --accent-soft: #1e1e42;
+  --danger: #f87171;
+  --danger-soft: #2a1414;
+  --warning: #fbbf24;
+  --warning-soft: #2a2110;
+  --success: #4ade80;
+  --success-soft: #10241a;
+  --focus-ring: #8181ec;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px -4px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 16px 40px -12px rgba(0, 0, 0, 0.6);
+  --shadow-accent: 0 8px 24px -8px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 * {

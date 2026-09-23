@@ -101,6 +101,7 @@ the working reference for continuing development.
 ```
 npm run dev          # dev server, port 3000
 npm run build         # production build (must stay clean, no warnings)
+                      # (Vercel runs `vercel-build` instead = migrate deploy + build)
 npx tsc --noEmit       # typecheck
 npm run lint           # eslint
 npm run test:e2e       # playwright e2e (spins its own server on :3100)
@@ -218,6 +219,29 @@ npx prisma studio                   # inspect the Supabase database
   log), except our `state` column, which `gradeReview` fills with the
   state AFTER it. `undoLastReview` relies on this via ts-fsrs's own
   `rollback`; read its comment before touching either.
+- **Personalization (Settings → Aparência)**: per-user `User.themeMode`,
+  `accentColor`, `homePage`, `monthlyGoalMinutes`, `dashboardOrder`/
+  `dashboardHidden`. Allowed values + zod schemas + fallbacks live in
+  `src/lib/preferences.ts` (unknown values read back as defaults, never
+  crash). Theme/accent are applied as `<html data-theme data-accent>` by
+  `AppearanceSync` (inline script for first paint + effect for client
+  navigation); CSS in `globals.css` (dark block written twice on purpose)
+  and `src/app/accents.css` — a new accent needs all three rules there
+  (`preferences.test.ts` enforces it) and a WCAG AA contrast check.
+  Chart colors come from the resolved CSS tokens (`use-chart-theme.ts`),
+  so they follow theme and accent with no palette copy. The dashboard is
+  a list of blocks rendered in the user's order (`renderBlock` in
+  `dashboard/page.tsx`); a new block goes in `DASHBOARD_BLOCKS` and shows
+  up for existing users automatically (`resolveDashboardLayout`).
+  Monthly goal progress is summed from `StudyEvent` at read time
+  (`getStudySecondsThisMonth` + pure `lib/month-goal.ts`).
+- **Migrations run on every Vercel build** (`vercel-build` script:
+  `prisma migrate deploy && next build`) — including preview deploys of
+  unmerged branches, against the one shared Supabase database. So every
+  migration must be **additive and backward compatible** (new nullable or
+  defaulted columns/tables; no renames, drops or type changes in the same
+  release as the code that stops using them). Locally, `npm run build`
+  never touches the database.
 - **Mobile bottom nav shows only `primary: true` items from
   `nav-items.ts` (currently 4) plus a "Mais" button** that opens a sheet
   with the rest — cramming all ~10 sections into one bottom bar overflows

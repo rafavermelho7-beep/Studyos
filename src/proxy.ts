@@ -12,7 +12,8 @@ export function proxy(request: NextRequest) {
   const hasCookie = request.cookies.has(SESSION_COOKIE);
 
   if (PUBLIC_PATHS.includes(pathname) && hasCookie) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    // "/" (not /dashboard) so the user's chosen start screen applies.
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   return NextResponse.next();

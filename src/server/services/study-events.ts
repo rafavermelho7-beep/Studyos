@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import type { ActivityType, EventSource } from "@prisma/client";
+import { startOfMonth } from "date-fns";
 
 export type LogStudyEventInput = {
   source?: EventSource;
@@ -80,4 +81,12 @@ export async function updateStudyEventDuration(userId: string, eventId: string, 
       endedAt: new Date(event.startedAt.getTime() + durationSec * 1000),
     },
   });
+}
+
+export async function getStudySecondsThisMonth(userId: string, now = new Date()): Promise<number> {
+  const result = await db.studyEvent.aggregate({
+    where: { userId, startedAt: { gte: startOfMonth(now) } },
+    _sum: { durationSec: true },
+  });
+  return result._sum.durationSec ?? 0;
 }

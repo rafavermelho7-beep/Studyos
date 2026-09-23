@@ -42,6 +42,21 @@ model User {
   apiKeyId   String? @unique
   apiKeyHash String?
 
+  // Personalization ("Aparência" in Settings). All optional/defaulted so
+  // the migration is purely additive — Vercel preview builds apply
+  // migrations to the one shared database (see package.json vercel-build).
+  // Allowed values live in src/lib/preferences.ts, validated with zod on
+  // write; unknown values read back as the defaults.
+  monthlyGoalMinutes Int? // total, not per subject; progress derives from StudyEvent
+  themeMode          String   @default("system") // system | light | dark
+  accentColor        String   @default("indigo")
+  homePage           String   @default("dashboard") // which screen "/" and login open
+  // Dashboard blocks: explicit order + which are hidden. Kept as two lists
+  // (not one "visible, in order" list) so a block added in a later release
+  // still shows up for users who already customized their layout.
+  dashboardOrder     String[] @default([])
+  dashboardHidden    String[] @default([])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

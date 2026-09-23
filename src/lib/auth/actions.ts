@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { homePath } from "@/lib/preferences";
 import { db } from "@/lib/db";
 import { hashPassword, verifyPassword, DUMMY_PASSWORD_HASH } from "@/lib/auth/password";
 import { createSession, destroySession } from "@/lib/auth/session";
@@ -80,7 +81,7 @@ export async function loginAction(
 
   clearAttempts(email);
   await createSession(user.id);
-  redirect("/dashboard");
+  redirect(homePath(user.homePage));
 }
 
 export async function logoutAction(): Promise<void> {

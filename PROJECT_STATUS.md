@@ -424,11 +424,35 @@ deploy feito no Vercel — `https://studyos-nine-ochre.vercel.app`.
   *antes*). Agora é `stabilityBeforeLastReview` em `reviews.ts`, com teste
   unitário que falharia na lógica antiga.
 
+- **Fase 28 — Personalização, etapa A (2026-09-23)**: Configurações ganhou
+  a seção **Aparência** (atalho "Personalizar" no Início):
+  - **Tema** Automático/Claro/Escuro (antes só seguia o sistema) e **cor de
+    destaque** entre 8 opções, todas conferidas para contraste AA nos dois
+    temas. Muda na hora, sem piscar o tema errado ao abrir o app. Gráficos
+    acompanham tema e cor (agora leem as cores reais do CSS).
+  - **Meta do mês** (total geral de horas, escolha do usuário): card no
+    Início com horas feitas, % e "faltam X em N dias → ~Y por dia",
+    avisando quando está abaixo do ritmo. Sem meta, mostra um convite
+    honesto em vez de número inventado.
+  - **Início do seu jeito**: mostrar/esconder e reordenar (↑↓) os blocos
+    Resumo do dia, Meta do mês, Seu foco agora, Matérias negligenciadas e
+    Suas matérias.
+  - **Tela que abre ao entrar**: Início, Sessão, Revisão ou Tarefas
+    (vale pro login, pro ícone do app e pra `/`).
+  - Banco: colunas novas em `User`, migration só aditiva. **Deploy agora
+    aplica migrations sozinho** (`vercel-build`) — o usuário não precisa
+    mexer no Supabase.
+  - Testes: `e2e/personalization.spec.ts` (3 fluxos, com reload pra provar
+    que salvou), unitários de preferências e da conta da meta. 20/20 e2e,
+    21/21 unitários, build limpo. Visual conferido em 390px claro/escuro.
+  - Limitação conhecida (já existia no "Hoje"): "mês" e "hoje" usam o
+    fuso do servidor (UTC no Vercel), então sessões entre 21h e 0h do
+    último dia do mês (horário de Brasília) contam pro mês seguinte.
+
 ## Em andamento / próximos passos (ordem planejada)
 
-0. **Personalização** (pedido do usuário, plano aguardando aprovação):
-   foto/capa por matéria, fundo e cor de destaque do app, meta do mês,
-   escolher o que aparece na tela inicial.
+0. **Personalização, etapa B** (aprovada): foto/capa por matéria e fundo
+   do app com foto (Supabase Storage, bucket privado criado pelo app).
 1. Fase 23 — mais testes (cobertura unitária além do caso de segurança;
    os 12 specs e2e já cobrem os fluxos principais de cada fase)
 2. Fase 22 (resto) — offline/sync de verdade (o banco já é Postgres real;

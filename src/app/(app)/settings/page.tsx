@@ -5,6 +5,8 @@ import { listSubjects } from "@/server/services/subjects";
 import { listTopicsForUser } from "@/server/services/topics";
 import { ApiKeySection } from "./api-key-section";
 import { AnkiLinksSection } from "./anki-links-section";
+import { AppearanceSection } from "./appearance-section";
+import { readPreferences } from "@/lib/preferences";
 
 export const metadata: Metadata = { title: "Configurações · StudyOS" };
 
@@ -15,12 +17,20 @@ export default async function SettingsPage() {
     listSubjects(user.id),
     listTopicsForUser(user.id),
   ]);
+  const prefs = readPreferences(user);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 md:px-6">
       <h1 className="mb-4 text-xl font-semibold tracking-tight">Configurações</h1>
 
       <div className="stagger space-y-4">
+        <AppearanceSection
+          themeMode={prefs.themeMode}
+          accentColor={prefs.accentColor}
+          homePage={prefs.homePage}
+          monthlyGoalMinutes={prefs.monthlyGoalMinutes}
+          dashboard={prefs.dashboard}
+        />
         <ApiKeySection hasKey={!!user.apiKeyId} apiKeyId={user.apiKeyId} />
         <AnkiLinksSection
           links={links}

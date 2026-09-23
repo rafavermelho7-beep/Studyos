@@ -472,6 +472,14 @@ deploy feito no Vercel — `https://studyos-nine-ochre.vercel.app`.
     usuário, limpeza). 22/22 e2e, 26/26 unitários, build limpo. Visual
     conferido em 390px claro/escuro.
 
+- **Correção de deploy (2026-09-23)**: o primeiro preview com
+  `vercel-build` falhou. A migration foi aplicada normalmente no Supabase,
+  mas o build fez typecheck contra o Prisma Client ANTIGO — o Vercel
+  restaura `node_modules` do cache, o `npm install` dá "up to date" e o
+  generate automático do Prisma não roda. Corrigido com `prisma generate`
+  explícito no início do `vercel-build`; reproduzido localmente (cliente
+  antigo → mesmos erros TS; script novo → build limpo).
+
 ## Em andamento / próximos passos (ordem planejada)
 
 1. Fase 23 — mais testes (cobertura unitária além do caso de segurança;

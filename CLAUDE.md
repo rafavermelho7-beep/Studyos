@@ -105,7 +105,7 @@ the working reference for continuing development.
 ```
 npm run dev          # dev server, port 3000
 npm run build         # production build (must stay clean, no warnings)
-                      # (Vercel runs `vercel-build` instead = migrate deploy + build)
+                      # (Vercel runs `vercel-build` instead = generate + migrate deploy + build)
 npx tsc --noEmit       # typecheck
 npm run lint           # eslint
 npm run test:e2e       # playwright e2e (spins its own server on :3100)
@@ -253,7 +253,13 @@ npx prisma studio                   # inspect the Supabase database
   session-protected URL). UI: `PhotoPicker`, `SubjectAvatar`,
   `AppBackground`.
 - **Migrations run on every Vercel build** (`vercel-build` script:
-  `prisma migrate deploy && next build`) — including preview deploys of
+  `prisma generate && prisma migrate deploy && next build`). The explicit
+  `prisma generate` is load-bearing: Vercel restores `node_modules` from
+  its build cache and `npm install` reports "up to date", so Prisma's
+  install-time generate never runs and the build type-checks against the
+  PREVIOUS schema's client — the first deploy with new User columns
+  failed exactly like that (migration applied fine, then TS2339 on every
+  new field). — including preview deploys of
   unmerged branches, against the one shared Supabase database. So every
   migration must be **additive and backward compatible** (new nullable or
   defaulted columns/tables; no renames, drops or type changes in the same

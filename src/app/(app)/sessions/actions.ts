@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/session";
-import { logStudyEvent } from "@/server/services/study-events";
+import { logStudyEvent, deleteStudyEvent, updateStudyEventDuration } from "@/server/services/study-events";
 
 const logSchema = z.object({
   subjectId: z.string().optional(),
@@ -31,4 +31,24 @@ export async function logStudySessionAction(input: {
   revalidatePath("/sessions");
   revalidatePath("/dashboard");
   return { id: event.id, durationSec: event.durationSec };
+}
+
+function revalidateStudyTime() {
+  revalidatePath("/sessions");
+  revalidatePath("/dashboard");
+  revalidatePath("/stats");
+  revalidatePath("/schedule");
+}
+
+export async function deleteStudyEventAction(eventId: string) {
+  const user = await requireUser();
+  await deleteStudyEvent(user.id, eventId);
+  revalidateStudyTime();
+}
+
+export async function updateStudyEventDurationAction(eventId: string, minutes: number) {
+  const user = await requireUser();
+  const parsed = z.number().int().min(1).max(24 * 60).parse(minutes);
+  await updateStudyEventDuration(user.id, eventId, parsed * 60);
+  revalidateStudyTime();
 }

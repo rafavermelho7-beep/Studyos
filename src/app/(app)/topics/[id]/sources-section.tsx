@@ -1,7 +1,7 @@
 "use client";
 
 import { useOptimistic, useRef, useState, useTransition } from "react";
-import { ExternalLink, Plus, Trash2 } from "lucide-react";
+import { ExternalLink, Plus } from "lucide-react";
 import type { StudySource } from "@prisma/client";
 import {
   createSourceAction,
@@ -11,6 +11,8 @@ import {
 } from "./actions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { UndoableDeleteButton } from "@/components/ui/delete-buttons";
+import { useUndoToast } from "@/components/ui/undo-toast";
 
 const typeOptions: { value: string; label: string }[] = [
   { value: "SANARFLIX", label: "SanarFlix" },
@@ -99,6 +101,8 @@ function SourceRow({ source, topicId }: { source: StudySource; topicId: string }
   const [logging, setLogging] = useState(false);
   const [minutes, setMinutes] = useState("30");
   const [completed, setOptimisticCompleted] = useOptimistic(source.completed);
+  const { isPendingDelete } = useUndoToast();
+  if (isPendingDelete(source.id)) return null;
 
   return (
     <li className="rounded-[var(--radius-sm)] border border-border bg-surface px-2.5 py-1.5 transition-colors duration-150 hover:border-border-strong">
@@ -139,14 +143,12 @@ function SourceRow({ source, topicId }: { source: StudySource; topicId: string }
         >
           Registrar tempo
         </button>
-        <button
-          onClick={() => startTransition(() => deleteSourceAction(source.id, topicId))}
-          disabled={pending}
-          aria-label={`Excluir fonte "${source.title}"`}
-          className="shrink-0 text-muted-foreground transition-[color,transform] duration-150 hover:scale-110 hover:text-danger active:scale-95"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
+        <UndoableDeleteButton
+          id={source.id}
+          label={`Excluir fonte "${source.title}"`}
+          message="Fonte excluída"
+          onDelete={() => deleteSourceAction(source.id, topicId)}
+        />
       </div>
       {logging && (
         <div className="animate-fade-in-up mt-1.5 flex items-center gap-2 pl-5.5">

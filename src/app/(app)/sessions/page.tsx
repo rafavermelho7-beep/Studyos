@@ -1,22 +1,13 @@
 import type { Metadata } from "next";
-import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { Timer } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
 import { listSubjects } from "@/server/services/subjects";
 import { listTopicsForUser } from "@/server/services/topics";
 import { listRecentStudyEvents } from "@/server/services/study-events";
 import { FocusSession } from "./focus-session";
+import { RecentActivity } from "./recent-activity";
 
 export const metadata: Metadata = { title: "Sessão de estudo · StudyOS" };
-
-const sourceLabel = { STUDYOS: "StudyOS", ANKI: "Anki", SANARFLIX: "SanarFlix", MANUAL: "Manual", OTHER: "Outro" };
-
-function formatEventDuration(sec: number) {
-  const m = Math.round(sec / 60);
-  if (m < 60) return `${m} min`;
-  return `${Math.floor(m / 60)}h${String(m % 60).padStart(2, "0")}`;
-}
 
 export default async function SessionsPage({
   searchParams,
@@ -50,28 +41,7 @@ export default async function SessionsPage({
             <p className="text-sm text-muted-foreground">Nenhuma sessão registrada ainda.</p>
           </div>
         ) : (
-          <ul className="stagger space-y-1.5">
-            {recentEvents.map((event) => (
-              <li
-                key={event.id}
-                className="flex items-center justify-between rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2.5 text-sm transition-colors duration-150 hover:border-border-strong"
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-medium text-foreground">
-                    {event.subject?.name ?? "Estudo livre"}
-                    {event.topic && ` · ${event.topic.name}`}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {sourceLabel[event.source]} ·{" "}
-                    {formatDistanceToNow(new Date(event.startedAt), { addSuffix: true, locale: ptBR })}
-                  </p>
-                </div>
-                <span className="shrink-0 text-xs font-medium text-muted-foreground">
-                  {formatEventDuration(event.durationSec)}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <RecentActivity events={recentEvents} />
         )}
       </div>
     </div>

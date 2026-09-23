@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/session";
 import {
@@ -55,11 +56,15 @@ export async function updateSubjectAction(subjectId: string, formData: FormData)
   revalidatePath("/dashboard");
 }
 
+// Deleting from the item's own page redirects server-side: revalidating
+// and then navigating client-side would first re-render the page that was
+// just deleted (a flash of 404) before the push lands.
 export async function deleteSubjectAction(subjectId: string) {
   const user = await requireUser();
   await deleteSubject(user.id, subjectId);
   revalidatePath("/subjects");
   revalidatePath("/dashboard");
+  redirect("/subjects");
 }
 
 const topicSchema = z.object({
@@ -95,4 +100,12 @@ export async function deleteTopicAction(topicId: string, subjectId: string) {
   await deleteTopic(user.id, topicId);
   revalidatePath(`/subjects/${subjectId}`);
   revalidatePath("/dashboard");
+}
+
+export async function deleteTopicFromDetailAction(topicId: string) {
+  const user = await requireUser();
+  const subjectId = await deleteTopic(user.id, topicId);
+  revalidatePath(`/subjects/${subjectId}`);
+  revalidatePath("/dashboard");
+  redirect(`/subjects/${subjectId}`);
 }

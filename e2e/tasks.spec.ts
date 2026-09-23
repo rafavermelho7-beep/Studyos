@@ -29,6 +29,9 @@ test("create a task, mark it done, filter, and delete it", async ({ page }) => {
   await page.getByRole("link", { name: "Concluídas" }).click();
   await expect(page.getByText("Resumir arritmias")).toBeVisible();
 
+  // Deletes are deferred behind an undo toast; × commits right away.
   await page.getByLabel('Excluir tarefa "Resumir arritmias"').click();
+  await expect(page.getByText("Tarefa excluída")).toBeVisible();
+  await page.getByRole("button", { name: "Fechar aviso" }).click();
   await expect(page.getByText("Nenhuma tarefa aqui.")).toBeVisible();
 });

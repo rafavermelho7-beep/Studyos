@@ -1,6 +1,6 @@
 import { describe, it, expect, afterAll } from "vitest";
 import { db } from "@/lib/db";
-import { startReview, gradeReview } from "./reviews";
+import { startReview, gradeReview, undoLastReview, removeFromReview } from "./reviews";
 
 const createdUserIds: string[] = [];
 
@@ -50,5 +50,69 @@ describe("gradeReview authorization", () => {
     // And no stray ReviewLog was attributed to the attacker for this topic.
     const attackerLogs = await db.reviewLog.findMany({ where: { userId: attacker.id, topicId: topic.id } });
     expect(attackerLogs).toHaveLength(0);
+  });
+});
+
+describe("undoLastReview", () => {
+  // Memory state only — `due` deliberately differs after an undo: like
+  // ts-fsrs's rollback, the card becomes due as of the undone review (it
+  // was due then, so it goes straight back into the queue).
+  const memory = (row: { state: string; stability: number; difficulty: number; reps: number; lapses: number; lastReview: Date | null }) => ({
+    state: row.state,
+    stability: row.stability,
+    difficulty: row.difficulty,
+    reps: row.reps,
+    lapses: row.lapses,
+    lastReview: row.lastReview?.getTime() ?? null,
+  });
+
+  it("restores the memory state the previous grade produced, lapse included", async () => {
+    const user = await makeUser("undo");
+    const topic = await makeTopic(user.id);
+    await startReview(user.id, topic.id);
+    await gradeReview(user.id, topic.id, 3); // Good → REVIEW
+    const before = await db.reviewState.findUniqueOrThrow({ where: { topicId: topic.id } });
+
+    await gradeReview(user.id, topic.id, 1); // Again from REVIEW → a lapse
+    const mistaken = await db.reviewState.findUniqueOrThrow({ where: { topicId: topic.id } });
+    expect(mistaken.lapses).toBe(before.lapses + 1);
+
+    expect(await undoLastReview(user.id, topic.id)).toBe(true);
+    const after = await db.reviewState.findUniqueOrThrow({ where: { topicId: topic.id } });
+    expect(memory(after)).toEqual(memory(before));
+    expect(after.due.getTime()).toBeLessThanOrEqual(Date.now());
+    expect(await db.reviewLog.count({ where: { topicId: topic.id } })).toBe(1);
+  });
+
+  it("puts a topic graded only once back to a fresh, due card", async () => {
+    const user = await makeUser("undo-first");
+    const topic = await makeTopic(user.id);
+    await startReview(user.id, topic.id);
+    await gradeReview(user.id, topic.id, 4);
+
+    await undoLastReview(user.id, topic.id);
+    const after = await db.reviewState.findUniqueOrThrow({ where: { topicId: topic.id } });
+    expect(after.state).toBe("NEW");
+    expect(after.reps).toBe(0);
+    expect(after.lastReview).toBeNull();
+    expect(after.due.getTime()).toBeLessThanOrEqual(Date.now());
+    expect(await undoLastReview(user.id, topic.id)).toBe(false);
+  });
+
+  it("cannot touch another user's review state or history", async () => {
+    const owner = await makeUser("owner");
+    const attacker = await makeUser("attacker");
+    const topic = await makeTopic(owner.id);
+    await startReview(owner.id, topic.id);
+    await gradeReview(owner.id, topic.id, 3);
+    const before = await db.reviewState.findUniqueOrThrow({ where: { topicId: topic.id } });
+
+    await expect(undoLastReview(attacker.id, topic.id)).rejects.toThrow("Tópico não encontrado.");
+    await removeFromReview(attacker.id, topic.id);
+
+    const after = await db.reviewState.findUniqueOrThrow({ where: { topicId: topic.id } });
+    expect(memory(after)).toEqual(memory(before));
+    expect(after.due.getTime()).toBe(before.due.getTime());
+    expect(await db.reviewLog.count({ where: { topicId: topic.id } })).toBe(1);
   });
 });

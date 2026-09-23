@@ -6,6 +6,8 @@ import { ChevronRight, Trash2 } from "lucide-react";
 import type { ContentStatus, Topic, ReviewState } from "@prisma/client";
 import { updateTopicStatusAction, deleteTopicAction } from "../actions";
 import { AddTopicForm } from "./add-topic-form";
+import { ConfirmDeletePanel } from "@/components/ui/delete-buttons";
+import { topicDeletionDetails } from "@/lib/deletion-copy";
 import { cn } from "@/lib/utils";
 
 type TopicWithChildren = Topic & {
@@ -42,6 +44,7 @@ export function TopicTree({
 
 function TopicRow({ subjectId, topic }: { subjectId: string; topic: TopicWithChildren }) {
   const [expanded, setExpanded] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [pending, startTransition] = useTransition();
   const hasChildren = topic.children.length > 0;
 
@@ -80,35 +83,70 @@ function TopicRow({ subjectId, topic }: { subjectId: string; topic: TopicWithChi
           ))}
         </select>
         <button
-          onClick={() => startTransition(() => deleteTopicAction(topic.id, subjectId))}
+          onClick={() => setConfirmingDelete(true)}
           disabled={pending}
           className="text-muted-foreground transition-[color,transform] duration-150 hover:scale-110 hover:text-danger active:scale-95"
-          aria-label="Excluir tópico"
+          aria-label={`Excluir tópico "${topic.name}"`}
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>
+
+      {confirmingDelete && (
+        <div className="px-3 pb-2">
+          <ConfirmDeletePanel
+            question={`Excluir "${topic.name}"?`}
+            details={topicDeletionDetails(topic.children.length, topic.reviewState !== null)}
+            onDelete={() => deleteTopicAction(topic.id, subjectId)}
+            onCancel={() => setConfirmingDelete(false)}
+          />
+        </div>
+      )}
 
       {expanded && (
         <div className="animate-fade-in-up border-t border-border px-3 py-2 pl-9">
           {hasChildren && (
             <ul className="stagger mb-2 space-y-1">
               {topic.children.map((child) => (
-                <li
-                  key={child.id}
-                  className="flex items-center justify-between rounded-[var(--radius-sm)] bg-surface-2 px-2.5 py-1.5 text-sm transition-colors duration-150 hover:bg-surface"
-                >
-                  <Link href={`/topics/${child.id}`} className="truncate text-foreground hover:text-accent hover:underline">
-                    {child.name}
-                  </Link>
-                  <span className={cn("rounded-full px-2 py-0.5 text-xs", statusConfig[child.status].className)}>
-                    {statusConfig[child.status].label}
-                  </span>
-                </li>
+                <SubtopicRow key={child.id} subjectId={subjectId} topic={child} />
               ))}
             </ul>
           )}
           <AddTopicForm subjectId={subjectId} parentId={topic.id} />
+        </div>
+      )}
+    </li>
+  );
+}
+
+function SubtopicRow({ subjectId, topic }: { subjectId: string; topic: Topic }) {
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  return (
+    <li className="rounded-[var(--radius-sm)] bg-surface-2 text-sm transition-colors duration-150 hover:bg-surface">
+      <div className="flex items-center gap-2 px-2.5 py-1.5">
+        <Link href={`/topics/${topic.id}`} className="flex-1 truncate text-foreground hover:text-accent hover:underline">
+          {topic.name}
+        </Link>
+        <span className={cn("rounded-full px-2 py-0.5 text-xs", statusConfig[topic.status].className)}>
+          {statusConfig[topic.status].label}
+        </span>
+        <button
+          onClick={() => setConfirmingDelete(true)}
+          className="text-muted-foreground transition-[color,transform] duration-150 hover:scale-110 hover:text-danger active:scale-95"
+          aria-label={`Excluir subtópico "${topic.name}"`}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      {confirmingDelete && (
+        <div className="px-2.5 pb-2">
+          <ConfirmDeletePanel
+            question={`Excluir "${topic.name}"?`}
+            details={topicDeletionDetails(0, true)}
+            onDelete={() => deleteTopicAction(topic.id, subjectId)}
+            onCancel={() => setConfirmingDelete(false)}
+          />
         </div>
       )}
     </li>

@@ -1,13 +1,15 @@
 # StudyOS — Project Status
 
-Last updated: 2026-09-14
+Last updated: 2026-09-23
 
 ## Fase atual
 
 Todas as fases de produto (1–21) concluídas. Fases 24 (segurança), 25
 (polimento visual) e a migração pra Supabase (parte da Fase 22)
-concluídas. Restam: Fase 23 (mais testes), offline/sync de verdade, e
-auditoria final (Fase 26).
+concluídas, mais o sistema de animações (2026-09-14) e a Fase 27
+(exclusões e desfazer, 2026-09-23). Próximo: personalização (ver
+"Em andamento"). Restam também: Fase 23 (mais testes), offline/sync de
+verdade, e auditoria final (Fase 26).
 
 ## Migração para Supabase (2026-09-14)
 
@@ -381,8 +383,45 @@ deploy feito no Vercel — `https://studyos-nine-ochre.vercel.app`.
     390px ("Em" / "andamento" em duas linhas). Trocado para rolagem
     horizontal.
 
+- **Animações (2026-09-14)**: keyframes + `.stagger`/`.hover-lift`/
+  `.skeleton` em `globals.css`, `PageTransition` no shell, `loading.tsx`
+  com skeleton em toda rota com dados. Respeita `prefers-reduced-motion`.
+
+- **Fase 27 — Exclusões e desfazer (2026-09-23)**: pedido do usuário —
+  "não tem muitas opções de exclusão quando erro". Antes: tópico e tarefa
+  excluíam sem confirmação nenhuma; subtópico, sessão de estudo e nota de
+  revisão não tinham como excluir/desfazer. Agora, dois padrões só (ver
+  `CLAUDE.md`):
+  - **Excluir com "Desfazer"** (tarefa, fonte, sessão, vínculo de deck,
+    prova direto da lista): some na hora, só vai pro servidor quando o
+    aviso de 6s expira/fecha. Desfazer não precisa recriar nada.
+  - **Excluir com confirmação que diz o impacto** (matéria, tópico,
+    subtópico, remover da revisão): ex. "Isso apaga 2 tópicos e 1 prova.
+    As horas estudadas continuam nas estatísticas."
+  - **Sessões de estudo**: editar duração e excluir, em Sessão →
+    Atividade recente (não pra eventos do Anki, que o sync reescreve).
+  - **Revisão**: "Desfazer" logo após avaliar na fila, e na página do
+    tópico (última avaliação do histórico); "Remover da revisão" apaga o
+    estado FSRS + histórico e o tópico volta pra "iniciar revisão".
+  - **Bug pego pelo teste unitário antes de ir pro ar**: a primeira versão
+    do "desfazer avaliação" assumia que o `ReviewLog` guarda o estado
+    *depois* da avaliação — mas o ts-fsrs guarda o de *antes* (só nossa
+    coluna `state` é o de depois). Reescrito sobre o `rollback` oficial do
+    ts-fsrs; `reviews.test.ts` prova que o estado de memória volta
+    exatamente ao anterior (incluindo `lapses`) e que outro usuário não
+    consegue desfazer/remover revisões alheias. `study-events.test.ts`
+    cobre o mesmo pra editar/excluir sessões.
+  - Testes: `e2e/deletions.spec.ts` (5 cenários), `tasks.spec.ts`
+    atualizado pro aviso de desfazer. Rodados contra um **Postgres 16
+    local** (disponível no container da sessão na nuvem — não mexe no
+    Supabase): 17/17 e2e + 9/9 unitários passando, `tsc`/`lint`/`build`
+    limpos. Visual conferido em 390px, claro e escuro.
+
 ## Em andamento / próximos passos (ordem planejada)
 
+0. **Personalização** (pedido do usuário, plano aguardando aprovação):
+   foto/capa por matéria, fundo e cor de destaque do app, meta do mês,
+   escolher o que aparece na tela inicial.
 1. Fase 23 — mais testes (cobertura unitária além do caso de segurança;
    os 12 specs e2e já cobrem os fluxos principais de cada fase)
 2. Fase 22 (resto) — offline/sync de verdade (o banco já é Postgres real;
@@ -407,6 +446,16 @@ deploy feito no Vercel — `https://studyos-nine-ochre.vercel.app`.
 
 ## Bugs conhecidos
 
-Nenhum no momento. `npx tsc --noEmit`, `npm run build`, `npm run test:e2e`
+- **Curva "sem a última revisão" usa a estabilidade errada** (pré-existente,
+  achado na Fase 27, ainda não corrigido): `topics/[id]/page.tsx` pega
+  `logs[length - 2].stability` achando que o log guarda o estado *depois*
+  da avaliação; como guarda o de *antes*, a estabilidade anterior à última
+  revisão é `logs[length - 1].stability`. A linha tracejada hoje mostra a
+  curva de duas revisões atrás. Correção de uma linha, aguardando o ok do
+  usuário.
+- `e2e/global-teardown.ts` não lê o `.env` (só funciona com
+  `DATABASE_URL` exportada no shell).
+
+Fora isso, nenhum. `npx tsc --noEmit`, `npm run build`, `npm run test:e2e`
 (12 specs) e `npm run test:unit` passam limpos contra o Supabase real no
 último commit.

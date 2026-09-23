@@ -195,6 +195,29 @@ npx prisma studio                   # inspect the Supabase database
   consistent. See PROJECT_STATUS.md's Fase 25 notes for the full story,
   including the narrower edge case (rapid-fire automation navigating away
   mid-save) that's understood but not specifically engineered around.
+- **Deleting things: two patterns, pick by blast radius**
+  (`src/components/ui/delete-buttons.tsx`). Small self-contained rows
+  (task, source, study session, deck link, exam in the list) use
+  `UndoableDeleteButton`: the row hides immediately and the server action
+  only runs when the "Desfazer" toast expires or is closed (×) —
+  `UndoToastProvider` in the `(app)` layout owns the timers, so undo never
+  has to rebuild a deleted row and its cascades. Server-rendered rows wrap
+  in `HideIfPendingDelete`; client rows call `useUndoToast().isPendingDelete`.
+  Anything that cascades into a lot of other data (subject, topic, removing
+  a topic from review) uses `ConfirmDeleteButton`/`ConfirmDeletePanel`
+  with copy from `src/lib/deletion-copy.ts` that says what goes AND what
+  stays (study hours always stay — SetNull). Deleting from the item's own
+  page redirects inside the server action (`deleteSubjectAction`,
+  `deleteTopicFromDetailAction`, `deleteExamFromDetailAction`), never
+  `router.push` after it — revalidating first re-renders the now-deleted
+  page as a 404. In e2e, click "Fechar aviso" to commit an undoable delete
+  instead of waiting out the 6s window. Anki-sourced `StudyEvent`s are
+  not editable/deletable (the next sync rewrites the day anyway).
+- **FSRS `ReviewLog` stores the card as it was BEFORE the grade**
+  (stability, difficulty, scheduled days — that's how ts-fsrs builds its
+  log), except our `state` column, which `gradeReview` fills with the
+  state AFTER it. `undoLastReview` relies on this via ts-fsrs's own
+  `rollback`; read its comment before touching either.
 - **Mobile bottom nav shows only `primary: true` items from
   `nav-items.ts` (currently 4) plus a "Mais" button** that opens a sheet
   with the rest — cramming all ~10 sections into one bottom bar overflows

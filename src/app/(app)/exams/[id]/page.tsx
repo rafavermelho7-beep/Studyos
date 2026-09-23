@@ -7,7 +7,8 @@ import { getExam } from "@/server/services/exams";
 import { getSubject } from "@/server/services/subjects";
 import { computeExamPrep } from "@/lib/exam-prep";
 import { ExamTopicsManager } from "./exam-topics-manager";
-import { DeleteExamButton } from "./delete-exam-button";
+import { ConfirmDeleteButton } from "@/components/ui/delete-buttons";
+import { deleteExamFromDetailAction } from "../actions";
 
 export async function generateMetadata({
   params,
@@ -41,7 +42,7 @@ export default async function ExamDetailPage({
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 md:px-6">
-      <div className="mb-6 flex items-start justify-between gap-4">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: exam.subject.color }} />
@@ -53,7 +54,14 @@ export default async function ExamDetailPage({
             {exam.location && ` · ${exam.location}`}
           </p>
         </div>
-        <DeleteExamButton examId={exam.id} />
+        <div className="max-w-sm flex-none">
+          <ConfirmDeleteButton
+            label="Excluir prova"
+            question={`Excluir "${exam.name}"?`}
+            details="Os tópicos continuam na matéria; só a prova e a lista de conteúdos dela são apagadas."
+            onDelete={deleteExamFromDetailAction.bind(null, exam.id)}
+          />
+        </div>
       </div>
 
       <div className="stagger grid grid-cols-2 gap-3">

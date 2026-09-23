@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { parseISO } from "date-fns";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/session";
@@ -38,6 +39,12 @@ export async function deleteExamAction(examId: string) {
   await deleteExam(user.id, examId);
   revalidatePath("/exams");
   revalidatePath("/dashboard");
+}
+
+/** Same, from the exam's own page — redirects server-side (see deleteSubjectAction). */
+export async function deleteExamFromDetailAction(examId: string) {
+  await deleteExamAction(examId);
+  redirect("/exams");
 }
 
 export async function addExamTopicAction(examId: string, topicId: string) {

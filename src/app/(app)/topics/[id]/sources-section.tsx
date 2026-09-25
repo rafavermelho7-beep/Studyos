@@ -16,7 +16,6 @@ import { useUndoToast } from "@/components/ui/undo-toast";
 
 const typeOptions: { value: string; label: string }[] = [
   { value: "SANARFLIX", label: "SanarFlix" },
-  { value: "ANKI", label: "Anki" },
   { value: "YOUTUBE", label: "YouTube" },
   { value: "PDF", label: "PDF" },
   { value: "BOOK", label: "Livro" },

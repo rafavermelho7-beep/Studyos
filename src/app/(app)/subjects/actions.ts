@@ -8,10 +8,15 @@ import {
   createSubject,
   updateSubject,
   deleteSubject,
+  setSubjectEmoji,
+  applySuggestedEmojis,
 } from "@/server/services/subjects";
 import { createTopic, updateTopic, deleteTopic } from "@/server/services/topics";
 import { removeSubjectCover, setSubjectCover } from "@/server/services/images";
 import { readUploadedImage } from "@/lib/upload";
+import { lessonFilePathsForSubject } from "@/server/services/lessons";
+import { getFileStorage } from "@/server/storage";
+import { requestOrigin } from "@/lib/request-origin";
 
 const quickCreateSchema = z.object({
   name: z.string().trim().min(1, "Informe um nome").max(120),
@@ -63,7 +68,16 @@ export async function updateSubjectAction(subjectId: string, formData: FormData)
 // just deleted (a flash of 404) before the push lands.
 export async function deleteSubjectAction(subjectId: string) {
   const user = await requireUser();
+  // Collected first: the delete cascades the attachment rows away.
+  const lessonFiles = await lessonFilePathsForSubject(user.id, subjectId);
   await deleteSubject(user.id, subjectId);
+  if (lessonFiles.length > 0) {
+    try {
+      await getFileStorage(await requestOrigin()).remove(lessonFiles);
+    } catch (error) {
+      console.error("[subjects] failed to remove lesson files", error);
+    }
+  }
   revalidatePath("/subjects");
   revalidatePath("/dashboard");
   redirect("/subjects");
@@ -135,4 +149,18 @@ function revalidateSubjectCover(subjectId: string) {
   revalidatePath(`/subjects/${subjectId}`);
   revalidatePath("/subjects");
   revalidatePath("/dashboard");
+}
+
+export async function setSubjectEmojiAction(subjectId: string, emoji: string | null) {
+  const user = await requireUser();
+  await setSubjectEmoji(user.id, subjectId, emoji);
+  revalidateSubjectCover(subjectId);
+}
+
+export async function applySuggestedEmojisAction() {
+  const user = await requireUser();
+  const count = await applySuggestedEmojis(user.id);
+  revalidatePath("/subjects", "layout");
+  revalidatePath("/dashboard");
+  return count;
 }

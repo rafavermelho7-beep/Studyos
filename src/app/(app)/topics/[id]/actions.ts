@@ -11,7 +11,6 @@ import {
 } from "@/server/services/sources";
 
 const sourceTypes = [
-  "ANKI",
   "SANARFLIX",
   "YOUTUBE",
   "PDF",

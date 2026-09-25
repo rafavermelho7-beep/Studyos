@@ -22,6 +22,7 @@ export type FocusRecommendation = {
   subjectId: string;
   subjectName: string;
   subjectColor: string;
+  subjectEmoji: string | null;
   score: number;
   urgency: "alta" | "media" | "baixa";
   reasons: FocusReason[];
@@ -36,7 +37,7 @@ export async function getFocusRecommendations(
   const topics = await db.topic.findMany({
     where: { userId },
     include: {
-      subject: { select: { id: true, name: true, color: true, priority: true } },
+      subject: { select: { id: true, name: true, color: true, emoji: true, priority: true } },
       reviewState: true,
       examTopics: { include: { exam: { select: { date: true } } } },
     },
@@ -107,6 +108,7 @@ export async function getFocusRecommendations(
       subjectId: topic.subjectId,
       subjectName: topic.subject.name,
       subjectColor: topic.subject.color,
+      subjectEmoji: topic.subject.emoji,
       score,
       urgency: score >= 50 ? "alta" : score >= 25 ? "media" : ("baixa" as const),
       reasons,

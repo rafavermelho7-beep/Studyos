@@ -33,6 +33,12 @@ model User {
   email        String   @unique
   passwordHash String
 
+  // LEGACY (Anki integration removed 2026-09-25, at the user's request):
+  // apiKeyId/apiKeyHash and the AnkiDeckLink table are no longer read or
+  // written by any code. Kept only because migrations must stay additive
+  // while preview deploys share the production database — drop them in a
+  // later, standalone migration once no deployed code references them.
+  //
   // API key for the local Anki connector (brief §26) to authenticate as
   // this user without a browser session cookie. Shaped like
   // "sk_live_<apiKeyId>_<secret>": apiKeyId is public and indexed so a
@@ -76,6 +82,8 @@ model User {
   reviewLogs    ReviewLog[]
   ankiDeckLinks AnkiDeckLink[]
   images        Image[]       @relation("ImageOwner")
+  lessons           Lesson[]
+  lessonAttachments LessonAttachment[]
   onboarding    OnboardingState?
 }
 
@@ -114,6 +122,10 @@ model Subject {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // One emoji from the curated list in src/lib/subject-emojis.ts (validated
+  // on write). Null = show the color dot.
+  emoji String?
+
   // Optional cover photo (Settings-free: set from the subject's own page).
   coverImageId String? @unique
   coverImage   Image?  @relation("SubjectCover", fields: [coverImageId], references: [id], onDelete: SetNull)
@@ -125,6 +137,7 @@ model Subject {
 
   studyEvents  StudyEvent[]
   studySources StudySource[]
+  lessons      Lesson[]
   ankiLinks    AnkiDeckLink[]
 
   @@index([userId])
@@ -153,6 +166,7 @@ model Topic {
   studyEvents  StudyEvent[]
   studySources StudySource[]
   examTopics   ExamTopic[]
+  lessonTopics LessonTopic[]
   reviewState  ReviewState?
   reviewLogs   ReviewLog[]
   ankiLinks    AnkiDeckLink[]
@@ -442,4 +456,60 @@ model Image {
   userBackgroundOf User?    @relation("UserBackground")
 
   @@index([userId])
+}
+
+// ─── Aulas: a per-subject class diary with its materials ─────────────────
+// What was taught on a given day, plus the slides/PDFs and links from it.
+// Files live in Supabase Storage (private bucket "lesson-files"), NOT in
+// Postgres like the small Image rows: slide decks are 5-50 MB each. The
+// browser uploads straight to Storage through a short-lived signed URL
+// (Vercel caps request bodies at 4.5 MB), then the server confirms the
+// object exists and records its real size. See src/server/storage/.
+model Lesson {
+  id        String   @id @default(cuid())
+  userId    String
+  subjectId String
+  date      DateTime // the class day (date-only, parsed with parseISO)
+  title     String
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject     Subject            @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  attachments LessonAttachment[]
+  topics      LessonTopic[]
+
+  @@index([userId, date])
+  @@index([subjectId])
+}
+
+model LessonAttachment {
+  id          String   @id @default(cuid())
+  userId      String
+  lessonId    String
+  kind        String // "FILE" | "LINK"
+  name        String
+  url         String? // LINK only (http/https)
+  storagePath String?  @unique // FILE only: "<userId>/<lessonId>/<id>-<name>"
+  contentType String?
+  byteSize    Int?
+  createdAt   DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([lessonId])
+}
+
+model LessonTopic {
+  lessonId String
+  topicId  String
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  topic  Topic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([lessonId, topicId])
+  @@index([topicId])
 }

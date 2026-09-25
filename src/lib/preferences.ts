@@ -42,6 +42,7 @@ export const DASHBOARD_BLOCKS = {
   goal: "Meta do mês",
   focus: "Seu foco agora",
   neglected: "Matérias negligenciadas",
+  lessons: "Últimas aulas",
   subjects: "Suas matérias",
 } as const;
 export type DashboardBlock = keyof typeof DASHBOARD_BLOCKS;

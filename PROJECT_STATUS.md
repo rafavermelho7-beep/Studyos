@@ -480,6 +480,44 @@ deploy feito no Vercel — `https://studyos-nine-ochre.vercel.app`.
   explícito no início do `vercel-build`; reproduzido localmente (cliente
   antigo → mesmos erros TS; script novo → build limpo).
 
+- **Fase 29 — Anki removido + emojis por matéria (2026-09-25)**:
+  - Integração com o Anki removida a pedido do usuário (Configurações,
+    rota da API, conector, testes). Tabelas antigas ficam no banco sem uso
+    (regra de migrations aditivas); sessões já importadas continuam nas
+    estatísticas e agora podem ser editadas/excluídas.
+  - Emoji por matéria: lista curada cobrindo o curso inteiro (ciclo
+    básico, clínica, cirurgia, mulher e criança, mente/sociedade/ética,
+    urgência/internato/carreira), sugestão automática pelo nome, seletor
+    com busca na página da matéria, botão "aplicar sugestões" para
+    matérias antigas; aparece nas listas, no "Seu foco agora", na revisão,
+    em provas e tarefas.
+  - IA de resumos: **cancelada pelo usuário** — não implementar.
+
+- **Fase 30 — Aulas (2026-09-25)**: diário de aulas por matéria. Cada
+  aula tem data, título, anotações, **slides/PDFs/Word/fotos** (até 50 MB
+  cada, 1 GB no total, com indicador de uso), **links** e os **tópicos**
+  que cobriu. Página "Aulas" no menu com todas as aulas, seção na página
+  da matéria, bloco "Últimas aulas" no Início e "Materiais das aulas" na
+  página de cada tópico marcado. PDF e imagem abrem direto; PowerPoint e
+  Word são baixados.
+  - Arquivos no **Supabase Storage** (bucket privado criado pelo app),
+    enviados direto do navegador por URL assinada — o Vercel limita
+    requisições a 4,5 MB. O servidor confere o que realmente chegou
+    antes de registrar. Chave nova não precisa ser criada: usa a
+    `SUPABASE_SECRET_KEY` que já está no Vercel.
+  - **Ainda não testado contra o Supabase real** (este ambiente não tem
+    as chaves). Dev/e2e usam um armazenamento local que imita o
+    protocolo do Supabase; o cliente Supabase é o oficial (supabase-js).
+    Primeiro envio na versão de teste do Vercel = validação real.
+  - Bugs pegos pelos testes antes de subir: segredo de assinatura local
+    diferente entre módulos do Next (upload sempre falhava); Android
+    enviando PowerPoint sem tipo (agora deduzido pela extensão); data
+    formatada no fuso do navegador (um dia a menos).
+  - Testes: `e2e/lessons.spec.ts` (envio real, privacidade entre contas,
+    links, tópicos, exclusão apaga o arquivo) e `lessons.test.ts` (tipo,
+    tamanho, cota, caminho de outro usuário, tópicos de outra matéria).
+    24/24 e2e, 52/52 unitários, build limpo.
+
 ## Em andamento / próximos passos (ordem planejada)
 
 1. Fase 23 — mais testes (cobertura unitária além do caso de segurança;

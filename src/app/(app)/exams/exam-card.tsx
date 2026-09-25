@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { UndoableDeleteButton } from "@/components/ui/delete-buttons";
 import { HideIfPendingDelete } from "@/components/ui/undo-toast";
 import { deleteExamAction } from "./actions";
+import { SubjectMark } from "@/components/ui/subject-mark";
 
 type ExamCardProps = {
   exam: {
@@ -13,7 +14,7 @@ type ExamCardProps = {
     name: string;
     date: Date;
     location: string | null;
-    subject: { name: string; color: string };
+    subject: { name: string; color: string; emoji: string | null };
     topics: ExamTopicStatus[];
   };
 };
@@ -29,7 +30,7 @@ export function ExamCard({ exam }: ExamCardProps) {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: exam.subject.color }} />
+                <SubjectMark color={exam.subject.color} emoji={exam.subject.emoji} />
                 {exam.subject.name}
               </div>
               <p className="mt-0.5 truncate font-medium text-foreground">{exam.name}</p>

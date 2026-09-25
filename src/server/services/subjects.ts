@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
+import { isSubjectEmoji, suggestSubjectEmoji } from "@/lib/subject-emojis";
 
 export function listSubjects(userId: string) {
   return db.subject.findMany({
@@ -36,6 +37,7 @@ export type CreateSubjectInput = {
   color?: string;
 };
 
+/** New subjects start with the emoji their name suggests ("Cardiologia" → 🫀); changeable any time. */
 export function createSubject(userId: string, input: CreateSubjectInput) {
   return db.subject.create({
     data: {
@@ -46,6 +48,7 @@ export function createSubject(userId: string, input: CreateSubjectInput) {
       semester: input.semester || null,
       priority: input.priority ?? 2,
       color: input.color ?? "#5b5bd6",
+      emoji: suggestSubjectEmoji(input.name),
     },
   });
 }
@@ -74,12 +77,31 @@ export async function deleteSubject(userId: string, subjectId: string) {
 export async function getSubjectDeletionImpact(userId: string, subjectId: string) {
   // Topics, exams and review history cascade away; tasks, sources and
   // study events are kept with their subject set to null (schema onDelete).
-  const [topics, exams, reviews, studyEvents, tasks] = await Promise.all([
+  const [topics, exams, reviews, studyEvents, tasks, lessons] = await Promise.all([
     db.topic.count({ where: { userId, subjectId } }),
     db.exam.count({ where: { userId, subjectId } }),
     db.reviewState.count({ where: { userId, topic: { subjectId } } }),
     db.studyEvent.count({ where: { userId, subjectId } }),
     db.task.count({ where: { userId, subjectId } }),
+    db.lesson.count({ where: { userId, subjectId } }),
   ]);
-  return { topics, exams, reviews, studyEvents, tasks };
+  return { topics, exams, reviews, studyEvents, tasks, lessons };
+}
+
+export async function setSubjectEmoji(userId: string, subjectId: string, emoji: string | null) {
+  if (emoji !== null && !isSubjectEmoji(emoji)) throw new Error("Emoji inválido.");
+  const result = await db.subject.updateMany({ where: { id: subjectId, userId }, data: { emoji } });
+  if (result.count === 0) throw new Error("Matéria não encontrada.");
+}
+
+/** Fills in the suggested emoji for every subject that has none yet; returns how many changed. */
+export async function applySuggestedEmojis(userId: string) {
+  const subjects = await db.subject.findMany({ where: { userId, emoji: null }, select: { id: true, name: true } });
+  const updates = subjects
+    .map((s) => ({ id: s.id, emoji: suggestSubjectEmoji(s.name) }))
+    .filter((u): u is { id: string; emoji: string } => u.emoji !== null);
+  await db.$transaction(
+    updates.map((u) => db.subject.updateMany({ where: { id: u.id, userId, emoji: null }, data: { emoji: u.emoji } })),
+  );
+  return updates.length;
 }

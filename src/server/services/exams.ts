@@ -6,7 +6,7 @@ export function listExams(userId: string) {
     where: { userId },
     orderBy: { date: "asc" },
     include: {
-      subject: { select: { id: true, name: true, color: true } },
+      subject: { select: { id: true, name: true, color: true, emoji: true } },
       topics: { include: { topic: { select: { id: true, name: true, status: true } } } },
     },
   });
@@ -16,7 +16,7 @@ export function getExam(userId: string, examId: string) {
   return db.exam.findFirst({
     where: { id: examId, userId },
     include: {
-      subject: { select: { id: true, name: true, color: true } },
+      subject: { select: { id: true, name: true, color: true, emoji: true } },
       topics: { include: { topic: { select: { id: true, name: true, status: true } } } },
     },
   });

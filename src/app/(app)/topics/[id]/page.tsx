@@ -15,6 +15,9 @@ import { Badge } from "@/components/ui/badge";
 import { ForgettingCurveChart } from "./forgetting-curve-chart";
 import { StartReviewButton } from "./start-review-button";
 import { SourcesSection } from "./sources-section";
+import { listLessonsForTopic } from "@/server/services/lessons";
+import { fileIcon } from "@/lib/file-icons";
+import { Link2 } from "lucide-react";
 import { RemoveFromReviewButton, UndoLastReviewButton } from "./review-controls";
 import { ConfirmDeleteButton } from "@/components/ui/delete-buttons";
 import { topicDeletionDetails } from "@/lib/deletion-copy";
@@ -49,7 +52,10 @@ export default async function TopicDetailPage({
   const topic = await getTopic(user.id, id);
   if (!topic) notFound();
 
-  const logs = topic.reviewState ? await getTopicReviewHistory(user.id, topic.id) : [];
+  const [logs, lessons] = await Promise.all([
+    topic.reviewState ? getTopicReviewHistory(user.id, topic.id) : Promise.resolve([]),
+    listLessonsForTopic(user.id, topic.id),
+  ]);
   const previousStability = stabilityBeforeLastReview(logs);
 
   const hasCurve = topic.reviewState && topic.reviewState.lastReview;
@@ -113,6 +119,44 @@ export default async function TopicDetailPage({
               A linha tracejada mostra como a retenção teria caído sem sua última revisão.
             </p>
           )}
+        </div>
+      )}
+
+      {lessons.length > 0 && (
+        <div className="mt-6">
+          <h2 className="mb-2 text-sm font-semibold text-foreground">Materiais das aulas</h2>
+          <ul className="stagger space-y-2">
+            {lessons.map((lesson) => (
+              <li key={lesson.id} className="rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2.5">
+                <Link href={`/lessons/${lesson.id}`} className="text-sm font-medium text-foreground hover:text-accent hover:underline">
+                  {lesson.title}
+                </Link>
+                <span className="ml-2 text-xs text-muted-foreground">
+                  {format(new Date(lesson.date), "d 'de' MMM", { locale: ptBR })}
+                </span>
+                {lesson.attachments.length > 0 && (
+                  <ul className="mt-1.5 space-y-1">
+                    {lesson.attachments.map((a) => {
+                      const Icon = a.kind === "LINK" ? Link2 : fileIcon(a.contentType);
+                      return (
+                        <li key={a.id}>
+                          <a
+                            href={a.kind === "LINK" ? a.url! : `/api/lesson-files/${a.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-accent"
+                          >
+                            <Icon className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">{a.name}</span>
+                          </a>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

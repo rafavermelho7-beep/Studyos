@@ -59,18 +59,16 @@ export async function getTodayStudySeconds(userId: string): Promise<number> {
 // Correcting a mistaken record (timer left running, logged to the wrong
 // subject) — not an aggregate counter, so the "events, not aggregates"
 // rule still holds: stats keep deriving from whatever rows remain.
-// ANKI rows are off-limits: /api/anki/sync replaces the whole day on every
-// sync, so an edit would silently come back. Fix those in Anki instead.
 
 export async function deleteStudyEvent(userId: string, eventId: string) {
-  const result = await db.studyEvent.deleteMany({ where: { id: eventId, userId, source: { not: "ANKI" } } });
+  const result = await db.studyEvent.deleteMany({ where: { id: eventId, userId } });
   if (result.count === 0) throw new Error("Sessão não encontrada.");
 }
 
 export async function updateStudyEventDuration(userId: string, eventId: string, durationSec: number) {
   if (durationSec <= 0) throw new Error("Duração inválida.");
   const event = await db.studyEvent.findFirst({
-    where: { id: eventId, userId, source: { not: "ANKI" } },
+    where: { id: eventId, userId },
     select: { startedAt: true },
   });
   if (!event) throw new Error("Sessão não encontrada.");

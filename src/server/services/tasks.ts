@@ -4,12 +4,12 @@ import { db } from "@/lib/db";
 import type { Task, TaskPriority, TaskStatus } from "@prisma/client";
 
 export type TaskWithMeta = Task & {
-  subject: { id: string; name: string; color: string } | null;
+  subject: { id: string; name: string; color: string; emoji: string | null } | null;
   topic: { id: string; name: string } | null;
   overdue: boolean;
 };
 
-function withOverdue(task: Task & { subject: { id: string; name: string; color: string } | null; topic: { id: string; name: string } | null }): TaskWithMeta {
+function withOverdue(task: Task & { subject: { id: string; name: string; color: string; emoji: string | null } | null; topic: { id: string; name: string } | null }): TaskWithMeta {
   return {
     ...task,
     // A task due "today" isn't overdue until the whole day has passed —
@@ -30,7 +30,7 @@ export async function listTasks(
     },
     orderBy: [{ dueDate: "asc" }, { priority: "desc" }, { createdAt: "desc" }],
     include: {
-      subject: { select: { id: true, name: true, color: true } },
+      subject: { select: { id: true, name: true, color: true, emoji: true } },
       topic: { select: { id: true, name: true } },
     },
   });

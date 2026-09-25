@@ -5,12 +5,18 @@ import { requireUser } from "@/lib/auth/session";
 import { listSubjects } from "@/server/services/subjects";
 import { QuickCreateSubject } from "./quick-create-subject";
 import { SubjectAvatar } from "@/components/ui/subject-avatar";
+import { ApplyEmojisButton } from "./apply-emojis-button";
+import { suggestSubjectEmoji } from "@/lib/subject-emojis";
 
 export const metadata: Metadata = { title: "Matérias · StudyOS" };
 
 export default async function SubjectsPage() {
   const user = await requireUser();
   const subjects = await listSubjects(user.id);
+  const suggestions = subjects
+    .filter((s) => !s.emoji)
+    .map((s) => suggestSubjectEmoji(s.name))
+    .filter((e): e is string => e !== null);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 md:px-6">
@@ -26,6 +32,7 @@ export default async function SubjectsPage() {
       </div>
 
       <QuickCreateSubject />
+      {suggestions.length > 0 && <ApplyEmojisButton preview={suggestions} />}
 
       {subjects.length === 0 ? (
         <div className="animate-fade-in-up mt-6 flex flex-col items-center rounded-[var(--radius-lg)] border border-dashed border-border py-16 text-center">

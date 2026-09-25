@@ -13,6 +13,8 @@ import { FocusCard } from "./focus-card";
 import { NeglectedSubjects } from "./neglected-subjects";
 import { MonthGoalCard } from "./month-goal-card";
 import { SubjectAvatar } from "@/components/ui/subject-avatar";
+import { listRecentLessons } from "@/server/services/lessons";
+import { LessonList } from "../lessons/lesson-list";
 import { monthGoalProgress } from "@/lib/month-goal";
 import { readPreferences, type DashboardBlock } from "@/lib/preferences";
 
@@ -35,7 +37,7 @@ export default async function DashboardPage() {
   const user = await requireUser();
   const prefs = readPreferences(user);
   const now = new Date();
-  const [subjects, tasks, todaySeconds, dueReviews, recommendations, neglected, monthSeconds] = await Promise.all([
+  const [subjects, tasks, todaySeconds, dueReviews, recommendations, neglected, monthSeconds, recentLessons] = await Promise.all([
     listSubjects(user.id),
     listTasks(user.id),
     getTodayStudySeconds(user.id),
@@ -43,6 +45,7 @@ export default async function DashboardPage() {
     getFocusRecommendations(user.id, 5),
     getNeglectedSubjects(user.id),
     getStudySecondsThisMonth(user.id, now),
+    listRecentLessons(user.id, 3),
   ]);
   const firstName = (user.name ?? "").split(" ")[0] || undefined;
   const hour = now.getHours();
@@ -71,7 +74,7 @@ export default async function DashboardPage() {
 
   // One entry per block in lib/preferences' DASHBOARD_BLOCKS; the user's
   // Settings choose which show and in what order.
-  function renderBlock(id: DashboardBlock) {
+  function renderBlock(id: DashboardBlock): React.ReactNode {
     switch (id) {
       case "summary":
         return (
@@ -120,6 +123,18 @@ export default async function DashboardPage() {
         );
       case "focus":
         return recommendations.length > 0 ? <FocusCard top={recommendations[0]} rest={recommendations.slice(1)} /> : null;
+      case "lessons":
+        return recentLessons.length > 0 ? (
+          <div>
+            <div className="mb-2 flex items-baseline justify-between">
+              <h2 className="text-sm font-semibold text-foreground">Últimas aulas</h2>
+              <Link href="/lessons" className="text-xs font-medium text-accent hover:underline">
+                Ver todas
+              </Link>
+            </div>
+            <LessonList lessons={recentLessons} />
+          </div>
+        ) : null;
       case "neglected":
         return neglected.length > 0 ? <NeglectedSubjects subjects={neglected} /> : null;
       case "subjects":

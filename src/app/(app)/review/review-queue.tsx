@@ -4,6 +4,7 @@ import { useOptimistic, useTransition } from "react";
 import { gradeReviewAction, undoLastReviewAction } from "./actions";
 import { Badge } from "@/components/ui/badge";
 import { useUndoToast } from "@/components/ui/undo-toast";
+import { SubjectMark } from "@/components/ui/subject-mark";
 
 type DueItem = {
   id: string;
@@ -11,6 +12,7 @@ type DueItem = {
   topicName: string;
   subjectName: string;
   subjectColor: string;
+  subjectEmoji: string | null;
   retrievabilityPercent: number;
   isNew: boolean;
 };
@@ -62,7 +64,7 @@ export function ReviewQueue({ items }: { items: DueItem[] }) {
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: item.subjectColor }} />
+                <SubjectMark color={item.subjectColor} emoji={item.subjectEmoji} />
                 {item.subjectName}
               </div>
               <p className="truncate text-sm font-medium text-foreground">{item.topicName}</p>

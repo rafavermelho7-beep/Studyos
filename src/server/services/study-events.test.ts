@@ -12,9 +12,9 @@ async function makeUser(label: string) {
   return user;
 }
 
-function logHour(userId: string, source: "STUDYOS" | "ANKI" = "STUDYOS") {
+function logHour(userId: string) {
   const startedAt = new Date(Date.now() - 60 * 60 * 1000);
-  return logStudyEvent(userId, { source, startedAt, endedAt: new Date(), durationSec: 3600 });
+  return logStudyEvent(userId, { startedAt, endedAt: new Date(), durationSec: 3600 });
 }
 
 afterAll(async () => {
@@ -41,15 +41,6 @@ describe("correcting study events", () => {
     await expect(updateStudyEventDuration(attacker.id, event.id, 60)).rejects.toThrow("Sessão não encontrada.");
     const after = await db.studyEvent.findUniqueOrThrow({ where: { id: event.id } });
     expect(after.durationSec).toBe(3600);
-  });
-
-  it("leaves Anki-synced events alone (the next sync would overwrite the edit anyway)", async () => {
-    const user = await makeUser("anki");
-    const event = await logHour(user.id, "ANKI");
-
-    await expect(deleteStudyEvent(user.id, event.id)).rejects.toThrow();
-    await expect(updateStudyEventDuration(user.id, event.id, 60)).rejects.toThrow();
-    expect(await db.studyEvent.count({ where: { id: event.id } })).toBe(1);
   });
 
   it("deletes the caller's own event", async () => {

@@ -3,6 +3,7 @@ import { Play, Target } from "lucide-react";
 import type { FocusRecommendation } from "@/server/services/planning";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { SubjectMark } from "@/components/ui/subject-mark";
 
 const urgencyMeta = {
   alta: { label: "Alta prioridade", dot: "bg-danger", className: "bg-danger-soft text-danger", pulse: true },
@@ -40,10 +41,14 @@ export function FocusCard({ top, rest }: { top: FocusRecommendation; rest: Focus
       </div>
 
       <div className="relative mt-4 flex items-center gap-2.5">
-        <span className="h-3 w-3 shrink-0 rounded-full ring-4" style={{ backgroundColor: top.subjectColor, boxShadow: `0 0 0 4px color-mix(in srgb, ${top.subjectColor} 18%, transparent)` }} />
+        {top.subjectEmoji ? (
+          <SubjectMark color={top.subjectColor} emoji={top.subjectEmoji} size="lg" />
+        ) : (
+          <span className="h-3 w-3 shrink-0 rounded-full ring-4" style={{ backgroundColor: top.subjectColor, boxShadow: `0 0 0 4px color-mix(in srgb, ${top.subjectColor} 18%, transparent)` }} />
+        )}
         <p className="text-xl font-semibold tracking-tight text-foreground">{top.subjectName}</p>
       </div>
-      <p className="relative mt-0.5 pl-[22px] text-base text-muted-foreground">{top.topicName}</p>
+      <p className={cn("relative mt-0.5 text-base text-muted-foreground", top.subjectEmoji ? "pl-[34px]" : "pl-[22px]")}>{top.topicName}</p>
 
       {top.reasons.length > 0 && (
         <ul className="relative mt-4 flex flex-wrap gap-1.5">
@@ -81,7 +86,7 @@ export function FocusCard({ top, rest }: { top: FocusRecommendation; rest: Focus
                   className="flex items-center justify-between gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-sm transition-colors hover:bg-surface-2"
                 >
                   <span className="flex min-w-0 items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: item.subjectColor }} />
+                    <SubjectMark color={item.subjectColor} emoji={item.subjectEmoji} />
                     <span className="truncate text-foreground">{item.topicName}</span>
                   </span>
                   <span className="shrink-0 text-xs text-muted-foreground">

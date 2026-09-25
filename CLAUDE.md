@@ -44,9 +44,13 @@ the working reference for continuing development.
     this writing. Pinned to the last stable 6.x. Revisit later.
   - **Supabase's own Auth/Storage/Realtime client is NOT used anywhere.**
     `SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEY`/`SUPABASE_SECRET_KEY` in
-    `.env` are stored for possible future use (e.g. file storage) but
-    nothing reads them today — the app talks to Postgres directly through
-    Prisma, with its own auth (below).
+    `.env` are stored for possible future use but nothing reads them
+    today — the app talks to Postgres directly through Prisma, with its
+    own auth (below). **Photos (subject covers, app background) are NOT in
+    Supabase Storage either** — they're `Image` rows (bytea) in Postgres,
+    served only by `GET /api/images/[id]` after a session + ownership
+    check. Deliberate at personal scale; see the `Image` model comment
+    for the reasoning and when to revisit.
 - **Auth**: hand-rolled, not next-auth (still in beta after a long time)
   and not Supabase Auth either. bcrypt password hash
   (`src/lib/auth/password.ts`) + opaque DB-backed session token in an
@@ -101,6 +105,7 @@ the working reference for continuing development.
 ```
 npm run dev          # dev server, port 3000
 npm run build         # production build (must stay clean, no warnings)
+                      # (Vercel runs `vercel-build` instead = generate + migrate deploy + build)
 npx tsc --noEmit       # typecheck
 npm run lint           # eslint
 npm run test:e2e       # playwright e2e (spins its own server on :3100)
@@ -195,6 +200,71 @@ npx prisma studio                   # inspect the Supabase database
   consistent. See PROJECT_STATUS.md's Fase 25 notes for the full story,
   including the narrower edge case (rapid-fire automation navigating away
   mid-save) that's understood but not specifically engineered around.
+- **Deleting things: two patterns, pick by blast radius**
+  (`src/components/ui/delete-buttons.tsx`). Small self-contained rows
+  (task, source, study session, deck link, exam in the list) use
+  `UndoableDeleteButton`: the row hides immediately and the server action
+  only runs when the "Desfazer" toast expires or is closed (×) —
+  `UndoToastProvider` in the `(app)` layout owns the timers, so undo never
+  has to rebuild a deleted row and its cascades. Server-rendered rows wrap
+  in `HideIfPendingDelete`; client rows call `useUndoToast().isPendingDelete`.
+  Anything that cascades into a lot of other data (subject, topic, removing
+  a topic from review) uses `ConfirmDeleteButton`/`ConfirmDeletePanel`
+  with copy from `src/lib/deletion-copy.ts` that says what goes AND what
+  stays (study hours always stay — SetNull). Deleting from the item's own
+  page redirects inside the server action (`deleteSubjectAction`,
+  `deleteTopicFromDetailAction`, `deleteExamFromDetailAction`), never
+  `router.push` after it — revalidating first re-renders the now-deleted
+  page as a 404. In e2e, click "Fechar aviso" to commit an undoable delete
+  instead of waiting out the 6s window. Anki-sourced `StudyEvent`s are
+  not editable/deletable (the next sync rewrites the day anyway).
+- **FSRS `ReviewLog` stores the card as it was BEFORE the grade**
+  (stability, difficulty, scheduled days — that's how ts-fsrs builds its
+  log), except our `state` column, which `gradeReview` fills with the
+  state AFTER it. `undoLastReview` relies on this via ts-fsrs's own
+  `rollback`; read its comment before touching either.
+- **Personalization (Settings → Aparência)**: per-user `User.themeMode`,
+  `accentColor`, `homePage`, `monthlyGoalMinutes`, `dashboardOrder`/
+  `dashboardHidden`. Allowed values + zod schemas + fallbacks live in
+  `src/lib/preferences.ts` (unknown values read back as defaults, never
+  crash). Theme/accent are applied as `<html data-theme data-accent>` by
+  `AppearanceSync` (inline script for first paint + effect for client
+  navigation); CSS in `globals.css` (dark block written twice on purpose)
+  and `src/app/accents.css` — a new accent needs all three rules there
+  (`preferences.test.ts` enforces it) and a WCAG AA contrast check.
+  Chart colors come from the resolved CSS tokens (`use-chart-theme.ts`),
+  so they follow theme and accent with no palette copy. The dashboard is
+  a list of blocks rendered in the user's order (`renderBlock` in
+  `dashboard/page.tsx`); a new block goes in `DASHBOARD_BLOCKS` and shows
+  up for existing users automatically (`resolveDashboardLayout`).
+  Monthly goal progress is summed from `StudyEvent` at read time
+  (`getStudySecondsThisMonth` + pure `lib/month-goal.ts`).
+- **Photos**: pick → `compressImage` in the browser (resize + WebP/JPEG,
+  `lib/image-compress.ts`) → server action with FormData field `image`
+  (`lib/upload.ts`) → `services/images.ts`, which re-validates by magic
+  bytes (never the client's MIME type — no SVG/HTML ever stored) and a
+  2 MB cap (`serverActions.bodySizeLimit` is 3mb in `next.config.ts` for
+  headroom). Replacing or removing a photo, or deleting its subject,
+  deletes the `Image` row in the same transaction — never leave orphans.
+  `/api/images/[id]` answers 401 logged out, 404 for someone else's id
+  (not 403, so ids can't be probed), and uses `no-cache` + ETag so the
+  ownership check runs on every view but repeats cost only a 304.
+  Render with `next/image` + `unoptimized` (the optimizer can't fetch a
+  session-protected URL). UI: `PhotoPicker`, `SubjectAvatar`,
+  `AppBackground`.
+- **Migrations run on every Vercel build** (`vercel-build` script:
+  `prisma generate && prisma migrate deploy && next build`). The explicit
+  `prisma generate` is load-bearing: Vercel restores `node_modules` from
+  its build cache and `npm install` reports "up to date", so Prisma's
+  install-time generate never runs and the build type-checks against the
+  PREVIOUS schema's client — the first deploy with new User columns
+  failed exactly like that (migration applied fine, then TS2339 on every
+  new field). — including preview deploys of
+  unmerged branches, against the one shared Supabase database. So every
+  migration must be **additive and backward compatible** (new nullable or
+  defaulted columns/tables; no renames, drops or type changes in the same
+  release as the code that stops using them). Locally, `npm run build`
+  never touches the database.
 - **Mobile bottom nav shows only `primary: true` items from
   `nav-items.ts` (currently 4) plus a "Mais" button** that opens a sheet
   with the rest — cramming all ~10 sections into one bottom bar overflows
@@ -223,6 +293,7 @@ src/app/(auth)/               login/register pages
 src/app/(app)/                authenticated app shell + feature routes (one folder per nav item,
                                plus topics/[id] which isn't in the sidebar — reached via links)
 src/app/api/anki/sync/        connector-facing API route (Bearer API key, not a session cookie)
+src/app/api/images/[id]/      serves stored photos to their owner (session cookie)
 src/components/ui/            small hand-built primitives (button, input, card, badge) — no shadcn CLI, no Radix yet
 src/components/layout/        sidebar/bottom-nav/user-menu, shared app chrome
 connector/                    standalone Node script + README — NOT part of the Next.js app,

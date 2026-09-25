@@ -144,6 +144,73 @@ export async function gradeReview(userId: string, topicId: string, rating: Grade
   return { nextDue: card.due, state };
 }
 
+/**
+ * Undo the most recent grade on a topic ("apertei Errei sem querer"), via
+ * ts-fsrs's own `rollback`. Its ReviewLog captures the card as it was
+ * BEFORE the grade (stability, difficulty, scheduled days...) — except our
+ * `ReviewLog.state` column, which gradeReview fills with the state AFTER
+ * it. So the pre-grade state is the previous log's `state` (or NEW if this
+ * was the first grade). Returns false if there was nothing to undo.
+ */
+export async function undoLastReview(userId: string, topicId: string) {
+  // Same load-bearing ownership check as gradeReview: the update below is
+  // keyed on the globally-unique `topicId`.
+  const topic = await db.topic.findFirst({ where: { id: topicId, userId } });
+  if (!topic) throw new Error("Tópico não encontrado.");
+
+  const [current, logs] = await Promise.all([
+    db.reviewState.findFirst({ where: { userId, topicId } }),
+    db.reviewLog.findMany({
+      where: { userId, topicId },
+      orderBy: [{ reviewedAt: "desc" }, { id: "desc" }],
+      take: 2,
+    }),
+  ]);
+  const [last, previous] = logs;
+  if (!current || !last) return false;
+
+  const card = scheduler.rollback(toFsrsCard(current), {
+    rating: last.rating as Grade,
+    state: STATE_TO_FSRS[previous?.state ?? "NEW"],
+    due: last.due,
+    stability: last.stability,
+    difficulty: last.difficulty,
+    elapsed_days: last.elapsedDays,
+    last_elapsed_days: last.lastElapsedDays,
+    scheduled_days: last.scheduledDays,
+    learning_steps: 0,
+    review: last.reviewedAt,
+  });
+
+  await db.$transaction([
+    db.reviewLog.deleteMany({ where: { id: last.id, userId } }),
+    db.reviewState.updateMany({
+      where: { userId, topicId },
+      data: {
+        state: FSRS_TO_STATE[card.state],
+        due: card.due,
+        stability: card.stability,
+        difficulty: card.difficulty,
+        elapsedDays: card.elapsed_days,
+        scheduledDays: card.scheduled_days,
+        learningSteps: card.learning_steps,
+        reps: card.reps,
+        lapses: card.lapses,
+        lastReview: card.last_review ?? null,
+      },
+    }),
+  ]);
+  return true;
+}
+
+/** Take a topic out of spaced review entirely, history included — it goes back to "iniciar revisão". */
+export async function removeFromReview(userId: string, topicId: string) {
+  await db.$transaction([
+    db.reviewLog.deleteMany({ where: { userId, topicId } }),
+    db.reviewState.deleteMany({ where: { userId, topicId } }),
+  ]);
+}
+
 /** Estimated probability of recall right now, 0-1. Always an estimate — see brief §46/§19. */
 export function estimateRetrievability(row: ReviewState, now = new Date()): number {
   return scheduler.get_retrievability(toFsrsCard(row), now, false);
@@ -162,6 +229,18 @@ export function getTopicReviewHistory(userId: string, topicId: string) {
 
 export function getReviewState(userId: string, topicId: string) {
   return db.reviewState.findFirst({ where: { userId, topicId } });
+}
+
+/**
+ * The stability the topic had going INTO its most recent review — the
+ * input for the "sem a última revisão" curve. ts-fsrs logs capture the
+ * card before each grade, so that's simply the newest log's stability.
+ * (This used to read the second-newest log, which is the stability before
+ * the review two grades back.) Null until there are two reviews: before
+ * the first one there's no memory state to draw a curve from.
+ */
+export function stabilityBeforeLastReview(logsOldestFirst: { stability: number }[]): number | null {
+  return logsOldestFirst.length >= 2 ? logsOldestFirst[logsOldestFirst.length - 1].stability : null;
 }
 
 /**

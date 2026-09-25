@@ -46,9 +46,12 @@ export async function updateTopic(userId: string, topicId: string, input: Update
   if (result.count === 0) throw new Error("Tópico não encontrado.");
 }
 
+/** Returns the deleted topic's subjectId, so callers can send the user back to it. */
 export async function deleteTopic(userId: string, topicId: string) {
-  const result = await db.topic.deleteMany({ where: { id: topicId, userId } });
-  if (result.count === 0) throw new Error("Tópico não encontrado.");
+  const topic = await db.topic.findFirst({ where: { id: topicId, userId }, select: { subjectId: true } });
+  if (!topic) throw new Error("Tópico não encontrado.");
+  await db.topic.deleteMany({ where: { id: topicId, userId } });
+  return topic.subjectId;
 }
 
 export function listTopicsForUser(userId: string) {

@@ -4,6 +4,7 @@ import { BookOpen } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
 import { listSubjects } from "@/server/services/subjects";
 import { QuickCreateSubject } from "./quick-create-subject";
+import { SubjectAvatar } from "@/components/ui/subject-avatar";
 
 export const metadata: Metadata = { title: "Matérias · StudyOS" };
 
@@ -42,10 +43,7 @@ export default async function SubjectsPage() {
               className="group rounded-[var(--radius-lg)] border border-border bg-surface p-4 shadow-[var(--shadow-sm)] transition-[box-shadow,border-color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:border-border-strong hover:shadow-[var(--shadow-md)]"
             >
               <div className="flex items-start gap-3">
-                <span
-                  className="mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: subject.color }}
-                />
+                <SubjectAvatar subject={subject} className="mt-0.5" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-foreground">{subject.name}</p>
                   {subject.description && (

@@ -9,11 +9,16 @@ import {
   getTopicReviewHistory,
   getForgettingCurve,
   estimateRetrievability,
+  stabilityBeforeLastReview,
 } from "@/server/services/reviews";
 import { Badge } from "@/components/ui/badge";
 import { ForgettingCurveChart } from "./forgetting-curve-chart";
 import { StartReviewButton } from "./start-review-button";
 import { SourcesSection } from "./sources-section";
+import { RemoveFromReviewButton, UndoLastReviewButton } from "./review-controls";
+import { ConfirmDeleteButton } from "@/components/ui/delete-buttons";
+import { topicDeletionDetails } from "@/lib/deletion-copy";
+import { deleteTopicFromDetailAction } from "../../subjects/actions";
 
 export async function generateMetadata({
   params,
@@ -45,7 +50,7 @@ export default async function TopicDetailPage({
   if (!topic) notFound();
 
   const logs = topic.reviewState ? await getTopicReviewHistory(user.id, topic.id) : [];
-  const previousStability = logs.length >= 2 ? logs[logs.length - 2].stability : null;
+  const previousStability = stabilityBeforeLastReview(logs);
 
   const hasCurve = topic.reviewState && topic.reviewState.lastReview;
   const curve = hasCurve
@@ -61,7 +66,17 @@ export default async function TopicDetailPage({
       <Link href={`/subjects/${topic.subjectId}`} className="text-xs text-muted-foreground transition-colors hover:text-foreground">
         ← {topic.subject.name}
       </Link>
-      <h1 className="mt-1 text-xl font-semibold tracking-tight">{topic.name}</h1>
+      <div className="mt-1 flex flex-wrap items-start justify-between gap-4">
+        <h1 className="text-xl font-semibold tracking-tight">{topic.name}</h1>
+        <div className="max-w-sm flex-none">
+          <ConfirmDeleteButton
+            label="Excluir tópico"
+            question={`Excluir "${topic.name}"?`}
+            details={topicDeletionDetails(topic.children.length, topic.reviewState !== null)}
+            onDelete={deleteTopicFromDetailAction.bind(null, topic.id)}
+          />
+        </div>
+      </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {topic.reviewState ? (
@@ -78,6 +93,11 @@ export default async function TopicDetailPage({
           <StartReviewButton topicId={topic.id} />
         )}
       </div>
+      {topic.reviewState && (
+        <div className="mt-2">
+          <RemoveFromReviewButton topicId={topic.id} reviewCount={logs.length} />
+        </div>
+      )}
 
       {curve && (
         <div className="mt-6 rounded-[var(--radius-lg)] border border-border bg-surface p-4">
@@ -105,12 +125,13 @@ export default async function TopicDetailPage({
         <div className="mt-6">
           <h2 className="mb-2 text-sm font-semibold text-foreground">Histórico de revisões</h2>
           <ul className="stagger space-y-1">
-            {[...logs].reverse().map((log) => (
+            {[...logs].reverse().map((log, index) => (
               <li
                 key={log.id}
-                className="flex items-center justify-between rounded-[var(--radius-sm)] border border-border bg-surface px-3 py-1.5 text-sm transition-colors duration-150 hover:border-border-strong"
+                className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-surface px-3 py-1.5 text-sm transition-colors duration-150 hover:border-border-strong"
               >
-                <span className="text-foreground">{ratingLabel[log.rating]}</span>
+                <span className="flex-1 text-foreground">{ratingLabel[log.rating]}</span>
+                {index === 0 && <UndoLastReviewButton topicId={topic.id} />}
                 <span className="text-xs text-muted-foreground">
                   {format(new Date(log.reviewedAt), "d 'de' MMM 'às' HH:mm", { locale: ptBR })}
                 </span>

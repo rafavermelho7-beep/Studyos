@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/session";
-import { startReview, gradeReview } from "@/server/services/reviews";
+import { startReview, gradeReview, undoLastReview, removeFromReview } from "@/server/services/reviews";
 import type { Grade } from "ts-fsrs";
 
 export async function startReviewAction(topicId: string) {
@@ -21,4 +21,20 @@ export async function gradeReviewAction(topicId: string, rating: number) {
   revalidatePath("/review");
   revalidatePath("/dashboard");
   return result;
+}
+
+export async function undoLastReviewAction(topicId: string) {
+  const user = await requireUser();
+  await undoLastReview(user.id, topicId);
+  revalidatePath("/review");
+  revalidatePath("/dashboard");
+  revalidatePath(`/topics/${topicId}`);
+}
+
+export async function removeFromReviewAction(topicId: string) {
+  const user = await requireUser();
+  await removeFromReview(user.id, topicId);
+  revalidatePath("/review");
+  revalidatePath("/dashboard");
+  revalidatePath(`/topics/${topicId}`);
 }

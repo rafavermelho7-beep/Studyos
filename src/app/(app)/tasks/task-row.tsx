@@ -1,11 +1,12 @@
 "use client";
 
 import { useOptimistic, useTransition } from "react";
-import { Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { setTaskStatusAction, deleteTaskAction } from "./actions";
 import { Badge } from "@/components/ui/badge";
+import { UndoableDeleteButton } from "@/components/ui/delete-buttons";
+import { useUndoToast } from "@/components/ui/undo-toast";
 import { cn } from "@/lib/utils";
 import type { TaskWithMeta } from "@/server/services/tasks";
 
@@ -14,6 +15,8 @@ const priorityLabel = { LOW: "Baixa", MEDIUM: "Média", HIGH: "Alta" } as const;
 export function TaskRow({ task }: { task: TaskWithMeta }) {
   const [pending, startTransition] = useTransition();
   const [done, setOptimisticDone] = useOptimistic(task.status === "DONE");
+  const { isPendingDelete } = useUndoToast();
+  if (isPendingDelete(task.id)) return null;
 
   return (
     <li
@@ -71,14 +74,12 @@ export function TaskRow({ task }: { task: TaskWithMeta }) {
       )}
       {task.status === "IN_PROGRESS" && <Badge variant="accent">Em andamento</Badge>}
 
-      <button
-        onClick={() => startTransition(() => deleteTaskAction(task.id))}
-        disabled={pending}
-        aria-label={`Excluir tarefa "${task.title}"`}
-        className="text-muted-foreground transition-[color,transform] duration-150 hover:scale-110 hover:text-danger active:scale-95"
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-      </button>
+      <UndoableDeleteButton
+        id={task.id}
+        label={`Excluir tarefa "${task.title}"`}
+        message="Tarefa excluída"
+        onDelete={() => deleteTaskAction(task.id)}
+      />
     </li>
   );
 }

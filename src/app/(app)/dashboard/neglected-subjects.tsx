@@ -5,7 +5,7 @@ export function NeglectedSubjects({ subjects }: { subjects: NeglectedSubject[] }
   if (subjects.length === 0) return null;
 
   return (
-    <div className="animate-fade-in-up mt-4 rounded-[var(--radius-lg)] border border-warning/30 bg-warning-soft p-3">
+    <div className="animate-fade-in-up rounded-[var(--radius-lg)] border border-warning/30 bg-warning-soft p-3">
       <p className="text-xs font-medium text-warning">Matérias negligenciadas</p>
       <ul className="stagger mt-1.5 space-y-1">
         {subjects.map((subject) => (

@@ -61,6 +61,25 @@ export async function updateSubject(userId: string, subjectId: string, input: Up
 }
 
 export async function deleteSubject(userId: string, subjectId: string) {
-  const result = await db.subject.deleteMany({ where: { id: subjectId, userId } });
-  if (result.count === 0) throw new Error("Matéria não encontrada.");
+  const subject = await db.subject.findFirst({ where: { id: subjectId, userId }, select: { coverImageId: true } });
+  if (!subject) throw new Error("Matéria não encontrada.");
+  // The cover photo is only referenced by this subject — delete it with it.
+  await db.$transaction([
+    db.subject.deleteMany({ where: { id: subjectId, userId } }),
+    ...(subject.coverImageId ? [db.image.deleteMany({ where: { id: subject.coverImageId, userId } })] : []),
+  ]);
+}
+
+/** What deleting a subject takes with it — shown in the confirmation before it happens. */
+export async function getSubjectDeletionImpact(userId: string, subjectId: string) {
+  // Topics, exams and review history cascade away; tasks, sources and
+  // study events are kept with their subject set to null (schema onDelete).
+  const [topics, exams, reviews, studyEvents, tasks] = await Promise.all([
+    db.topic.count({ where: { userId, subjectId } }),
+    db.exam.count({ where: { userId, subjectId } }),
+    db.reviewState.count({ where: { userId, topic: { subjectId } } }),
+    db.studyEvent.count({ where: { userId, subjectId } }),
+    db.task.count({ where: { userId, subjectId } }),
+  ]);
+  return { topics, exams, reviews, studyEvents, tasks };
 }

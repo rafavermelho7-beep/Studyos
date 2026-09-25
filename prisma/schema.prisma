@@ -42,6 +42,25 @@ model User {
   apiKeyId   String? @unique
   apiKeyHash String?
 
+  // Personalization ("Aparência" in Settings). All optional/defaulted so
+  // the migration is purely additive — Vercel preview builds apply
+  // migrations to the one shared database (see package.json vercel-build).
+  // Allowed values live in src/lib/preferences.ts, validated with zod on
+  // write; unknown values read back as the defaults.
+  monthlyGoalMinutes Int? // total, not per subject; progress derives from StudyEvent
+  themeMode          String   @default("system") // system | light | dark
+  accentColor        String   @default("indigo")
+  homePage           String   @default("dashboard") // which screen "/" and login open
+  // Dashboard blocks: explicit order + which are hidden. Kept as two lists
+  // (not one "visible, in order" list) so a block added in a later release
+  // still shows up for users who already customized their layout.
+  dashboardOrder     String[] @default([])
+  dashboardHidden    String[] @default([])
+  // App background: plain | gradient | photo (photo uses backgroundImage).
+  backgroundStyle    String   @default("plain")
+  backgroundImageId  String?  @unique
+  backgroundImage    Image?   @relation("UserBackground", fields: [backgroundImageId], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -56,6 +75,7 @@ model User {
   reviewStates  ReviewState[]
   reviewLogs    ReviewLog[]
   ankiDeckLinks AnkiDeckLink[]
+  images        Image[]       @relation("ImageOwner")
   onboarding    OnboardingState?
 }
 
@@ -93,6 +113,10 @@ model Subject {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Optional cover photo (Settings-free: set from the subject's own page).
+  coverImageId String? @unique
+  coverImage   Image?  @relation("SubjectCover", fields: [coverImageId], references: [id], onDelete: SetNull)
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   topics Topic[]
@@ -395,4 +419,27 @@ model OnboardingState {
   step        Int      @default(0)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Images (subject covers, app background) ─────────────────────────────
+// Stored in Postgres, not Supabase Storage, on purpose: at personal scale
+// (a handful of ~200 KB covers + one background, compressed client-side
+// before upload) it fits comfortably, authorization stays the same userId
+// filter as everything else (served only through /api/images/[id] after a
+// session check — no public bucket, no signed URLs), and it's testable
+// end-to-end without Storage credentials. Revisit if this ever becomes
+// multi-user at scale. `data` is never selected except by that route.
+model Image {
+  id          String   @id @default(cuid())
+  userId      String
+  contentType String // sniffed from the bytes on upload, never trusted from the client
+  byteSize    Int
+  data        Bytes
+  createdAt   DateTime @default(now())
+
+  user             User     @relation("ImageOwner", fields: [userId], references: [id], onDelete: Cascade)
+  subjectCover     Subject? @relation("SubjectCover")
+  userBackgroundOf User?    @relation("UserBackground")
+
+  @@index([userId])
 }

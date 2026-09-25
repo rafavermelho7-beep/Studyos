@@ -1,8 +1,9 @@
 "use client";
 
 import { useOptimistic, useTransition } from "react";
-import { gradeReviewAction } from "./actions";
+import { gradeReviewAction, undoLastReviewAction } from "./actions";
 import { Badge } from "@/components/ui/badge";
+import { useUndoToast } from "@/components/ui/undo-toast";
 
 type DueItem = {
   id: string;
@@ -27,10 +28,19 @@ export function ReviewQueue({ items }: { items: DueItem[] }) {
     state.filter((i) => i.topicId !== topicId),
   );
 
-  function grade(topicId: string, rating: number) {
+  const { showToast } = useUndoToast();
+
+  function grade(item: DueItem, rating: number) {
     startTransition(async () => {
-      removeItem(topicId);
-      await gradeReviewAction(topicId, rating);
+      removeItem(item.topicId);
+      await gradeReviewAction(item.topicId, rating);
+      // Grades apply immediately (unlike deletes) — undo rolls the FSRS
+      // state back to the previous review; see undoLastReview.
+      showToast({
+        message: `${item.topicName}: ${grades.find((g) => g.rating === rating)?.label}`,
+        actionLabel: "Desfazer",
+        onAction: () => startTransition(() => undoLastReviewAction(item.topicId)),
+      });
     });
   }
 
@@ -70,7 +80,7 @@ export function ReviewQueue({ items }: { items: DueItem[] }) {
               <button
                 key={g.rating}
                 disabled={pending}
-                onClick={() => grade(item.topicId, g.rating)}
+                onClick={() => grade(item, g.rating)}
                 className={`rounded-[var(--radius-sm)] py-1.5 text-xs font-medium transition-[opacity,transform] duration-150 active:scale-95 disabled:opacity-50 ${g.className}`}
               >
                 {g.label}

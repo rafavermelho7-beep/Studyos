@@ -1,13 +1,15 @@
 # StudyOS — Project Status
 
-Last updated: 2026-09-14
+Last updated: 2026-09-23
 
 ## Fase atual
 
 Todas as fases de produto (1–21) concluídas. Fases 24 (segurança), 25
 (polimento visual) e a migração pra Supabase (parte da Fase 22)
-concluídas. Restam: Fase 23 (mais testes), offline/sync de verdade, e
-auditoria final (Fase 26).
+concluídas, mais o sistema de animações (2026-09-14) e a Fase 27
+(exclusões e desfazer, 2026-09-23). Próximo: personalização (ver
+"Em andamento"). Restam também: Fase 23 (mais testes), offline/sync de
+verdade, e auditoria final (Fase 26).
 
 ## Migração para Supabase (2026-09-14)
 
@@ -381,6 +383,103 @@ deploy feito no Vercel — `https://studyos-nine-ochre.vercel.app`.
     390px ("Em" / "andamento" em duas linhas). Trocado para rolagem
     horizontal.
 
+- **Animações (2026-09-14)**: keyframes + `.stagger`/`.hover-lift`/
+  `.skeleton` em `globals.css`, `PageTransition` no shell, `loading.tsx`
+  com skeleton em toda rota com dados. Respeita `prefers-reduced-motion`.
+
+- **Fase 27 — Exclusões e desfazer (2026-09-23)**: pedido do usuário —
+  "não tem muitas opções de exclusão quando erro". Antes: tópico e tarefa
+  excluíam sem confirmação nenhuma; subtópico, sessão de estudo e nota de
+  revisão não tinham como excluir/desfazer. Agora, dois padrões só (ver
+  `CLAUDE.md`):
+  - **Excluir com "Desfazer"** (tarefa, fonte, sessão, vínculo de deck,
+    prova direto da lista): some na hora, só vai pro servidor quando o
+    aviso de 6s expira/fecha. Desfazer não precisa recriar nada.
+  - **Excluir com confirmação que diz o impacto** (matéria, tópico,
+    subtópico, remover da revisão): ex. "Isso apaga 2 tópicos e 1 prova.
+    As horas estudadas continuam nas estatísticas."
+  - **Sessões de estudo**: editar duração e excluir, em Sessão →
+    Atividade recente (não pra eventos do Anki, que o sync reescreve).
+  - **Revisão**: "Desfazer" logo após avaliar na fila, e na página do
+    tópico (última avaliação do histórico); "Remover da revisão" apaga o
+    estado FSRS + histórico e o tópico volta pra "iniciar revisão".
+  - **Bug pego pelo teste unitário antes de ir pro ar**: a primeira versão
+    do "desfazer avaliação" assumia que o `ReviewLog` guarda o estado
+    *depois* da avaliação — mas o ts-fsrs guarda o de *antes* (só nossa
+    coluna `state` é o de depois). Reescrito sobre o `rollback` oficial do
+    ts-fsrs; `reviews.test.ts` prova que o estado de memória volta
+    exatamente ao anterior (incluindo `lapses`) e que outro usuário não
+    consegue desfazer/remover revisões alheias. `study-events.test.ts`
+    cobre o mesmo pra editar/excluir sessões.
+  - Testes: `e2e/deletions.spec.ts` (5 cenários), `tasks.spec.ts`
+    atualizado pro aviso de desfazer. Rodados contra um **Postgres 16
+    local** (disponível no container da sessão na nuvem — não mexe no
+    Supabase): 17/17 e2e + 9/9 unitários passando, `tsc`/`lint`/`build`
+    limpos. Visual conferido em 390px, claro e escuro.
+
+- **Correção — curva "sem a última revisão" (2026-09-23)**: a linha
+  tracejada da curva de esquecimento (`/topics/[id]`) usava a estabilidade
+  de duas revisões atrás, porque o código lia o penúltimo `ReviewLog`
+  achando que o log guarda o estado *depois* da avaliação (guarda o de
+  *antes*). Agora é `stabilityBeforeLastReview` em `reviews.ts`, com teste
+  unitário que falharia na lógica antiga.
+
+- **Fase 28 — Personalização, etapa A (2026-09-23)**: Configurações ganhou
+  a seção **Aparência** (atalho "Personalizar" no Início):
+  - **Tema** Automático/Claro/Escuro (antes só seguia o sistema) e **cor de
+    destaque** entre 8 opções, todas conferidas para contraste AA nos dois
+    temas. Muda na hora, sem piscar o tema errado ao abrir o app. Gráficos
+    acompanham tema e cor (agora leem as cores reais do CSS).
+  - **Meta do mês** (total geral de horas, escolha do usuário): card no
+    Início com horas feitas, % e "faltam X em N dias → ~Y por dia",
+    avisando quando está abaixo do ritmo. Sem meta, mostra um convite
+    honesto em vez de número inventado.
+  - **Início do seu jeito**: mostrar/esconder e reordenar (↑↓) os blocos
+    Resumo do dia, Meta do mês, Seu foco agora, Matérias negligenciadas e
+    Suas matérias.
+  - **Tela que abre ao entrar**: Início, Sessão, Revisão ou Tarefas
+    (vale pro login, pro ícone do app e pra `/`).
+  - Banco: colunas novas em `User`, migration só aditiva. **Deploy agora
+    aplica migrations sozinho** (`vercel-build`) — o usuário não precisa
+    mexer no Supabase.
+  - Testes: `e2e/personalization.spec.ts` (3 fluxos, com reload pra provar
+    que salvou), unitários de preferências e da conta da meta. 20/20 e2e,
+    21/21 unitários, build limpo. Visual conferido em 390px claro/escuro.
+  - Limitação conhecida (já existia no "Hoje"): "mês" e "hoje" usam o
+    fuso do servidor (UTC no Vercel), então sessões entre 21h e 0h do
+    último dia do mês (horário de Brasília) contam pro mês seguinte.
+
+- **Fase 28 — Personalização, etapa B: fotos (2026-09-23)**:
+  - **Capa da matéria**: "Adicionar capa" na página da matéria (câmera ou
+    galeria no celular), com Trocar/Remover; aparece como banner na
+    página e como miniatura em Matérias e no Início.
+  - **Fundo do app**: Liso, Gradiente (na cor de destaque) ou Foto, com
+    véu na cor do tema pra manter tudo legível; a foto fica guardada ao
+    alternar pra Gradiente e volta sem novo upload.
+  - **Decisão: fotos no Postgres, não no Supabase Storage** (o plano
+    original era o Storage). Motivos: escala pessoal (poucas fotos de
+    ~100-400 KB depois de comprimidas no celular), a autorização continua
+    sendo o mesmo filtro por `userId` de todo o resto, nenhuma chave nova
+    ou bucket pra configurar, e — principal — dá pra testar de ponta a
+    ponta aqui; com o Storage, o upload iria pro ar sem nunca ter rodado
+    contra o serviço real. Revisitar se o app virar multiusuário em escala.
+  - Segurança: tipo detectado pelos bytes (SVG/HTML recusados), limite de
+    2 MB, 401 deslogado / 404 pra foto de outra conta, sem cache
+    compartilhável; foto substituída/removida/matéria excluída não deixa
+    lixo no banco.
+  - Testes: `e2e/photos.spec.ts` (upload real com compressão, privacidade
+    entre contas, fundo), `images.test.ts` (validação, acesso de outro
+    usuário, limpeza). 22/22 e2e, 26/26 unitários, build limpo. Visual
+    conferido em 390px claro/escuro.
+
+- **Correção de deploy (2026-09-23)**: o primeiro preview com
+  `vercel-build` falhou. A migration foi aplicada normalmente no Supabase,
+  mas o build fez typecheck contra o Prisma Client ANTIGO — o Vercel
+  restaura `node_modules` do cache, o `npm install` dá "up to date" e o
+  generate automático do Prisma não roda. Corrigido com `prisma generate`
+  explícito no início do `vercel-build`; reproduzido localmente (cliente
+  antigo → mesmos erros TS; script novo → build limpo).
+
 ## Em andamento / próximos passos (ordem planejada)
 
 1. Fase 23 — mais testes (cobertura unitária além do caso de segurança;
@@ -407,6 +506,9 @@ deploy feito no Vercel — `https://studyos-nine-ochre.vercel.app`.
 
 ## Bugs conhecidos
 
-Nenhum no momento. `npx tsc --noEmit`, `npm run build`, `npm run test:e2e`
+- `e2e/global-teardown.ts` não lê o `.env` (só funciona com
+  `DATABASE_URL` exportada no shell).
+
+Fora isso, nenhum. `npx tsc --noEmit`, `npm run build`, `npm run test:e2e`
 (12 specs) e `npm run test:unit` passam limpos contra o Supabase real no
 último commit.

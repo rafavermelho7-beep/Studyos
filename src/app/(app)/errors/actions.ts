@@ -12,8 +12,8 @@ const errorSchema = z.object({
   topicId: z.string().optional(),
   source: z.string().trim().max(120).optional(),
   question: z.string().trim().max(5000).optional(),
-  reason: z.enum(ERROR_REASON_KEYS as [ErrorReason, ...ErrorReason[]], { message: "Escolha por que errou" }),
-  lesson: z.string().trim().min(1, "Escreva o que você aprendeu").max(2000),
+  reason: z.enum(ERROR_REASON_KEYS as [ErrorReason, ...ErrorReason[]]).optional(),
+  lesson: z.string().trim().min(1, "Escreva o conceito que você errou").max(2000),
 });
 
 function parse(formData: FormData) {

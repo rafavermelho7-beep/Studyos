@@ -21,10 +21,13 @@ test("log a missed question and review it later", async ({ page }) => {
   await page.getByRole("button", { name: "Adicionar tópico" }).click();
   await expect(page.getByRole("link", { name: "Anemia ferropriva", exact: true })).toBeVisible();
 
-  // The form starts open while the notebook is empty.
+  // The form starts open while the notebook is empty. Concept first; the
+  // question/source/reason live under "Mais detalhes".
   await page.goto("/errors");
   await page.getByLabel("Matéria").selectOption({ label: "👶 Pediatria" });
   await page.getByLabel("Tópico").selectOption({ label: "Anemia ferropriva" });
+  await page.getByLabel("Conceito que errei").fill("Tratamento: 3–5 mg/kg/dia de ferro elementar.");
+  await page.getByRole("button", { name: /Mais detalhes/ }).click();
   await page.getByLabel("De onde é a questão").fill("MedCof");
   await page.getByLabel("A questão", { exact: true }).fill("Lactente de 9 meses com Hb 8,5 — qual a dose de ferro?");
   const photo = await page.evaluate(() => {
@@ -41,11 +44,10 @@ test("log a missed question and review it later", async ({ page }) => {
   });
   await expect(page.getByAltText("Prévia da foto")).toBeVisible();
   await page.getByText("Confundi conceitos").click();
-  await page.getByLabel("O que aprendi").fill("Tratamento: 3–5 mg/kg/dia de ferro elementar.");
-  await page.getByRole("button", { name: "Salvar erro" }).click();
-  await expect(page.getByText("✓ Erro registrado")).toBeVisible();
-  // Stays open and cleared, ready for the next question.
-  await expect(page.getByLabel("O que aprendi")).toHaveValue("");
+  await page.getByRole("button", { name: "Salvar conceito" }).click();
+  await expect(page.getByText("✓ Conceito salvo")).toBeVisible();
+  // Stays open and cleared, ready for the next one.
+  await expect(page.getByLabel("Conceito que errei")).toHaveValue("");
 
   await expect(page.getByText("Tratamento: 3–5 mg/kg/dia de ferro elementar.")).toBeVisible();
 
@@ -57,7 +59,7 @@ test("log a missed question and review it later", async ({ page }) => {
   expect(overflow).toBeLessThanOrEqual(0);
   await page.setViewportSize({ width: 1280, height: 720 });
   await expect(page.getByAltText("Foto da questão")).toBeVisible();
-  await expect(page.getByText("Erros registrados")).toBeVisible();
+  await expect(page.getByText("Conceitos anotados")).toBeVisible();
   // Not due yet — first look is tomorrow.
   await expect(page.getByRole("link", { name: /Revisar erros/ })).toHaveCount(0);
 
@@ -74,14 +76,13 @@ test("log a missed question and review it later", async ({ page }) => {
   await db.errorEntry.updateMany({ where: { user: { email } }, data: { nextReviewAt: new Date(Date.now() - 60_000) } });
   await db.$disconnect();
 
-  // A second, text-only error so the queue has two cards (one used to get skipped).
+  // A second entry with ONLY the concept (the minimal case), so the queue
+  // has two cards (one used to get skipped) of both kinds.
   await page.goto("/errors");
   await page.getByRole("button", { name: "Registrar erro" }).click(); // closed once the notebook has entries
-  await page.getByLabel("A questão", { exact: true }).fill("Qual o marcador mais precoce de ferropenia?");
-  await page.getByText("Não sabia o conteúdo").click();
-  await page.getByLabel("O que aprendi").fill("Ferritina cai primeiro.");
-  await page.getByRole("button", { name: "Salvar erro" }).click();
-  await expect(page.getByText("✓ Erro registrado")).toBeVisible();
+  await page.getByLabel("Conceito que errei").fill("Ferritina é o primeiro marcador a cair.");
+  await page.getByRole("button", { name: "Salvar conceito" }).click();
+  await expect(page.getByText("✓ Conceito salvo")).toBeVisible();
   const db2 = new PrismaClient();
   await db2.errorEntry.updateMany({ where: { user: { email } }, data: { nextReviewAt: new Date(Date.now() - 60_000) } });
   await db2.$disconnect();
@@ -89,12 +90,15 @@ test("log a missed question and review it later", async ({ page }) => {
   await page.reload();
   await page.getByRole("link", { name: "Revisar erros (2)" }).click();
   await expect(page.getByText("1 de 2")).toBeVisible();
-  await expect(page.getByText(/Tratamento: 3–5|Ferritina cai primeiro/)).toHaveCount(0); // lesson hidden until revealed
-  await page.getByRole("button", { name: "Mostrar a lição" }).click();
+  // Card with a saved question: the concept stays hidden until revealed.
+  await expect(page.getByText("Tratamento: 3–5")).toHaveCount(0);
+  await page.getByRole("button", { name: "Mostrar o conceito" }).click();
+  await expect(page.getByText("Tratamento: 3–5")).toBeVisible();
   await page.getByRole("button", { name: "Acertaria agora" }).click();
+  // Concept-only card: shown straight away, "já fixou?".
   await expect(page.getByText("2 de 2")).toBeVisible();
-  await page.getByRole("button", { name: "Mostrar a lição" }).click();
-  await page.getByRole("button", { name: "Ainda erraria" }).click();
+  await expect(page.getByText("Ferritina é o primeiro marcador a cair.")).toBeVisible();
+  await page.getByRole("button", { name: "Ainda não fixei" }).click();
   await expect(page.getByText("Revisão concluída")).toBeVisible();
-  await expect(page.getByText("1 acertaria agora · 1 para rever amanhã")).toBeVisible();
+  await expect(page.getByText("1 fixado · 1 para rever amanhã")).toBeVisible();
 });

@@ -36,7 +36,7 @@ export function ErrorReview({ entries: initialEntries }: { entries: ErrorCardEnt
         <p className="text-4xl">🎯</p>
         <h2 className="mt-2 text-lg font-semibold text-foreground">Revisão concluída</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {tally.right} acertaria agora · {tally.wrong} para rever amanhã
+          {tally.right} fixado{tally.right === 1 ? "" : "s"} · {tally.wrong} para rever amanhã
         </p>
         <Link href="/errors" className={buttonVariants({ className: "mt-5" })}>
           Voltar ao caderno
@@ -46,6 +46,11 @@ export function ErrorReview({ entries: initialEntries }: { entries: ErrorCardEnt
   }
 
   const entry = entries[index];
+  // With the question saved, it's a real recall test: concept hidden until
+  // revealed. Without one there's nothing to answer, so the concept shows
+  // straight away and the question becomes "já fixou?".
+  const hasQuestion = Boolean(entry.question || entry.imageId);
+  const showConcept = revealed || !hasQuestion;
   function answer(gotItRight: boolean) {
     startTransition(async () => {
       await reviewErrorAction(entry.id, gotItRight);
@@ -82,30 +87,32 @@ export function ErrorReview({ entries: initialEntries }: { entries: ErrorCardEnt
           </span>
         )}
 
-        {revealed ? (
+        {showConcept ? (
           <div className="animate-scale-in mt-4 rounded-[var(--radius-md)] border-l-4 border-accent bg-accent-soft/60 px-3 py-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-accent">O que aprendi</p>
-            <p className="whitespace-pre-line text-sm text-foreground">{entry.lesson}</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Motivo do erro: {ERROR_REASONS[entry.reason as ErrorReason]?.label ?? entry.reason}
-            </p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-accent">Conceito</p>
+            <p className="whitespace-pre-line text-base font-medium text-foreground">{entry.lesson}</p>
+            {entry.reason && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Motivo do erro: {ERROR_REASONS[entry.reason as ErrorReason]?.label}
+              </p>
+            )}
           </div>
         ) : (
           <Button variant="secondary" className="mt-4 w-full" onClick={() => setRevealed(true)}>
-            Mostrar a lição
+            Mostrar o conceito
           </Button>
         )}
       </div>
 
-      {revealed && (
+      {showConcept && (
         <div className="animate-fade-in-up mt-3 grid grid-cols-2 gap-2">
           <Button variant="secondary" disabled={pending} onClick={() => answer(false)}>
             <RotateCcw className="h-4 w-4" />
-            Ainda erraria
+            {hasQuestion ? "Ainda erraria" : "Ainda não fixei"}
           </Button>
           <Button disabled={pending} onClick={() => answer(true)}>
             <Check className="h-4 w-4" />
-            Acertaria agora
+            {hasQuestion ? "Acertaria agora" : "Já fixei"}
           </Button>
         </div>
       )}

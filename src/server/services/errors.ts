@@ -31,7 +31,8 @@ export function listErrors(userId: string, filters: ErrorFilters = {}) {
 export function listDueErrors(userId: string, now = new Date()) {
   return db.errorEntry.findMany({
     where: { userId, mastered: false, nextReviewAt: { lte: now } },
-    orderBy: { nextReviewAt: "asc" },
+    // Oldest-first on ties, so the order is stable.
+    orderBy: [{ nextReviewAt: "asc" }, { createdAt: "asc" }],
     include,
   });
 }
@@ -43,7 +44,7 @@ export function countDueErrors(userId: string, now = new Date()) {
 /** Totals by reason and by subject — the "where am I losing points" view. */
 export async function errorSummary(userId: string) {
   const [byReason, bySubject, total, mastered] = await Promise.all([
-    db.errorEntry.groupBy({ by: ["reason"], where: { userId }, _count: { _all: true } }),
+    db.errorEntry.groupBy({ by: ["reason"], where: { userId, reason: { not: null } }, _count: { _all: true } }),
     db.errorEntry.groupBy({ by: ["subjectId"], where: { userId }, _count: { _all: true } }),
     db.errorEntry.count({ where: { userId } }),
     db.errorEntry.count({ where: { userId, mastered: true } }),
@@ -51,7 +52,9 @@ export async function errorSummary(userId: string) {
   return {
     total,
     mastered,
-    byReason: byReason.map((r) => ({ reason: r.reason, count: r._count._all })).sort((a, b) => b.count - a.count),
+    // Only entries where a reason was given; the % is out of those.
+    byReason: byReason.map((r) => ({ reason: r.reason!, count: r._count._all })).sort((a, b) => b.count - a.count),
+    withReason: byReason.reduce((sum, r) => sum + r._count._all, 0),
     bySubject: bySubject
       .map((s) => ({ subjectId: s.subjectId, count: s._count._all }))
       .sort((a, b) => b.count - a.count),
@@ -81,7 +84,7 @@ export type ErrorInput = {
   topicId?: string | null;
   source?: string | null;
   question?: string | null;
-  reason: ErrorReason;
+  reason?: ErrorReason | null;
   lesson: string;
 };
 
@@ -102,7 +105,6 @@ async function resolveLinks(userId: string, subjectId?: string | null, topicId?:
 }
 
 export async function createError(userId: string, input: ErrorInput, photo?: Uint8Array, now = new Date()) {
-  if (!input.question && !photo) throw new Error("Escreva a questão ou tire uma foto dela.");
   const links = await resolveLinks(userId, input.subjectId, input.topicId);
   const contentType = photo ? validateImageBytes(photo) : null;
 
@@ -121,7 +123,7 @@ export async function createError(userId: string, input: ErrorInput, photo?: Uin
         source: input.source || null,
         question: input.question || null,
         imageId: image?.id ?? null,
-        reason: input.reason,
+        reason: input.reason ?? null,
         lesson: input.lesson,
         nextReviewAt: firstReviewAt(now),
       },
@@ -132,9 +134,6 @@ export async function createError(userId: string, input: ErrorInput, photo?: Uin
 export async function updateError(userId: string, errorId: string, input: ErrorInput & { removePhoto?: boolean }) {
   const existing = await db.errorEntry.findFirst({ where: { id: errorId, userId }, select: { imageId: true } });
   if (!existing) throw new Error("Erro não encontrado.");
-  if (!input.question && (!existing.imageId || input.removePhoto)) {
-    throw new Error("Escreva a questão ou mantenha a foto.");
-  }
   const links = await resolveLinks(userId, input.subjectId, input.topicId);
   await db.$transaction([
     db.errorEntry.updateMany({
@@ -143,7 +142,7 @@ export async function updateError(userId: string, errorId: string, input: ErrorI
         ...links,
         source: input.source || null,
         question: input.question || null,
-        reason: input.reason,
+        reason: input.reason ?? null,
         lesson: input.lesson,
       },
     }),

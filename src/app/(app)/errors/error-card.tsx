@@ -16,7 +16,7 @@ export type ErrorCardEntry = {
   question: string | null;
   imageId: string | null;
   source: string | null;
-  reason: string;
+  reason: string | null;
   lesson: string;
   mastered: boolean;
   createdAt: Date;
@@ -25,7 +25,7 @@ export type ErrorCardEntry = {
 };
 
 export function ErrorCard({ entry }: { entry: ErrorCardEntry }) {
-  const reason = ERROR_REASONS[entry.reason as ErrorReason];
+  const reason = entry.reason ? ERROR_REASONS[entry.reason as ErrorReason] : null;
   return (
     <HideIfPendingDelete id={entry.id}>
       <li className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 transition-colors hover:border-border-strong">
@@ -58,22 +58,24 @@ export function ErrorCard({ entry }: { entry: ErrorCardEntry }) {
           </div>
         </div>
 
-        {entry.question && <p className="mt-2 line-clamp-4 whitespace-pre-line text-sm text-foreground">{entry.question}</p>}
-        {entry.imageId && (
-          <a href={imageUrl(entry.imageId)} target="_blank" rel="noopener noreferrer" className="mt-2 block">
-            <span className="relative block h-32 w-full max-w-xs overflow-hidden rounded-[var(--radius-sm)] border border-border">
-              <Image src={imageUrl(entry.imageId)} alt="Foto da questão" fill unoptimized sizes="320px" className="object-cover object-top" />
-            </span>
-          </a>
+        <p className="mt-2 whitespace-pre-line text-[15px] font-medium leading-snug text-foreground">{entry.lesson}</p>
+
+        {(entry.question || entry.imageId) && (
+          <div className="mt-3 rounded-[var(--radius-md)] bg-surface-2 px-3 py-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Questão</p>
+            {entry.question && <p className="line-clamp-3 whitespace-pre-line text-sm text-muted-foreground">{entry.question}</p>}
+            {entry.imageId && (
+              <a href={imageUrl(entry.imageId)} target="_blank" rel="noopener noreferrer" className="mt-1.5 block">
+                <span className="relative block h-28 w-full max-w-xs overflow-hidden rounded-[var(--radius-sm)] border border-border">
+                  <Image src={imageUrl(entry.imageId)} alt="Foto da questão" fill unoptimized sizes="320px" className="object-cover object-top" />
+                </span>
+              </a>
+            )}
+          </div>
         )}
 
-        <div className="mt-3 rounded-[var(--radius-md)] border-l-4 border-accent bg-accent-soft/60 px-3 py-2">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-accent">O que aprendi</p>
-          <p className="whitespace-pre-line text-sm text-foreground">{entry.lesson}</p>
-        </div>
-
         <div className="mt-2 flex flex-wrap gap-1.5">
-          <Badge variant="warning">{reason?.label ?? entry.reason}</Badge>
+          {reason && <Badge variant="warning">{reason.label}</Badge>}
           {entry.mastered && <Badge variant="success">Dominado</Badge>}
         </div>
       </li>

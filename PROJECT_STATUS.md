@@ -518,13 +518,17 @@ deploy feito no Vercel — `https://studyos-nine-ochre.vercel.app`.
     tamanho, cota, caminho de outro usuário, tópicos de outra matéria).
     24/24 e2e, 52/52 unitários, build limpo.
 
-- **Fase 31 — Caderno de Erros (2026-09-25)**: aba nova. Cada erro tem
-  matéria/tópico, fonte (MedCof, prova P2...), a questão em texto e/ou
-  **foto** (câmera do celular), **por que errou** (conteúdo, confusão,
-  atenção, interpretação, chute) e **o que aprendeu**. Resumo "onde você
+- **Fase 31 — Caderno de Erros (2026-09-25)**: aba nova para anotar os
+  **conceitos que o usuário errou nas questões** (ajustado após o
+  feedback: o conceito é o centro e o único campo obrigatório). Opcional,
+  em "Mais detalhes": a questão em texto e/ou **foto** (câmera do
+  celular), a fonte (MedCof, prova P2...) e **por que errou** (conteúdo,
+  confusão, atenção, interpretação, chute). Resumo "onde você
   perde pontos" (principal motivo, matéria com mais erros), filtros,
-  edição, exclusão com desfazer. **Modo revisão**: questão com a lição
-  escondida → revela → "acertaria agora" / "ainda erraria"; intervalos
+  edição, exclusão com desfazer. **Modo revisão**: com questão salva, o
+  conceito fica escondido até revelar ("acertaria agora" / "ainda
+  erraria"); só com o conceito, ele aparece direto ("já fixei" / "ainda
+  não fixei"); intervalos
   1 → 7 → 30 → 90 dias. Erros recentes aparecem na página do tópico e
   **sobem o tópico no "Seu foco agora"** ("Errou N questões recentemente").
   - Bugs pegos antes de subir: a revisão pulava cards (a lista mudava a

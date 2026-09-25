@@ -22,9 +22,10 @@ afterAll(async () => {
 const base = { reason: "CONFUNDI" as const, lesson: "Sulfato ferroso: 1 h antes das refeições." };
 
 describe("createError", () => {
-  it("needs the question as text or a photo", async () => {
-    const user = await makeUser("err-empty");
-    await expect(createError(user.id, base)).rejects.toThrow("Escreva a questão ou tire uma foto");
+  it("only the concept is required — question, photo, source and reason are optional", async () => {
+    const user = await makeUser("err-minimal");
+    const entry = await createError(user.id, { lesson: "IAM inferior: cuidado com nitrato (VD)." });
+    expect(entry).toMatchObject({ question: null, imageId: null, source: null, reason: null });
   });
 
   it("links only the caller's own topics, and a topic implies its subject", async () => {

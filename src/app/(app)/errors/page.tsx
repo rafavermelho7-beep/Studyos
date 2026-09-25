@@ -48,7 +48,7 @@ export default async function ErrorsPage({ searchParams }: { searchParams: Promi
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Caderno de Erros</h1>
-          <p className="text-sm text-muted-foreground">Cada questão errada vira uma lição que você não esquece.</p>
+          <p className="text-sm text-muted-foreground">Os conceitos que você errou nas questões, para não errar de novo.</p>
         </div>
         {due > 0 && (
           <Link href="/errors/review" className={buttonVariants({ size: "sm" })}>
@@ -61,14 +61,14 @@ export default async function ErrorsPage({ searchParams }: { searchParams: Promi
       {summary.total > 0 && (
         <div className="stagger mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
-            <p className="text-xs text-muted-foreground">Erros registrados</p>
+            <p className="text-xs text-muted-foreground">Conceitos anotados</p>
             <p className="text-2xl font-bold text-foreground">{summary.total}</p>
             <p className="text-xs text-muted-foreground">{summary.mastered} dominados</p>
           </div>
           {topReason && (
             <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
               <p className="text-xs text-muted-foreground">Principal motivo</p>
-              <p className="text-2xl font-bold text-foreground">{Math.round((topReason.count / summary.total) * 100)}%</p>
+              <p className="text-2xl font-bold text-foreground">{Math.round((topReason.count / summary.withReason) * 100)}%</p>
               <p className="text-xs text-muted-foreground">{ERROR_REASONS[topReason.reason as ErrorReason]?.label}</p>
             </div>
           )}
@@ -91,7 +91,7 @@ export default async function ErrorsPage({ searchParams }: { searchParams: Promi
           subjects={subjects.map((s) => ({ id: s.id, name: s.name, emoji: s.emoji }))}
           topics={topics.map((t) => ({ id: t.id, name: t.name, subjectId: t.subjectId }))}
           onSubmit={createErrorAction}
-          submitLabel="Salvar erro"
+          submitLabel="Salvar conceito"
         />
       </AddErrorPanel>
 

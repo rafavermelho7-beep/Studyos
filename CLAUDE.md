@@ -270,10 +270,14 @@ npx prisma studio                   # inspect the Supabase database
   Lesson dates are calendar days: parse with `parseISO` on the server and
   format on the server (client components get a preformatted string);
   "today" as a default comes from the browser.
-- **Caderno de Erros** (`ErrorEntry`, `services/errors.ts`, `/errors`):
-  question as text and/or a photo (an `Image` row, validated with
-  `validateImageBytes`, deleted with the entry), source, reason
-  (`ERROR_REASONS` in `lib/error-review.ts`) and the lesson learned.
+- **Caderno de Erros** (`ErrorEntry`, `services/errors.ts`, `/errors`) is a
+  notebook of **concepts** missed in questions (user's framing): `lesson`
+  (the concept) is the only required field and comes first in the form.
+  Optional context under "Mais detalhes": the question as text and/or a
+  photo (an `Image` row, validated with `validateImageBytes`, deleted with
+  the entry), source, reason (`ERROR_REASONS` in `lib/error-review.ts`).
+  Review hides the concept only when a question was saved; concept-only
+  cards show it and ask "já fixou?".
   Review is a simple widening schedule (1 → 7 → 30 → 90 days, "ainda
   erraria" resets), deliberately not FSRS. Unmastered errors from the last
   30 days feed `planning.ts` (+8 per error, capped at 20). The review

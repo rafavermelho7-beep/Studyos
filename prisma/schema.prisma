@@ -519,9 +519,10 @@ model LessonTopic {
 }
 
 // ─── Caderno de Erros ────────────────────────────────────────────────────
-// One row per question the user got wrong: what it was (text and/or a
-// photo — an Image row, same as covers), where it came from, WHY they got
-// it wrong, and the one-line lesson to reread. Re-shown on a simple
+// One row per CONCEPT the user got wrong in a question (`lesson`, the only
+// required field — that's what gets reread). The question itself (text
+// and/or a photo — an Image row, same as covers), its source and why it
+// was missed are optional context. Re-shown on a simple
 // widening schedule (lib/error-review.ts: 1 → 7 → 30 → 90 days; "ainda
 // erraria" resets it), not FSRS — a handful of wrong questions per topic
 // doesn't give a memory model enough signal to be worth its complexity.
@@ -534,8 +535,8 @@ model ErrorEntry {
   source         String? // "Sanar", "MedCof", "Prova P2"... free text
   question       String?
   imageId        String?   @unique
-  reason         String // lib/error-review.ts ERROR_REASONS key
-  lesson         String // "o que aprendi"
+  reason         String? // optional; lib/error-review.ts ERROR_REASONS key
+  lesson         String // THE point of the entry: the concept that was missed
   stage          Int       @default(0) // index into the review intervals
   nextReviewAt   DateTime
   lastReviewedAt DateTime?

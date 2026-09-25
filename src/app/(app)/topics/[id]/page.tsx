@@ -138,8 +138,9 @@ export default async function TopicDetailPage({
               <li key={entry.id} className="rounded-[var(--radius-md)] border-l-4 border-accent bg-accent-soft/40 px-3 py-2">
                 <p className="text-sm text-foreground">{entry.lesson}</p>
                 <p className="text-xs text-muted-foreground">
-                  {ERROR_REASONS[entry.reason as ErrorReason]?.label}
-                  {entry.source ? ` · ${entry.source}` : ""}
+                  {[entry.reason && ERROR_REASONS[entry.reason as ErrorReason]?.label, entry.source]
+                    .filter(Boolean)
+                    .join(" · ")}
                   {entry.mastered ? " · dominado" : ""}
                 </p>
               </li>

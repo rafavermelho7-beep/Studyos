@@ -505,10 +505,10 @@ deploy feito no Vercel — `https://studyos-nine-ochre.vercel.app`.
     requisições a 4,5 MB. O servidor confere o que realmente chegou
     antes de registrar. Chave nova não precisa ser criada: usa a
     `SUPABASE_SECRET_KEY` que já está no Vercel.
-  - **Ainda não testado contra o Supabase real** (este ambiente não tem
-    as chaves). Dev/e2e usam um armazenamento local que imita o
-    protocolo do Supabase; o cliente Supabase é o oficial (supabase-js).
-    Primeiro envio na versão de teste do Vercel = validação real.
+  - Dev/e2e usam um armazenamento local que imita o protocolo do
+    Supabase; o cliente Supabase é o oficial (supabase-js). **Validado em
+    produção pelo usuário em 2026-09-25**: envio e abertura de PDF
+    funcionando no Supabase real.
   - Bugs pegos pelos testes antes de subir: segredo de assinatura local
     diferente entre módulos do Next (upload sempre falhava); Android
     enviando PowerPoint sem tipo (agora deduzido pela extensão); data
@@ -517,6 +517,23 @@ deploy feito no Vercel — `https://studyos-nine-ochre.vercel.app`.
     links, tópicos, exclusão apaga o arquivo) e `lessons.test.ts` (tipo,
     tamanho, cota, caminho de outro usuário, tópicos de outra matéria).
     24/24 e2e, 52/52 unitários, build limpo.
+
+- **Fase 31 — Caderno de Erros (2026-09-25)**: aba nova. Cada erro tem
+  matéria/tópico, fonte (MedCof, prova P2...), a questão em texto e/ou
+  **foto** (câmera do celular), **por que errou** (conteúdo, confusão,
+  atenção, interpretação, chute) e **o que aprendeu**. Resumo "onde você
+  perde pontos" (principal motivo, matéria com mais erros), filtros,
+  edição, exclusão com desfazer. **Modo revisão**: questão com a lição
+  escondida → revela → "acertaria agora" / "ainda erraria"; intervalos
+  1 → 7 → 30 → 90 dias. Erros recentes aparecem na página do tópico e
+  **sobem o tópico no "Seu foco agora"** ("Errou N questões recentemente").
+  - Bugs pegos antes de subir: a revisão pulava cards (a lista mudava a
+    cada resposta); o formulário fechava após o primeiro erro salvo; e,
+    no app todo, qualquer fileira com rolagem horizontal alargava a página
+    no celular (layout sem `min-w-0`).
+  - Testes: `e2e/errors.spec.ts` (foto, resumo, tópico, foco, revisão de
+    2 cards, sem estouro de largura em 390px), `errors.test.ts`,
+    `error-review.test.ts`. 25/25 e2e, 59/59 unitários, build limpo.
 
 ## Em andamento / próximos passos (ordem planejada)
 

@@ -2,12 +2,14 @@ import "server-only";
 import { differenceInCalendarDays, subDays } from "date-fns";
 import { db } from "@/lib/db";
 import { estimateRetrievability } from "@/server/services/reviews";
+import { recentErrorCountsByTopic } from "@/server/services/errors";
 
 // The priority engine (brief §31). Deliberately isolated here — never
 // spread this scoring logic into components — so it stays a single place
 // to read, test, and evolve. Every input is a real signal already in the
-// database (exam dates, manual topic status, FSRS review state, subject
-// priority); nothing here is invented or randomized.
+// database (exam dates, manual topic status, FSRS review state, recent
+// entries in the Caderno de Erros, subject priority); nothing here is
+// invented or randomized.
 //
 // Score is additive and unbounded on purpose: it only has to produce a
 // correct ORDER, not a calibrated 0-100 "readiness" number — turning it
@@ -34,14 +36,17 @@ export async function getFocusRecommendations(
 ): Promise<FocusRecommendation[]> {
   const now = new Date();
 
-  const topics = await db.topic.findMany({
-    where: { userId },
-    include: {
-      subject: { select: { id: true, name: true, color: true, emoji: true, priority: true } },
-      reviewState: true,
-      examTopics: { include: { exam: { select: { date: true } } } },
-    },
-  });
+  const [topics, recentErrors] = await Promise.all([
+    db.topic.findMany({
+      where: { userId },
+      include: {
+        subject: { select: { id: true, name: true, color: true, emoji: true, priority: true } },
+        reviewState: true,
+        examTopics: { include: { exam: { select: { date: true } } } },
+      },
+    }),
+    recentErrorCountsByTopic(userId, 30, now),
+  ]);
 
   const scored = topics.map((topic) => {
     let score = 0;
@@ -90,6 +95,15 @@ export async function getFocusRecommendations(
           reasons.push({ code: "low-retention", label: "Retenção baixa" });
         }
       }
+    }
+
+    // Questions missed in the last 30 days (and not yet mastered in the
+    // Caderno de Erros): direct evidence of a gap, capped so a burst of
+    // entries can't drown out an imminent exam.
+    const errors = recentErrors.get(topic.id) ?? 0;
+    if (errors > 0) {
+      score += Math.min(20, errors * 8);
+      reasons.push({ code: "errors", label: `Errou ${errors} quest${errors === 1 ? "ão" : "ões"} recentemente` });
     }
 
     if (topic.subject.priority === 1) score += 10;

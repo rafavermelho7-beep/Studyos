@@ -270,6 +270,17 @@ npx prisma studio                   # inspect the Supabase database
   Lesson dates are calendar days: parse with `parseISO` on the server and
   format on the server (client components get a preformatted string);
   "today" as a default comes from the browser.
+- **Caderno de Erros** (`ErrorEntry`, `services/errors.ts`, `/errors`):
+  question as text and/or a photo (an `Image` row, validated with
+  `validateImageBytes`, deleted with the entry), source, reason
+  (`ERROR_REASONS` in `lib/error-review.ts`) and the lesson learned.
+  Review is a simple widening schedule (1 → 7 → 30 → 90 days, "ainda
+  erraria" resets), deliberately not FSRS. Unmastered errors from the last
+  30 days feed `planning.ts` (+8 per error, capped at 20). The review
+  screen snapshots its queue into state on mount — every answer's action
+  revalidates and re-renders the page with a shorter list, and reading
+  props would skip cards (caught by e2e). Same trap anywhere a client
+  component walks through a server-provided list while mutating it.
 - **Migrations run on every Vercel build** (`vercel-build` script:
   `prisma generate && prisma migrate deploy && next build`). The explicit
   `prisma generate` is load-bearing: Vercel restores `node_modules` from
@@ -283,6 +294,11 @@ npx prisma studio                   # inspect the Supabase database
   defaulted columns/tables; no renames, drops or type changes in the same
   release as the code that stops using them). Locally, `npm run build`
   never touches the database.
+- **The app shell's content column has `min-w-0`** (`(app)/layout.tsx`):
+  without it a flex item grows to its widest child, so any horizontally
+  scrolling row widened the whole page past a phone screen instead of
+  scrolling inside itself. `e2e/errors.spec.ts` asserts no horizontal
+  overflow at 390px.
 - **Mobile bottom nav shows only `primary: true` items from
   `nav-items.ts` (currently 4) plus a "Mais" button** that opens a sheet
   with the rest — cramming all ~10 sections into one bottom bar overflows

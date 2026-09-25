@@ -84,6 +84,7 @@ model User {
   images        Image[]       @relation("ImageOwner")
   lessons           Lesson[]
   lessonAttachments LessonAttachment[]
+  errorEntries      ErrorEntry[]
   onboarding    OnboardingState?
 }
 
@@ -138,6 +139,7 @@ model Subject {
   studyEvents  StudyEvent[]
   studySources StudySource[]
   lessons      Lesson[]
+  errorEntries ErrorEntry[]
   ankiLinks    AnkiDeckLink[]
 
   @@index([userId])
@@ -167,6 +169,7 @@ model Topic {
   studySources StudySource[]
   examTopics   ExamTopic[]
   lessonTopics LessonTopic[]
+  errorEntries ErrorEntry[]
   reviewState  ReviewState?
   reviewLogs   ReviewLog[]
   ankiLinks    AnkiDeckLink[]
@@ -452,8 +455,9 @@ model Image {
   createdAt   DateTime @default(now())
 
   user             User     @relation("ImageOwner", fields: [userId], references: [id], onDelete: Cascade)
-  subjectCover     Subject? @relation("SubjectCover")
-  userBackgroundOf User?    @relation("UserBackground")
+  subjectCover     Subject?    @relation("SubjectCover")
+  userBackgroundOf User?       @relation("UserBackground")
+  errorEntry       ErrorEntry? @relation("ErrorPhoto")
 
   @@index([userId])
 }
@@ -512,4 +516,39 @@ model LessonTopic {
 
   @@id([lessonId, topicId])
   @@index([topicId])
+}
+
+// ─── Caderno de Erros ────────────────────────────────────────────────────
+// One row per question the user got wrong: what it was (text and/or a
+// photo — an Image row, same as covers), where it came from, WHY they got
+// it wrong, and the one-line lesson to reread. Re-shown on a simple
+// widening schedule (lib/error-review.ts: 1 → 7 → 30 → 90 days; "ainda
+// erraria" resets it), not FSRS — a handful of wrong questions per topic
+// doesn't give a memory model enough signal to be worth its complexity.
+// Recent entries also raise the topic in the planning engine.
+model ErrorEntry {
+  id             String    @id @default(cuid())
+  userId         String
+  subjectId      String?
+  topicId        String?
+  source         String? // "Sanar", "MedCof", "Prova P2"... free text
+  question       String?
+  imageId        String?   @unique
+  reason         String // lib/error-review.ts ERROR_REASONS key
+  lesson         String // "o que aprendi"
+  stage          Int       @default(0) // index into the review intervals
+  nextReviewAt   DateTime
+  lastReviewedAt DateTime?
+  mastered       Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  topic   Topic?   @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  image   Image?   @relation("ErrorPhoto", fields: [imageId], references: [id], onDelete: SetNull)
+
+  @@index([userId, nextReviewAt])
+  @@index([topicId])
+  @@index([subjectId])
 }

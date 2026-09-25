@@ -16,6 +16,8 @@ import { ForgettingCurveChart } from "./forgetting-curve-chart";
 import { StartReviewButton } from "./start-review-button";
 import { SourcesSection } from "./sources-section";
 import { listLessonsForTopic } from "@/server/services/lessons";
+import { listErrorsForTopic } from "@/server/services/errors";
+import { ERROR_REASONS, type ErrorReason } from "@/lib/error-review";
 import { fileIcon } from "@/lib/file-icons";
 import { Link2 } from "lucide-react";
 import { RemoveFromReviewButton, UndoLastReviewButton } from "./review-controls";
@@ -52,9 +54,10 @@ export default async function TopicDetailPage({
   const topic = await getTopic(user.id, id);
   if (!topic) notFound();
 
-  const [logs, lessons] = await Promise.all([
+  const [logs, lessons, errors] = await Promise.all([
     topic.reviewState ? getTopicReviewHistory(user.id, topic.id) : Promise.resolve([]),
     listLessonsForTopic(user.id, topic.id),
+    listErrorsForTopic(user.id, topic.id),
   ]);
   const previousStability = stabilityBeforeLastReview(logs);
 
@@ -119,6 +122,30 @@ export default async function TopicDetailPage({
               A linha tracejada mostra como a retenção teria caído sem sua última revisão.
             </p>
           )}
+        </div>
+      )}
+
+      {errors.length > 0 && (
+        <div className="mt-6">
+          <div className="mb-2 flex items-baseline justify-between">
+            <h2 className="text-sm font-semibold text-foreground">Caderno de erros</h2>
+            <Link href={`/errors?materia=${topic.subjectId}`} className="text-xs font-medium text-accent hover:underline">
+              Ver no caderno
+            </Link>
+          </div>
+          <ul className="stagger space-y-1.5">
+            {errors.map((entry) => (
+              <li key={entry.id} className="rounded-[var(--radius-md)] border-l-4 border-accent bg-accent-soft/40 px-3 py-2">
+                <p className="text-sm text-foreground">{entry.lesson}</p>
+                <p className="text-xs text-muted-foreground">
+                  {[entry.reason && ERROR_REASONS[entry.reason as ErrorReason]?.label, entry.source]
+                    .filter(Boolean)
+                    .join(" · ")}
+                  {entry.mastered ? " · dominado" : ""}
+                </p>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

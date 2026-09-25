@@ -27,7 +27,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <SidebarNavLinks />
         </aside>
 
-        <div className="flex min-h-dvh flex-1 flex-col">
+        {/* min-w-0: a flex item defaults to min-width:auto, so any wide child
+            (e.g. a horizontally-scrolling chip row) would widen the whole page
+            past the phone screen instead of scrolling inside itself. */}
+        <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-10 flex h-14 items-center justify-end border-b border-border bg-surface/80 px-4 backdrop-blur-md md:px-6">
             <UserMenu name={user.name} email={user.email} />
           </header>

@@ -293,6 +293,15 @@ npx prisma studio                   # inspect the Supabase database
   10-min floor). Like the planning engine the weight only orders; it's
   never shown as a number. The "revisado" checklist is per-device
   localStorage on purpose (a one-night tick-list, not study history).
+- **Cronograma automático** (`/schedule?view=plan`, `lib/auto-schedule.ts`
+  `buildPlan`, `services/auto-schedule.ts`): `User.weeklyStudyMinutes`
+  (7 ints, Sunday first) × upcoming exams' topics → 30-min blocks per day.
+  Topics share an exam's blocks by `weakness()`, exams share a day by
+  1/days-left, both via "highest weight / (given + 1)" (deterministic, no
+  randomness); the day before an exam is its véspera and pauses the rest.
+  **The plan is never stored** — recomputed on every read from current
+  data, so there's no stale plan and no "replanejar" button. Keep it that
+  way unless the user needs to pin/move blocks by hand.
 - **Migrations run on every Vercel build** (`vercel-build` script:
   `prisma generate && prisma migrate deploy && next build`). The explicit
   `prisma generate` is load-bearing: Vercel restores `node_modules` from

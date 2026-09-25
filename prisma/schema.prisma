@@ -66,6 +66,10 @@ model User {
   backgroundStyle    String   @default("plain")
   backgroundImageId  String?  @unique
   backgroundImage    Image?   @relation("UserBackground", fields: [backgroundImageId], references: [id], onDelete: SetNull)
+  // Cronograma automático: minutes available to study on each weekday,
+  // index 0 = Sunday. Empty until the user sets it (read through
+  // lib/auto-schedule.ts readWeeklyMinutes, which pads to 7).
+  weeklyStudyMinutes Int[]    @default([])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

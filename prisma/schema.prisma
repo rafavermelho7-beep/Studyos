@@ -33,6 +33,12 @@ model User {
   email        String   @unique
   passwordHash String
 
+  // LEGACY (Anki integration removed 2026-09-25, at the user's request):
+  // apiKeyId/apiKeyHash and the AnkiDeckLink table are no longer read or
+  // written by any code. Kept only because migrations must stay additive
+  // while preview deploys share the production database — drop them in a
+  // later, standalone migration once no deployed code references them.
+  //
   // API key for the local Anki connector (brief §26) to authenticate as
   // this user without a browser session cookie. Shaped like
   // "sk_live_<apiKeyId>_<secret>": apiKeyId is public and indexed so a
@@ -113,6 +119,10 @@ model Subject {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // One emoji from the curated list in src/lib/subject-emojis.ts (validated
+  // on write). Null = show the color dot.
+  emoji String?
 
   // Optional cover photo (Settings-free: set from the subject's own page).
   coverImageId String? @unique

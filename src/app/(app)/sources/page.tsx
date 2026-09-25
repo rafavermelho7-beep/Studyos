@@ -49,7 +49,7 @@ export default async function SourcesPage() {
         <div className="animate-fade-in-up flex flex-col items-center rounded-[var(--radius-lg)] border border-dashed border-border py-16 text-center">
           <Library className="mb-3 h-8 w-8 text-muted-foreground" strokeWidth={1.5} />
           <p className="text-sm text-muted-foreground">
-            Nenhuma fonte ainda. Adicione fontes (SanarFlix, Anki, PDFs, aulas...) a partir da
+            Nenhuma fonte ainda. Adicione fontes (SanarFlix, PDFs, aulas...) a partir da
             página de um tópico.
           </p>
         </div>

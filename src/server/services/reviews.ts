@@ -40,7 +40,7 @@ export function listDueReviews(userId: string, now = new Date()) {
   return db.reviewState.findMany({
     where: { userId, due: { lte: now } },
     orderBy: { due: "asc" },
-    include: { topic: { include: { subject: { select: { id: true, name: true, color: true } } } } },
+    include: { topic: { include: { subject: { select: { id: true, name: true, color: true, emoji: true } } } } },
   });
 }
 

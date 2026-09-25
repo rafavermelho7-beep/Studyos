@@ -480,6 +480,19 @@ deploy feito no Vercel — `https://studyos-nine-ochre.vercel.app`.
   explícito no início do `vercel-build`; reproduzido localmente (cliente
   antigo → mesmos erros TS; script novo → build limpo).
 
+- **Fase 29 — Anki removido + emojis por matéria (2026-09-25)**:
+  - Integração com o Anki removida a pedido do usuário (Configurações,
+    rota da API, conector, testes). Tabelas antigas ficam no banco sem uso
+    (regra de migrations aditivas); sessões já importadas continuam nas
+    estatísticas e agora podem ser editadas/excluídas.
+  - Emoji por matéria: lista curada cobrindo o curso inteiro (ciclo
+    básico, clínica, cirurgia, mulher e criança, mente/sociedade/ética,
+    urgência/internato/carreira), sugestão automática pelo nome, seletor
+    com busca na página da matéria, botão "aplicar sugestões" para
+    matérias antigas; aparece nas listas, no "Seu foco agora", na revisão,
+    em provas e tarefas.
+  - IA de resumos: **cancelada pelo usuário** — não implementar.
+
 ## Em andamento / próximos passos (ordem planejada)
 
 1. Fase 23 — mais testes (cobertura unitária além do caso de segurança;

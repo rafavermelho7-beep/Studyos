@@ -9,6 +9,7 @@ import { UndoableDeleteButton } from "@/components/ui/delete-buttons";
 import { useUndoToast } from "@/components/ui/undo-toast";
 import { cn } from "@/lib/utils";
 import type { TaskWithMeta } from "@/server/services/tasks";
+import { SubjectMark } from "@/components/ui/subject-mark";
 
 const priorityLabel = { LOW: "Baixa", MEDIUM: "Média", HIGH: "Alta" } as const;
 
@@ -47,7 +48,7 @@ export function TaskRow({ task }: { task: TaskWithMeta }) {
         <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
           {task.subject && (
             <span className="flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: task.subject.color }} />
+              <SubjectMark color={task.subject.color} emoji={task.subject.emoji} />
               {task.subject.name}
             </span>
           )}

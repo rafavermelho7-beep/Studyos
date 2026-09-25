@@ -8,6 +8,8 @@ import {
   createSubject,
   updateSubject,
   deleteSubject,
+  setSubjectEmoji,
+  applySuggestedEmojis,
 } from "@/server/services/subjects";
 import { createTopic, updateTopic, deleteTopic } from "@/server/services/topics";
 import { removeSubjectCover, setSubjectCover } from "@/server/services/images";
@@ -135,4 +137,18 @@ function revalidateSubjectCover(subjectId: string) {
   revalidatePath(`/subjects/${subjectId}`);
   revalidatePath("/subjects");
   revalidatePath("/dashboard");
+}
+
+export async function setSubjectEmojiAction(subjectId: string, emoji: string | null) {
+  const user = await requireUser();
+  await setSubjectEmoji(user.id, subjectId, emoji);
+  revalidateSubjectCover(subjectId);
+}
+
+export async function applySuggestedEmojisAction() {
+  const user = await requireUser();
+  const count = await applySuggestedEmojis(user.id);
+  revalidatePath("/subjects", "layout");
+  revalidatePath("/dashboard");
+  return count;
 }

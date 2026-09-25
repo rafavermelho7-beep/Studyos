@@ -6,6 +6,7 @@ import { SubjectEditForm } from "./subject-edit-form";
 import { TopicTree } from "./topic-tree";
 import { AddTopicForm } from "./add-topic-form";
 import { SubjectCover } from "./subject-cover";
+import { EmojiPicker } from "./emoji-picker";
 import { ConfirmDeleteButton } from "@/components/ui/delete-buttons";
 import { subjectDeletionDetails } from "@/lib/deletion-copy";
 import { deleteSubjectAction } from "../actions";
@@ -36,12 +37,9 @@ export default async function SubjectDetailPage({
     <div className="mx-auto max-w-3xl px-4 py-6 md:px-6">
       <SubjectCover subjectId={subject.id} subjectName={subject.name} coverImageId={subject.coverImageId} />
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <span
-            className="mt-1.5 h-3 w-3 shrink-0 rounded-full"
-            style={{ backgroundColor: subject.color }}
-          />
-          <div>
+        <div className="relative flex min-w-0 flex-1 items-center gap-3">
+          <EmojiPicker subjectId={subject.id} subjectName={subject.name} emoji={subject.emoji} color={subject.color} />
+          <div className="min-w-0">
             <h1 className="text-xl font-semibold tracking-tight">{subject.name}</h1>
             <p className="text-sm text-muted-foreground">
               {subject.topics.length} tópico{subject.topics.length === 1 ? "" : "s"}

@@ -52,8 +52,6 @@ function EventRow({ event }: { event: RecentEvent }) {
   if (isPendingDelete(event.id)) return null;
 
   const title = `${event.subject?.name ?? "Estudo livre"}${event.topic ? ` · ${event.topic.name}` : ""}`;
-  // Anki rows are rewritten by every sync — editing them here wouldn't stick.
-  const editable = event.source !== "ANKI";
 
   return (
     <li className="rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2.5 text-sm transition-colors duration-150 hover:border-border-strong">
@@ -68,23 +66,19 @@ function EventRow({ event }: { event: RecentEvent }) {
         <span className="shrink-0 text-xs font-medium text-muted-foreground">
           {formatEventDuration(event.durationSec)}
         </span>
-        {editable && (
-          <>
-            <button
-              onClick={() => setEditing((v) => !v)}
-              aria-label={`Editar duração de "${title}"`}
-              className="shrink-0 text-muted-foreground transition-[color,transform] duration-150 hover:scale-110 hover:text-accent active:scale-95"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </button>
-            <UndoableDeleteButton
-              id={event.id}
-              label={`Excluir sessão "${title}"`}
-              message="Sessão excluída"
-              onDelete={() => deleteStudyEventAction(event.id)}
-            />
-          </>
-        )}
+        <button
+          onClick={() => setEditing((v) => !v)}
+          aria-label={`Editar duração de "${title}"`}
+          className="shrink-0 text-muted-foreground transition-[color,transform] duration-150 hover:scale-110 hover:text-accent active:scale-95"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+        <UndoableDeleteButton
+          id={event.id}
+          label={`Excluir sessão "${title}"`}
+          message="Sessão excluída"
+          onDelete={() => deleteStudyEventAction(event.id)}
+        />
       </div>
       {editing && (
         <form

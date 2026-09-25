@@ -19,6 +19,7 @@ export default async function ReviewPage() {
     topicName: row.topic.name,
     subjectName: row.topic.subject.name,
     subjectColor: row.topic.subject.color,
+    subjectEmoji: row.topic.subject.emoji,
     retrievabilityPercent: Math.round(estimateRetrievability(row) * 100),
     isNew: row.state === "NEW",
   }));

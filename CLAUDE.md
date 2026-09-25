@@ -130,23 +130,13 @@ npx prisma studio                   # inspect the Supabase database
 - **Nav items** (`src/components/layout/nav-items.ts`) only list routes
   that are fully functional. Add the link in the same change that ships
   the page — never link to a stub.
-- **Anki integration** (brief section 26): a hosted web app cannot reach
-  Anki Desktop directly. Architecture: `StudyOS Web ← POST /api/anki/sync ←
-  connector/sync.mjs (runs locally, reads AnkiConnect) ← Anki Desktop`.
-  The connector authenticates with a per-user API key (Settings page,
-  `src/lib/auth/api-key.ts`: `sk_live_<id>_<secret>`, only the bcrypt hash
-  of the secret is stored, `apiKeyId` is indexed for O(1) lookup) — never
-  a session cookie, since it's not a browser. Deck → subject/topic
-  mapping is `AnkiDeckLink`, resolved with "::" hierarchy fallback
-  (`resolveDeckLink` in `src/server/services/anki-links.ts`) so a link on
-  a parent deck covers its subdecks. The sync endpoint does a full
-  replace-for-day of that user's `ANKI`-sourced `StudyEvent`s, which makes
-  re-syncing the same day idempotent without row-level reconciliation.
-  The server side (API key, deck resolution, sync endpoint) is real and
-  e2e-tested (`e2e/anki-sync.spec.ts`); `connector/sync.mjs` is real code
-  against AnkiConnect's documented API but **was never run against a live
-  Anki Desktop** in this environment — see `connector/README.md`'s status
-  note before trusting it blindly.
+- **Anki integration: REMOVED (2026-09-25, user's request).** The
+  connector, `/api/anki/sync`, API keys and deck-link settings are gone.
+  Legacy leftovers kept on purpose: `User.apiKeyId/apiKeyHash` and the
+  `AnkiDeckLink` table (unused; drop in a later standalone migration —
+  see the additive-migrations rule), and `ANKI` values in the
+  `EventSource`/source-type enums so historical rows still render. Past
+  Anki-sourced `StudyEvent`s are now editable/deletable like any other.
 - **SanarFlix**: no scraping, ever. Manual link/title/completion tracking
   via `StudySource` (`src/server/services/sources.ts`), managed from a
   topic's detail page; "Registrar tempo" is the one place a source logs
@@ -216,8 +206,7 @@ npx prisma studio                   # inspect the Supabase database
   `deleteTopicFromDetailAction`, `deleteExamFromDetailAction`), never
   `router.push` after it — revalidating first re-renders the now-deleted
   page as a 404. In e2e, click "Fechar aviso" to commit an undoable delete
-  instead of waiting out the 6s window. Anki-sourced `StudyEvent`s are
-  not editable/deletable (the next sync rewrites the day anyway).
+  instead of waiting out the 6s window.
 - **FSRS `ReviewLog` stores the card as it was BEFORE the grade**
   (stability, difficulty, scheduled days — that's how ts-fsrs builds its
   log), except our `state` column, which `gradeReview` fills with the
@@ -252,6 +241,13 @@ npx prisma studio                   # inspect the Supabase database
   Render with `next/image` + `unoptimized` (the optimizer can't fetch a
   session-protected URL). UI: `PhotoPicker`, `SubjectAvatar`,
   `AppBackground`.
+- **Subject emojis**: `Subject.emoji` holds one emoji from the curated,
+  curriculum-wide list in `src/lib/subject-emojis.ts` (validated on write;
+  never free text). New subjects get `suggestSubjectEmoji(name)`
+  automatically; pattern order matters (tests pin the tricky cases:
+  "Genética" ≠ ética, "Cirurgia Pediátrica" = surgery). Display:
+  `SubjectAvatar` (cover > emoji > dot) in lists, `SubjectMark`
+  (emoji > dot) inline next to a subject name.
 - **Migrations run on every Vercel build** (`vercel-build` script:
   `prisma generate && prisma migrate deploy && next build`). The explicit
   `prisma generate` is load-bearing: Vercel restores `node_modules` from
@@ -288,16 +284,13 @@ src/lib/db.ts                 Prisma client singleton
 src/lib/exam-prep.ts          exam preparation % / status breakdown, shared by exam list + detail
 src/server/services/          userId-scoped business logic (see its README) — one file per domain:
                                subjects, topics, tasks, exams, study-events, reviews (FSRS),
-                               stats, schedule, knowledge-map, sources, anki-links, planning
+                               stats, schedule, knowledge-map, sources, planning, images, preferences
 src/app/(auth)/               login/register pages
 src/app/(app)/                authenticated app shell + feature routes (one folder per nav item,
                                plus topics/[id] which isn't in the sidebar — reached via links)
-src/app/api/anki/sync/        connector-facing API route (Bearer API key, not a session cookie)
 src/app/api/images/[id]/      serves stored photos to their owner (session cookie)
 src/components/ui/            small hand-built primitives (button, input, card, badge) — no shadcn CLI, no Radix yet
 src/components/layout/        sidebar/bottom-nav/user-menu, shared app chrome
-connector/                    standalone Node script + README — NOT part of the Next.js app,
-                               run locally by the user against their own Anki Desktop
 public/sw.js, public/offline.html   PWA service worker (see the PWA note above)
 e2e/                          Playwright specs — one file per feature slice, plus global-teardown.ts
 ```

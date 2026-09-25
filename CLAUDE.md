@@ -285,6 +285,14 @@ npx prisma studio                   # inspect the Supabase database
   revalidates and re-renders the page with a shorter list, and reading
   props would skip cards (caught by e2e). Same trap anywhere a client
   component walks through a server-provided list while mutating it.
+- **Modo véspera** (`/exams/[id]/vespera`, `services/vespera.ts`,
+  `lib/vespera.ts`): an exam's topics weakest-first by `weakness()` —
+  manual status + (1 − FSRS retention) + open concepts from the Caderno de
+  Erros (capped) — with each topic's concepts and lesson materials, and
+  the user's time budget split by weight (`allocateMinutes`, 5-min steps,
+  10-min floor). Like the planning engine the weight only orders; it's
+  never shown as a number. The "revisado" checklist is per-device
+  localStorage on purpose (a one-night tick-list, not study history).
 - **Migrations run on every Vercel build** (`vercel-build` script:
   `prisma generate && prisma migrate deploy && next build`). The explicit
   `prisma generate` is load-bearing: Vercel restores `node_modules` from

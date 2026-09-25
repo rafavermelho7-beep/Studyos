@@ -539,6 +539,15 @@ deploy feito no Vercel — `https://studyos-nine-ochre.vercel.app`.
     2 cards, sem estouro de largura em 390px), `errors.test.ts`,
     `error-review.test.ts`. 25/25 e2e, 59/59 unitários, build limpo.
 
+- **Fase 32 — Modo véspera (2026-09-25)**: botão na página de cada prova.
+  Lista os tópicos da prova **do mais fraco para o mais forte** (status,
+  retenção estimada, conceitos a fixar no Caderno de Erros), divide o
+  tempo que o usuário tem ("quanto tempo você tem?") entre eles, e em
+  cada tópico mostra os conceitos errados e os materiais das aulas, com
+  "Estudar agora" e checklist de revisado (salvo no aparelho).
+  Testes: `e2e/vespera.spec.ts`, `vespera.test.ts` (ordem, acesso de outro
+  usuário), `lib/vespera.test.ts`. 26/26 e2e, 67/67 unitários.
+
 ## Em andamento / próximos passos (ordem planejada)
 
 1. Fase 23 — mais testes (cobertura unitária além do caso de segurança;

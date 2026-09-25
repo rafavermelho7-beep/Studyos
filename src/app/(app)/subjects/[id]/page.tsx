@@ -7,6 +7,9 @@ import { TopicTree } from "./topic-tree";
 import { AddTopicForm } from "./add-topic-form";
 import { SubjectCover } from "./subject-cover";
 import { EmojiPicker } from "./emoji-picker";
+import { listLessonsForSubject } from "@/server/services/lessons";
+import { NewLessonForm } from "../../lessons/new-lesson-form";
+import { LessonList } from "../../lessons/lesson-list";
 import { ConfirmDeleteButton } from "@/components/ui/delete-buttons";
 import { subjectDeletionDetails } from "@/lib/deletion-copy";
 import { deleteSubjectAction } from "../actions";
@@ -31,7 +34,10 @@ export default async function SubjectDetailPage({
   const user = await requireUser();
   const subject = await getSubject(user.id, id);
   if (!subject) notFound();
-  const impact = await getSubjectDeletionImpact(user.id, subject.id);
+  const [impact, lessons] = await Promise.all([
+    getSubjectDeletionImpact(user.id, subject.id),
+    listLessonsForSubject(user.id, subject.id),
+  ]);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 md:px-6">
@@ -54,6 +60,16 @@ export default async function SubjectDetailPage({
             onDelete={deleteSubjectAction.bind(null, subject.id)}
           />
         </div>
+      </div>
+
+      <div className="mb-8">
+        <h2 className="mb-3 text-sm font-semibold text-foreground">Aulas</h2>
+        <NewLessonForm subjectId={subject.id} />
+        {lessons.length > 0 && (
+          <div className="mt-3">
+            <LessonList lessons={lessons} />
+          </div>
+        )}
       </div>
 
       <SubjectEditForm subject={subject} />

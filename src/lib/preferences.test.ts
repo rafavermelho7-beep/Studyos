@@ -7,12 +7,12 @@ const ids = (layout: { id: string }[]) => layout.map((b) => b.id);
 
 describe("resolveDashboardLayout", () => {
   it("uses the default order when nothing was customized", () => {
-    expect(ids(resolveDashboardLayout([], []))).toEqual(["summary", "goal", "focus", "neglected", "subjects"]);
+    expect(ids(resolveDashboardLayout([], []))).toEqual(["summary", "goal", "focus", "neglected", "lessons", "subjects"]);
   });
 
   it("keeps the saved order and hidden flags", () => {
-    const layout = resolveDashboardLayout(["subjects", "focus", "summary", "goal", "neglected"], ["goal"]);
-    expect(ids(layout)).toEqual(["subjects", "focus", "summary", "goal", "neglected"]);
+    const layout = resolveDashboardLayout(["subjects", "focus", "summary", "goal", "neglected", "lessons"], ["goal"]);
+    expect(ids(layout)).toEqual(["subjects", "focus", "summary", "goal", "neglected", "lessons"]);
     expect(layout.find((b) => b.id === "goal")?.visible).toBe(false);
   });
 
@@ -23,6 +23,7 @@ describe("resolveDashboardLayout", () => {
       "summary",
       "goal",
       "neglected",
+      "lessons",
       "subjects",
     ]);
   });
@@ -34,6 +35,7 @@ describe("resolveDashboardLayout", () => {
       "goal",
       "focus",
       "neglected",
+      "lessons",
       "subjects",
     ]);
   });

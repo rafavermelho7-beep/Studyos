@@ -52,3 +52,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# dev/e2e stand-in for Supabase Storage (src/server/storage/local.ts)
+/.local-storage

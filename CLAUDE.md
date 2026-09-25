@@ -44,9 +44,10 @@ the working reference for continuing development.
     this writing. Pinned to the last stable 6.x. Revisit later.
   - **Supabase's own Auth/Storage/Realtime client is NOT used anywhere.**
     `SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEY`/`SUPABASE_SECRET_KEY` in
-    `.env` are stored for possible future use but nothing reads them
-    today — the app talks to Postgres directly through Prisma, with its
-    own auth (below). **Photos (subject covers, app background) are NOT in
+    `.env` — `SUPABASE_URL` + `SUPABASE_SECRET_KEY` are now read by
+    exactly one thing: the lesson-files Storage driver
+    (`src/server/storage/supabase.ts`, see "Aulas" below). Auth and data
+    still go straight to Postgres through Prisma, with our own auth. **Photos (subject covers, app background) are NOT in
     Supabase Storage either** — they're `Image` rows (bytea) in Postgres,
     served only by `GET /api/images/[id]` after a session + ownership
     check. Deliberate at personal scale; see the `Image` model comment
@@ -248,6 +249,27 @@ npx prisma studio                   # inspect the Supabase database
   "Genética" ≠ ética, "Cirurgia Pediátrica" = surgery). Display:
   `SubjectAvatar` (cover > emoji > dot) in lists, `SubjectMark`
   (emoji > dot) inline next to a subject name.
+- **Aulas (lesson files) — Supabase Storage, private bucket `lesson-files`**
+  (created by the app on first upload). Upload is two server actions
+  around a direct browser→Storage PUT: `startLessonUploadAction` (checks
+  type/size/1 GB quota, returns a signed upload URL) → browser PUTs
+  multipart FormData (`cacheControl` + file under field `""`, the
+  storage-js signed-upload format, with XHR for progress) →
+  `finishLessonUploadAction` (`stat`s what actually landed and records it
+  only if the path is under `<userId>/<lessonId>/` and type/size are
+  allowed; otherwise deletes it). Vercel's 4.5 MB body cap is why files
+  never pass through our functions. Files open via `/api/lesson-files/[id]`
+  (session + ownership, then a 2-min signed URL). Deleting a file, lesson
+  or subject removes the Storage objects too (best effort, after the DB
+  delete; services return the paths, actions call Storage). Storage is
+  behind `getFileStorage()` (`src/server/storage/`): Supabase when its env
+  vars exist, else a local-disk stand-in (`local.ts` +
+  `/api/dev-storage/[...path]`, 404 in production) that speaks the same
+  protocol — that's what dev and e2e exercise. Use `supabase-js`, never
+  hand-rolled headers: new `sb_secret_` keys must not be sent as Bearer.
+  Lesson dates are calendar days: parse with `parseISO` on the server and
+  format on the server (client components get a preformatted string);
+  "today" as a default comes from the browser.
 - **Migrations run on every Vercel build** (`vercel-build` script:
   `prisma generate && prisma migrate deploy && next build`). The explicit
   `prisma generate` is load-bearing: Vercel restores `node_modules` from
@@ -289,6 +311,8 @@ src/app/(auth)/               login/register pages
 src/app/(app)/                authenticated app shell + feature routes (one folder per nav item,
                                plus topics/[id] which isn't in the sidebar — reached via links)
 src/app/api/images/[id]/      serves stored photos to their owner (session cookie)
+src/app/api/lesson-files/[id]/ opens a lesson file (ownership check → signed Storage URL)
+src/server/storage/           file storage drivers: Supabase (prod) / local disk (dev, e2e)
 src/components/ui/            small hand-built primitives (button, input, card, badge) — no shadcn CLI, no Radix yet
 src/components/layout/        sidebar/bottom-nav/user-menu, shared app chrome
 public/sw.js, public/offline.html   PWA service worker (see the PWA note above)

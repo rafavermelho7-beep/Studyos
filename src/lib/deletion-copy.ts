@@ -12,10 +12,12 @@ export function subjectDeletionDetails(impact: {
   reviews: number;
   studyEvents: number;
   tasks: number;
+  lessons?: number;
 }) {
   const gone = [
     impact.topics > 0 && plural(impact.topics, "tópico"),
     impact.exams > 0 && plural(impact.exams, "prova"),
+    (impact.lessons ?? 0) > 0 && `${plural(impact.lessons!, "aula")} (com os arquivos)`,
     impact.reviews > 0 && `o histórico de revisão de ${plural(impact.reviews, "tópico")}`,
   ].filter((part): part is string => Boolean(part));
   const kept = [

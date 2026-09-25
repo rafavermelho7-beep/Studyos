@@ -77,14 +77,15 @@ export async function deleteSubject(userId: string, subjectId: string) {
 export async function getSubjectDeletionImpact(userId: string, subjectId: string) {
   // Topics, exams and review history cascade away; tasks, sources and
   // study events are kept with their subject set to null (schema onDelete).
-  const [topics, exams, reviews, studyEvents, tasks] = await Promise.all([
+  const [topics, exams, reviews, studyEvents, tasks, lessons] = await Promise.all([
     db.topic.count({ where: { userId, subjectId } }),
     db.exam.count({ where: { userId, subjectId } }),
     db.reviewState.count({ where: { userId, topic: { subjectId } } }),
     db.studyEvent.count({ where: { userId, subjectId } }),
     db.task.count({ where: { userId, subjectId } }),
+    db.lesson.count({ where: { userId, subjectId } }),
   ]);
-  return { topics, exams, reviews, studyEvents, tasks };
+  return { topics, exams, reviews, studyEvents, tasks, lessons };
 }
 
 export async function setSubjectEmoji(userId: string, subjectId: string, emoji: string | null) {

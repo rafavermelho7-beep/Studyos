@@ -10,6 +10,7 @@ import {
   Calendar,
   Network,
   Library,
+  Presentation,
 } from "lucide-react";
 
 export type NavItem = {
@@ -31,6 +32,7 @@ export const navItems: NavItem[] = [
   { href: "/tasks", label: "Tarefas", icon: ListTodo, primary: true },
   { href: "/review", label: "Revisão", icon: Brain, primary: true },
   { href: "/subjects", label: "Matérias", icon: BookOpen },
+  { href: "/lessons", label: "Aulas", icon: Presentation },
   { href: "/schedule", label: "Cronograma", icon: Calendar },
   { href: "/exams", label: "Provas", icon: CalendarClock },
   { href: "/stats", label: "Estatísticas", icon: BarChart3 },

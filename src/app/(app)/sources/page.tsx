@@ -40,7 +40,7 @@ export default async function SourcesPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 md:px-6">
-      <h1 className="mb-1 text-xl font-semibold tracking-tight">Fontes</h1>
+      <h1 className="mb-1 text-2xl font-bold tracking-tight">Fontes</h1>
       <p className="mb-4 text-sm text-muted-foreground">
         {sources.length} fonte{sources.length === 1 ? "" : "s"} cadastradas em todas as matérias
       </p>

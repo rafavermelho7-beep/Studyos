@@ -15,7 +15,7 @@ export default async function ErrorReviewPage() {
       <Link href="/errors" className="text-xs text-muted-foreground hover:text-foreground">
         ← Caderno de Erros
       </Link>
-      <h1 className="mb-4 mt-1 text-xl font-semibold tracking-tight">Revisar erros</h1>
+      <h1 className="mb-4 mt-1 text-2xl font-bold tracking-tight">Revisar erros</h1>
       {/* Always mounted (even when empty) so a mid-session revalidation keeps its state. */}
       <ErrorReview entries={due} />
     </div>

@@ -40,7 +40,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
       </Link>
       <div className="mt-1 flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight">{lesson.title}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{lesson.title}</h1>
           {/* First letter only — CSS `capitalize` would give "25 De Setembro De". */}
           <p className="text-sm text-muted-foreground">
             {capitalizeFirst(format(lesson.date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR }))}

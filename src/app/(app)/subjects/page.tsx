@@ -22,7 +22,7 @@ export default async function SubjectsPage() {
     <div className="mx-auto max-w-4xl px-4 py-6 md:px-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Matérias</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Matérias</h1>
           <p className="text-sm text-muted-foreground">
             {subjects.length === 0
               ? "Vamos configurar seus estudos."

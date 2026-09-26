@@ -577,6 +577,17 @@ deploy feito no Vercel — `https://studyos-nine-ochre.vercel.app`.
   `lessons.test.ts` (reuso de tópico existente, idempotência, acesso de
   outro usuário).
 
+- **Fase 35 — Visual "alto rendimento" (2026-09-26)**: tema escuro mais
+  profundo e claro com mais contraste (tinta e bordas mais fortes);
+  títulos de página maiores e em negrito; painel com números grandes
+  (`StatTile`: rótulo pequeno em cima, valor em 30px; "Revisões hoje" leva
+  à revisão); a meta do mês é o único número-herói (48px) com barra na cor
+  do acento; cards de matéria com faixa na cor da matéria. Sem efeitos
+  "decorativos" (o usuário rejeitou a ideia de batimento/frequência).
+  Também: `lessons.spec.ts` agora espera a exclusão em segundo plano do
+  arquivo terminar (`expect.poll`) — numa rodada completa ela ainda não
+  tinha rodado quando o teste conferiu o 404.
+
 ## Em andamento / próximos passos (ordem planejada)
 
 1. Fase 23 — mais testes (cobertura unitária além do caso de segurança;

@@ -33,13 +33,15 @@ export function MonthGoalCard({ progress }: { progress: ReturnType<typeof monthG
       <CardContent className="p-4">
         <div className="flex items-baseline justify-between gap-3">
           <p className="text-xs font-medium text-muted-foreground">Meta do mês</p>
-          <p className="text-xs text-muted-foreground">{percent}%</p>
+          <p className="text-sm font-semibold text-foreground">{percent}%</p>
         </div>
-        <p className="mt-0.5 text-lg font-semibold text-foreground">
-          {formatHours(studiedSec)} <span className="text-sm font-normal text-muted-foreground">de {formatHours(goalSec)}</span>
+        {/* The dashboard's one hero figure. */}
+        <p className="mt-1 text-5xl font-semibold leading-none tracking-tight text-foreground">
+          {formatHours(studiedSec)}{" "}
+          <span className="text-base font-medium tracking-normal text-muted-foreground">de {formatHours(goalSec)}</span>
         </p>
         <div
-          className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-2"
+          className={cn("mt-3 h-2.5 w-full overflow-hidden rounded-full", done ? "bg-success-soft" : "bg-accent-soft")}
           role="progressbar"
           aria-label="Progresso da meta do mês"
           aria-valuenow={percent}

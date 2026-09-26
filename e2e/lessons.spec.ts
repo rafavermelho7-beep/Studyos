@@ -81,8 +81,9 @@ test("a class with slides, a link and a topic — private to its owner", async (
   await page.getByLabel('Excluir arquivo "slides-aula5.pdf"').click();
   await page.getByRole("button", { name: "Fechar aviso" }).click();
   await expect(pdfLink).toBeHidden();
-  await page.waitForLoadState("networkidle");
-  expect((await page.request.get(href!, { maxRedirects: 0 })).status()).toBe(404);
+  // The undoable delete runs in the background once the toast closes, so
+  // poll for it rather than checking once (a slow run lost that race).
+  await expect.poll(async () => (await page.request.get(href!, { maxRedirects: 0 })).status()).toBe(404);
 
   await page.getByRole("button", { name: "Excluir aula" }).click();
   await expect(page.getByText("Os 1 arquivo enviado também são apagados.", { exact: false })).toBeVisible();

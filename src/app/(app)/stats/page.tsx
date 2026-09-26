@@ -50,7 +50,7 @@ export default async function StatsPage({
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 md:px-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold tracking-tight">Estatísticas</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Estatísticas</h1>
         <PeriodFilter active={activePeriod} />
       </div>
 

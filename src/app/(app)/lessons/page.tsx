@@ -44,7 +44,7 @@ export default async function LessonsPage({
     const summaries = await listLessonSummaries(user.id, q);
     return (
       <div className="mx-auto max-w-2xl px-4 py-6 md:px-6">
-        <h1 className="text-xl font-semibold tracking-tight">Aulas</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Aulas</h1>
         <p className="mb-4 text-sm text-muted-foreground">Os resumos que você escreveu, aula por aula.</p>
         {tabs}
         <SummaryList summaries={summaries} query={q ?? ""} />
@@ -61,7 +61,7 @@ export default async function LessonsPage({
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 md:px-6">
-      <h1 className="text-xl font-semibold tracking-tight">Aulas</h1>
+      <h1 className="text-2xl font-bold tracking-tight">Aulas</h1>
       <p className="mb-4 text-sm text-muted-foreground">O que foi dado em cada aula, com resumo, slides e links.</p>
       {tabs}
 

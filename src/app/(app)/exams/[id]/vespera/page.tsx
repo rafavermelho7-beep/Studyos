@@ -24,7 +24,7 @@ export default async function VesperaPage({ params }: { params: Promise<{ id: st
       </Link>
       <div className="mt-1 flex items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Modo véspera</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Modo véspera</h1>
           <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <SubjectMark color={exam.subject.color} emoji={exam.subject.emoji} />
             {exam.subject.name} · {exam.name}

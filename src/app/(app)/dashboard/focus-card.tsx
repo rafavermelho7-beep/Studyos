@@ -46,7 +46,7 @@ export function FocusCard({ top, rest }: { top: FocusRecommendation; rest: Focus
         ) : (
           <span className="h-3 w-3 shrink-0 rounded-full ring-4" style={{ backgroundColor: top.subjectColor, boxShadow: `0 0 0 4px color-mix(in srgb, ${top.subjectColor} 18%, transparent)` }} />
         )}
-        <p className="text-xl font-semibold tracking-tight text-foreground">{top.subjectName}</p>
+        <p className="text-2xl font-bold tracking-tight text-foreground">{top.subjectName}</p>
       </div>
       <p className={cn("relative mt-0.5 text-base text-muted-foreground", top.subjectEmoji ? "pl-[34px]" : "pl-[22px]")}>{top.topicName}</p>
 

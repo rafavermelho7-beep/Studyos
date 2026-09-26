@@ -47,7 +47,7 @@ export default async function ErrorsPage({ searchParams }: { searchParams: Promi
     <div className="mx-auto max-w-2xl px-4 py-6 md:px-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Caderno de Erros</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Caderno de Erros</h1>
           <p className="text-sm text-muted-foreground">Os conceitos que você errou nas questões, para não errar de novo.</p>
         </div>
         {due > 0 && (

@@ -24,7 +24,7 @@ export default async function SessionsPage({
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 md:px-6">
-      <h1 className="mb-4 text-xl font-semibold tracking-tight">Sessão de estudo</h1>
+      <h1 className="mb-4 text-2xl font-bold tracking-tight">Sessão de estudo</h1>
 
       <FocusSession
         subjects={subjects.map((s) => ({ id: s.id, name: s.name, color: s.color }))}

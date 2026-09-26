@@ -50,7 +50,7 @@ export default async function ExamDetailPage({
             <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: exam.subject.color }} />
             {exam.subject.name}
           </div>
-          <h1 className="mt-0.5 text-xl font-semibold tracking-tight">{exam.name}</h1>
+          <h1 className="mt-0.5 text-2xl font-bold tracking-tight">{exam.name}</h1>
           <p className="text-sm text-muted-foreground">
             {format(new Date(exam.date), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
             {exam.location && ` · ${exam.location}`}

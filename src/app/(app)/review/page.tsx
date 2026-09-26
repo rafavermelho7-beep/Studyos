@@ -26,7 +26,7 @@ export default async function ReviewPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 md:px-6">
-      <h1 className="mb-1 text-xl font-semibold tracking-tight">Revisão</h1>
+      <h1 className="mb-1 text-2xl font-bold tracking-tight">Revisão</h1>
       <p className="mb-4 text-sm text-muted-foreground">
         {items.length} tópico{items.length === 1 ? "" : "s"} para revisar agora
       </p>

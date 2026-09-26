@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import {
   confirmLessonUpload,
   createLesson,
+  createTopicsFromSummary,
   deleteLesson,
   lessonFilePathsForSubject,
   prepareLessonUpload,
@@ -113,5 +114,33 @@ describe("lesson topics and deletion", () => {
     const result = await deleteLesson(user.id, lesson.id);
     expect(result.storagePaths).toEqual([`${user.id}/${lesson.id}/a.pdf`]);
     expect(await db.lessonAttachment.count({ where: { lessonId: lesson.id } })).toBe(0);
+  });
+});
+
+describe("createTopicsFromSummary", () => {
+  it("creates missing topics in the lesson's subject, reuses existing ones and links all", async () => {
+    const owner = await makeUser("summary-owner");
+    const { subject, lesson } = await makeLesson(owner.id);
+    const existing = await db.topic.create({ data: { userId: owner.id, subjectId: subject.id, name: "Sífilis" } });
+
+    const result = await createTopicsFromSummary(owner.id, lesson.id, ["sifilis", "HPV", "HPV"]);
+    expect(result).toMatchObject({ created: 1, linked: 2 });
+
+    const topics = await db.topic.findMany({ where: { subjectId: subject.id }, orderBy: { name: "asc" } });
+    expect(topics.map((t) => t.name)).toEqual(["HPV", "Sífilis"]);
+    const links = await db.lessonTopic.findMany({ where: { lessonId: lesson.id } });
+    expect(links.map((l) => l.topicId).sort()).toEqual(topics.map((t) => t.id).sort());
+    expect(links.some((l) => l.topicId === existing.id)).toBe(true);
+
+    // Running it again changes nothing.
+    expect(await createTopicsFromSummary(owner.id, lesson.id, ["HPV"])).toMatchObject({ created: 0, linked: 1 });
+    expect(await db.topic.count({ where: { subjectId: subject.id } })).toBe(2);
+  });
+
+  it("refuses someone else's lesson", async () => {
+    const owner = await makeUser("summary-owner2");
+    const attacker = await makeUser("summary-attacker");
+    const { lesson } = await makeLesson(owner.id);
+    await expect(createTopicsFromSummary(attacker.id, lesson.id, ["HPV"])).rejects.toThrow("Aula não encontrada.");
   });
 });

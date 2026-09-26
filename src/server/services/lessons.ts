@@ -1,6 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { db } from "@/lib/db";
+import { topicKey } from "@/lib/summary-topics";
 import {
   ALLOWED_LESSON_FILE_TYPES,
   LESSON_FILES_QUOTA_BYTES,
@@ -35,6 +36,28 @@ export function listRecentLessons(userId: string, take = 50) {
     orderBy: [{ date: "desc" }, { createdAt: "desc" }],
     take,
     include: { subject: subjectSelect, _count: { select: { attachments: true } } },
+  });
+}
+
+/** Lessons that have a summary, newest first; `query` searches title and text. */
+export function listLessonSummaries(userId: string, query?: string) {
+  const q = query?.trim();
+  return db.lesson.findMany({
+    where: {
+      userId,
+      notes: { not: null },
+      ...(q
+        ? {
+            OR: [
+              { notes: { contains: q, mode: "insensitive" as const } },
+              { title: { contains: q, mode: "insensitive" as const } },
+            ],
+          }
+        : {}),
+    },
+    orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+    take: 100,
+    select: { id: true, title: true, date: true, notes: true, subject: subjectSelect },
   });
 }
 
@@ -94,6 +117,43 @@ export async function setLessonTopics(userId: string, lessonId: string, topicIds
     db.lessonTopic.deleteMany({ where: { lessonId } }),
     db.lessonTopic.createMany({ data: valid.map((t) => ({ lessonId, topicId: t.id })) }),
   ]);
+}
+
+/**
+ * Turns the "# heading" names picked from a lesson's summary into topics of
+ * the lesson's subject and links them to the lesson. A name that matches an
+ * existing topic of that subject (ignoring case/accents) reuses it instead
+ * of creating a duplicate.
+ */
+export async function createTopicsFromSummary(userId: string, lessonId: string, names: string[]) {
+  const lesson = await ownLesson(userId, lessonId);
+  const existing = await db.topic.findMany({
+    where: { userId, subjectId: lesson.subjectId },
+    select: { id: true, name: true },
+  });
+  const byKey = new Map(existing.map((t) => [topicKey(t.name), t.id]));
+
+  let created = 0;
+  const topicIds: string[] = [];
+  await db.$transaction(async (tx) => {
+    for (const raw of names) {
+      const name = raw.trim();
+      const key = topicKey(name);
+      if (!key) continue;
+      let id = byKey.get(key);
+      if (!id) {
+        id = (await tx.topic.create({ data: { userId, subjectId: lesson.subjectId, name }, select: { id: true } })).id;
+        byKey.set(key, id);
+        created++;
+      }
+      if (!topicIds.includes(id)) topicIds.push(id);
+    }
+    await tx.lessonTopic.createMany({
+      data: topicIds.map((topicId) => ({ lessonId, topicId })),
+      skipDuplicates: true,
+    });
+  });
+  return { created, linked: topicIds.length, subjectId: lesson.subjectId };
 }
 
 export async function addLessonLink(userId: string, lessonId: string, input: { name: string; url: string }) {

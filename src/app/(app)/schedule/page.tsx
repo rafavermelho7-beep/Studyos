@@ -80,7 +80,7 @@ export default async function SchedulePage({
     return (
       <div className="mx-auto max-w-4xl px-4 py-6 md:px-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-xl font-semibold tracking-tight">Plano automático</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Plano automático</h1>
           {viewTabs}
         </div>
         <PlanView plan={plan} today={now} showAll={all === "1"} />
@@ -136,7 +136,7 @@ export default async function SchedulePage({
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 md:px-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold tracking-tight">{capitalizeFirst(title)}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{capitalizeFirst(title)}</h1>
         <div className="flex items-center gap-2">
           {viewTabs}
           <div className="flex items-center gap-1">

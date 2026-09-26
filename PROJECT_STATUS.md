@@ -566,6 +566,28 @@ deploy feito no Vercel — `https://studyos-nine-ochre.vercel.app`.
   o `vespera.spec.ts` falhou uma vez (o erro não foi capturado); passou
   sozinho e nas duas rodadas completas seguintes — ficar de olho.
 
+- **Fase 34 — Resumo da aula (2026-09-26)**: cada aula tem uma área de
+  **resumo em texto** (grande, "Salvar resumo" ou Ctrl+S, aviso de
+  alterações não salvas). Linhas começadas com `#` viram **tópicos**: a
+  lista aparece ao vivo embaixo do texto ("novo" / "já existe"), e um
+  clique cria os que faltam na matéria da aula e liga todos à aula (sem
+  duplicar nomes, ignorando acentos/maiúsculas). Aba **Resumos** em Aulas
+  com busca no texto. Sem IA, por escolha do usuário.
+  Testes: `lessons.spec.ts` (fluxo completo + busca), `summary-topics.test.ts`,
+  `lessons.test.ts` (reuso de tópico existente, idempotência, acesso de
+  outro usuário).
+
+- **Fase 35 — Visual "alto rendimento" (2026-09-26)**: tema escuro mais
+  profundo e claro com mais contraste (tinta e bordas mais fortes);
+  títulos de página maiores e em negrito; painel com números grandes
+  (`StatTile`: rótulo pequeno em cima, valor em 30px; "Revisões hoje" leva
+  à revisão); a meta do mês é o único número-herói (48px) com barra na cor
+  do acento; cards de matéria com faixa na cor da matéria. Sem efeitos
+  "decorativos" (o usuário rejeitou a ideia de batimento/frequência).
+  Também: `lessons.spec.ts` agora espera a exclusão em segundo plano do
+  arquivo terminar (`expect.poll`) — numa rodada completa ela ainda não
+  tinha rodado quando o teste conferiu o 404.
+
 ## Em andamento / próximos passos (ordem planejada)
 
 1. Fase 23 — mais testes (cobertura unitária além do caso de segurança;

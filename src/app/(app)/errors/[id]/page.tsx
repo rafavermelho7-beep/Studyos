@@ -25,7 +25,7 @@ export default async function EditErrorPage({ params }: { params: Promise<{ id: 
       <Link href="/errors" className="text-xs text-muted-foreground hover:text-foreground">
         ← Caderno de Erros
       </Link>
-      <h1 className="mb-4 mt-1 text-xl font-semibold tracking-tight">Editar erro</h1>
+      <h1 className="mb-4 mt-1 text-2xl font-bold tracking-tight">Editar erro</h1>
       <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
         <ErrorForm
           subjects={subjects.map((s) => ({ id: s.id, name: s.name, emoji: s.emoji }))}

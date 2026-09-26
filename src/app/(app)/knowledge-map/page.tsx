@@ -21,7 +21,7 @@ export default async function KnowledgeMapPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 md:px-6">
-      <h1 className="mb-1 text-xl font-semibold tracking-tight">Mapa de conhecimento</h1>
+      <h1 className="mb-1 text-2xl font-bold tracking-tight">Mapa de conhecimento</h1>
       <p className="mb-4 text-sm text-muted-foreground">
         Visão global de {totalTopics} tópico{totalTopics === 1 ? "" : "s"}
       </p>

@@ -11,7 +11,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 md:px-6">
-      <h1 className="mb-4 text-xl font-semibold tracking-tight">Configurações</h1>
+      <h1 className="mb-4 text-2xl font-bold tracking-tight">Configurações</h1>
 
       <div className="stagger space-y-4">
         <AppearanceSection

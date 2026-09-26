@@ -270,6 +270,14 @@ npx prisma studio                   # inspect the Supabase database
   Lesson dates are calendar days: parse with `parseISO` on the server and
   format on the server (client components get a preformatted string);
   "today" as a default comes from the browser.
+- **Resumo da aula → tópicos** (`lesson-summary.tsx`, `lib/summary-topics.ts`):
+  the summary is plain text in `Lesson.notes` (50k chars). No AI: lines
+  starting with `#`/`##`/`###` are the user's topic markers —
+  `extractHeadingTopics` (shared by the live preview and the server) →
+  `createTopicsFromSummary` creates the missing ones in the lesson's
+  subject (matching existing names ignoring case/accents via `topicKey`)
+  and links all to the lesson. Never auto-create topics from free text.
+  "Resumos" tab on `/lessons?view=resumos` lists/searches summaries.
 - **Caderno de Erros** (`ErrorEntry`, `services/errors.ts`, `/errors`) is a
   notebook of **concepts** missed in questions (user's framing): `lesson`
   (the concept) is the only required field and comes first in the form.

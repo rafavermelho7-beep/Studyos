@@ -46,7 +46,7 @@ export default async function SubjectDetailPage({
         <div className="relative flex min-w-0 flex-1 items-center gap-3">
           <EmojiPicker subjectId={subject.id} subjectName={subject.name} emoji={subject.emoji} color={subject.color} />
           <div className="min-w-0">
-            <h1 className="text-xl font-semibold tracking-tight">{subject.name}</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{subject.name}</h1>
             <p className="text-sm text-muted-foreground">
               {subject.topics.length} tópico{subject.topics.length === 1 ? "" : "s"}
             </p>

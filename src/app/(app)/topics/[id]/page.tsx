@@ -76,7 +76,7 @@ export default async function TopicDetailPage({
         ← {topic.subject.name}
       </Link>
       <div className="mt-1 flex flex-wrap items-start justify-between gap-4">
-        <h1 className="text-xl font-semibold tracking-tight">{topic.name}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{topic.name}</h1>
         <div className="max-w-sm flex-none">
           <ConfirmDeleteButton
             label="Excluir tópico"

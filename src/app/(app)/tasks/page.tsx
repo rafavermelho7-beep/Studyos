@@ -38,7 +38,7 @@ export default async function TasksPage({
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 md:px-6">
-      <h1 className="mb-1 text-xl font-semibold tracking-tight">Tarefas</h1>
+      <h1 className="mb-1 text-2xl font-bold tracking-tight">Tarefas</h1>
       <p className="mb-4 text-sm text-muted-foreground">
         {tasks.length} tarefa{tasks.length === 1 ? "" : "s"}
       </p>

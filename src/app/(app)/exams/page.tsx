@@ -17,7 +17,7 @@ export default async function ExamsPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 md:px-6">
-      <h1 className="mb-4 text-xl font-semibold tracking-tight">Provas</h1>
+      <h1 className="mb-4 text-2xl font-bold tracking-tight">Provas</h1>
 
       <QuickCreateExam subjects={subjects.map((s) => ({ id: s.id, name: s.name }))} />
 

@@ -2,13 +2,13 @@
 @import "./accents.css";
 
 :root {
-  --background: #fbfbfa;
+  --background: #f6f6f4;
   --surface: #ffffff;
-  --surface-2: #f4f4f3;
-  --border: #e5e5e3;
-  --border-strong: #d4d4d1;
-  --foreground: #17171a;
-  --muted-foreground: #6b6b6f;
+  --surface-2: #efefed;
+  --border: #dededb;
+  --border-strong: #c8c8c4;
+  --foreground: #0e0e11;
+  --muted-foreground: #5a5a60;
   --accent: #5b5bd6;
   --accent-2: #d6479c;
   --accent-foreground: #ffffff;
@@ -73,16 +73,16 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --background: #0b0b0d;
-    --surface: #131316;
-    --surface-2: #1a1a1e;
-    --border: #26262b;
-    --border-strong: #333338;
-    --foreground: #f2f2f3;
-    --muted-foreground: #9a9aa0;
+    --background: #060708;
+    --surface: #0f1013;
+    --surface-2: #17181c;
+    --border: #23252b;
+    --border-strong: #353841;
+    --foreground: #f7f7f8;
+    --muted-foreground: #a3a3ab;
     --accent: #8181ec;
     --accent-2: #ec6bb8;
-    --accent-foreground: #0b0b0d;
+    --accent-foreground: #060708;
     --accent-soft: #1e1e42;
     --danger: #f87171;
     --danger-soft: #2a1414;
@@ -101,16 +101,16 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --background: #0b0b0d;
-  --surface: #131316;
-  --surface-2: #1a1a1e;
-  --border: #26262b;
-  --border-strong: #333338;
-  --foreground: #f2f2f3;
-  --muted-foreground: #9a9aa0;
+  --background: #060708;
+  --surface: #0f1013;
+  --surface-2: #17181c;
+  --border: #23252b;
+  --border-strong: #353841;
+  --foreground: #f7f7f8;
+  --muted-foreground: #a3a3ab;
   --accent: #8181ec;
   --accent-2: #ec6bb8;
-  --accent-foreground: #0b0b0d;
+  --accent-foreground: #060708;
   --accent-soft: #1e1e42;
   --danger: #f87171;
   --danger-soft: #2a1414;

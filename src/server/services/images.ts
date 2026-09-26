@@ -19,7 +19,8 @@ export function sniffImageType(bytes: Uint8Array): ImageType | null {
   return null;
 }
 
-function validate(bytes: Uint8Array) {
+/** Throws a user-facing error unless these bytes are an allowed image within the size cap. */
+export function validateImageBytes(bytes: Uint8Array) {
   if (bytes.length === 0) throw new Error("Arquivo vazio.");
   if (bytes.length > MAX_IMAGE_BYTES) throw new Error("Imagem grande demais (máximo 2 MB).");
   const contentType = sniffImageType(bytes);
@@ -28,7 +29,7 @@ function validate(bytes: Uint8Array) {
 }
 
 export async function setSubjectCover(userId: string, subjectId: string, bytes: Uint8Array) {
-  const contentType = validate(bytes);
+  const contentType = validateImageBytes(bytes);
   const subject = await db.subject.findFirst({ where: { id: subjectId, userId }, select: { coverImageId: true } });
   if (!subject) throw new Error("Matéria não encontrada.");
 
@@ -52,7 +53,7 @@ export async function removeSubjectCover(userId: string, subjectId: string) {
 }
 
 export async function setBackgroundImage(userId: string, bytes: Uint8Array) {
-  const contentType = validate(bytes);
+  const contentType = validateImageBytes(bytes);
   const user = await db.user.findUniqueOrThrow({ where: { id: userId }, select: { backgroundImageId: true } });
 
   return db.$transaction(async (tx) => {

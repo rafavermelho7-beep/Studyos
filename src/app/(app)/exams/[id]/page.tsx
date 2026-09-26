@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { differenceInCalendarDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { requireUser } from "@/lib/auth/session";
@@ -7,6 +8,7 @@ import { getExam } from "@/server/services/exams";
 import { getSubject } from "@/server/services/subjects";
 import { computeExamPrep } from "@/lib/exam-prep";
 import { ExamTopicsManager } from "./exam-topics-manager";
+import { ChevronRight, Moon } from "lucide-react";
 import { ConfirmDeleteButton } from "@/components/ui/delete-buttons";
 import { deleteExamFromDetailAction } from "../actions";
 
@@ -63,6 +65,22 @@ export default async function ExamDetailPage({
           />
         </div>
       </div>
+
+      {daysRemaining >= 0 && (
+        <Link
+          href={`/exams/${exam.id}/vespera`}
+          className="mb-4 flex items-center gap-3 rounded-[var(--radius-lg)] border border-accent/40 bg-accent-soft/60 px-4 py-3 transition-colors hover:bg-accent-soft"
+        >
+          <Moon className="h-5 w-5 shrink-0 text-accent" />
+          <span className="flex-1">
+            <span className="block text-sm font-semibold text-foreground">Modo véspera</span>
+            <span className="block text-xs text-muted-foreground">
+              Tópicos do mais fraco ao mais forte, seus conceitos errados e os materiais das aulas
+            </span>
+          </span>
+          <ChevronRight className="h-4 w-4 text-accent" />
+        </Link>
+      )}
 
       <div className="stagger grid grid-cols-2 gap-3">
         <div className="hover-lift rounded-[var(--radius-lg)] border border-border bg-surface p-4">

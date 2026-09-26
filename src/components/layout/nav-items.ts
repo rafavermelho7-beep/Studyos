@@ -11,6 +11,7 @@ import {
   Network,
   Library,
   Presentation,
+  NotebookPen,
 } from "lucide-react";
 
 export type NavItem = {
@@ -33,6 +34,7 @@ export const navItems: NavItem[] = [
   { href: "/review", label: "Revisão", icon: Brain, primary: true },
   { href: "/subjects", label: "Matérias", icon: BookOpen },
   { href: "/lessons", label: "Aulas", icon: Presentation },
+  { href: "/errors", label: "Caderno de Erros", icon: NotebookPen },
   { href: "/schedule", label: "Cronograma", icon: Calendar },
   { href: "/exams", label: "Provas", icon: CalendarClock },
   { href: "/stats", label: "Estatísticas", icon: BarChart3 },

@@ -270,6 +270,38 @@ npx prisma studio                   # inspect the Supabase database
   Lesson dates are calendar days: parse with `parseISO` on the server and
   format on the server (client components get a preformatted string);
   "today" as a default comes from the browser.
+- **Caderno de Erros** (`ErrorEntry`, `services/errors.ts`, `/errors`) is a
+  notebook of **concepts** missed in questions (user's framing): `lesson`
+  (the concept) is the only required field and comes first in the form.
+  Optional context under "Mais detalhes": the question as text and/or a
+  photo (an `Image` row, validated with `validateImageBytes`, deleted with
+  the entry), source, reason (`ERROR_REASONS` in `lib/error-review.ts`).
+  Review hides the concept only when a question was saved; concept-only
+  cards show it and ask "já fixou?".
+  Review is a simple widening schedule (1 → 7 → 30 → 90 days, "ainda
+  erraria" resets), deliberately not FSRS. Unmastered errors from the last
+  30 days feed `planning.ts` (+8 per error, capped at 20). The review
+  screen snapshots its queue into state on mount — every answer's action
+  revalidates and re-renders the page with a shorter list, and reading
+  props would skip cards (caught by e2e). Same trap anywhere a client
+  component walks through a server-provided list while mutating it.
+- **Modo véspera** (`/exams/[id]/vespera`, `services/vespera.ts`,
+  `lib/vespera.ts`): an exam's topics weakest-first by `weakness()` —
+  manual status + (1 − FSRS retention) + open concepts from the Caderno de
+  Erros (capped) — with each topic's concepts and lesson materials, and
+  the user's time budget split by weight (`allocateMinutes`, 5-min steps,
+  10-min floor). Like the planning engine the weight only orders; it's
+  never shown as a number. The "revisado" checklist is per-device
+  localStorage on purpose (a one-night tick-list, not study history).
+- **Cronograma automático** (`/schedule?view=plan`, `lib/auto-schedule.ts`
+  `buildPlan`, `services/auto-schedule.ts`): `User.weeklyStudyMinutes`
+  (7 ints, Sunday first) × upcoming exams' topics → 30-min blocks per day.
+  Topics share an exam's blocks by `weakness()`, exams share a day by
+  1/days-left, both via "highest weight / (given + 1)" (deterministic, no
+  randomness); the day before an exam is its véspera and pauses the rest.
+  **The plan is never stored** — recomputed on every read from current
+  data, so there's no stale plan and no "replanejar" button. Keep it that
+  way unless the user needs to pin/move blocks by hand.
 - **Migrations run on every Vercel build** (`vercel-build` script:
   `prisma generate && prisma migrate deploy && next build`). The explicit
   `prisma generate` is load-bearing: Vercel restores `node_modules` from
@@ -283,6 +315,11 @@ npx prisma studio                   # inspect the Supabase database
   defaulted columns/tables; no renames, drops or type changes in the same
   release as the code that stops using them). Locally, `npm run build`
   never touches the database.
+- **The app shell's content column has `min-w-0`** (`(app)/layout.tsx`):
+  without it a flex item grows to its widest child, so any horizontally
+  scrolling row widened the whole page past a phone screen instead of
+  scrolling inside itself. `e2e/errors.spec.ts` asserts no horizontal
+  overflow at 390px.
 - **Mobile bottom nav shows only `primary: true` items from
   `nav-items.ts` (currently 4) plus a "Mais" button** that opens a sheet
   with the rest — cramming all ~10 sections into one bottom bar overflows

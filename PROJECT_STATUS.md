@@ -1,6 +1,6 @@
 # StudyOS — Project Status
 
-Last updated: 2026-09-23
+Last updated: 2026-09-25
 
 ## Fase atual
 
@@ -505,10 +505,10 @@ deploy feito no Vercel — `https://studyos-nine-ochre.vercel.app`.
     requisições a 4,5 MB. O servidor confere o que realmente chegou
     antes de registrar. Chave nova não precisa ser criada: usa a
     `SUPABASE_SECRET_KEY` que já está no Vercel.
-  - **Ainda não testado contra o Supabase real** (este ambiente não tem
-    as chaves). Dev/e2e usam um armazenamento local que imita o
-    protocolo do Supabase; o cliente Supabase é o oficial (supabase-js).
-    Primeiro envio na versão de teste do Vercel = validação real.
+  - Dev/e2e usam um armazenamento local que imita o protocolo do
+    Supabase; o cliente Supabase é o oficial (supabase-js). **Validado em
+    produção pelo usuário em 2026-09-25**: envio e abertura de PDF
+    funcionando no Supabase real.
   - Bugs pegos pelos testes antes de subir: segredo de assinatura local
     diferente entre módulos do Next (upload sempre falhava); Android
     enviando PowerPoint sem tipo (agora deduzido pela extensão); data
@@ -517,6 +517,54 @@ deploy feito no Vercel — `https://studyos-nine-ochre.vercel.app`.
     links, tópicos, exclusão apaga o arquivo) e `lessons.test.ts` (tipo,
     tamanho, cota, caminho de outro usuário, tópicos de outra matéria).
     24/24 e2e, 52/52 unitários, build limpo.
+
+- **Fase 31 — Caderno de Erros (2026-09-25)**: aba nova para anotar os
+  **conceitos que o usuário errou nas questões** (ajustado após o
+  feedback: o conceito é o centro e o único campo obrigatório). Opcional,
+  em "Mais detalhes": a questão em texto e/ou **foto** (câmera do
+  celular), a fonte (MedCof, prova P2...) e **por que errou** (conteúdo,
+  confusão, atenção, interpretação, chute). Resumo "onde você
+  perde pontos" (principal motivo, matéria com mais erros), filtros,
+  edição, exclusão com desfazer. **Modo revisão**: com questão salva, o
+  conceito fica escondido até revelar ("acertaria agora" / "ainda
+  erraria"); só com o conceito, ele aparece direto ("já fixei" / "ainda
+  não fixei"); intervalos
+  1 → 7 → 30 → 90 dias. Erros recentes aparecem na página do tópico e
+  **sobem o tópico no "Seu foco agora"** ("Errou N questões recentemente").
+  - Bugs pegos antes de subir: a revisão pulava cards (a lista mudava a
+    cada resposta); o formulário fechava após o primeiro erro salvo; e,
+    no app todo, qualquer fileira com rolagem horizontal alargava a página
+    no celular (layout sem `min-w-0`).
+  - Testes: `e2e/errors.spec.ts` (foto, resumo, tópico, foco, revisão de
+    2 cards, sem estouro de largura em 390px), `errors.test.ts`,
+    `error-review.test.ts`. 25/25 e2e, 59/59 unitários, build limpo.
+
+- **Fase 32 — Modo véspera (2026-09-25)**: botão na página de cada prova.
+  Lista os tópicos da prova **do mais fraco para o mais forte** (status,
+  retenção estimada, conceitos a fixar no Caderno de Erros), divide o
+  tempo que o usuário tem ("quanto tempo você tem?") entre eles, e em
+  cada tópico mostra os conceitos errados e os materiais das aulas, com
+  "Estudar agora" e checklist de revisado (salvo no aparelho).
+  Testes: `e2e/vespera.spec.ts`, `vespera.test.ts` (ordem, acesso de outro
+  usuário), `lib/vespera.test.ts`. 26/26 e2e, 67/67 unitários.
+
+- **Fase 33 — Cronograma automático (2026-09-25)**: aba "Plano" no
+  Cronograma. O usuário diz quantas horas tem em cada dia da semana; o
+  app distribui os tópicos de todas as provas dos próximos 60 dias em
+  blocos de 30 min, do dia de hoje até cada prova: tópicos mais fracos
+  (mesmo `weakness()` do modo véspera) voltam mais vezes, a prova mais
+  próxima fica com mais tempo, e **a véspera fica reservada** (bloco
+  "Modo véspera", as outras provas pausam nesse dia). Blocos de hoje têm
+  "Começar" (abre a sessão já no tópico) e ficam "✓ Feito" quando o tempo
+  estudado no tópico hoje alcança o bloco. **Não há plano salvo**: é
+  recalculado a cada visita a partir dos dados atuais, então estudar,
+  mudar status ou cadastrar prova já replaneja — sem botão "replanejar"
+  nem plano velho. Prova sem tópicos vinculados gera aviso.
+  Testes: `e2e/auto-schedule.spec.ts`, `lib/auto-schedule.test.ts`
+  (véspera, peso por fraqueza, prova próxima, dias sem tempo, soma exata
+  dos minutos). 27/27 e2e, 74/74 unitários. Numa das 3 rodadas completas
+  o `vespera.spec.ts` falhou uma vez (o erro não foi capturado); passou
+  sozinho e nas duas rodadas completas seguintes — ficar de olho.
 
 ## Em andamento / próximos passos (ordem planejada)
 

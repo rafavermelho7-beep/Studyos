@@ -22,14 +22,16 @@ import { ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
 import { getScheduleItems } from "@/server/services/schedule";
+import { getAutoPlan } from "@/server/services/auto-schedule";
 import { MonthView } from "./month-view";
 import { WeekView } from "./week-view";
 import { DayView } from "./day-view";
+import { PlanView } from "./plan-view";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Cronograma · StudyOS" };
 
-type View = "month" | "week" | "day";
+type View = "month" | "week" | "day" | "plan";
 
 function urlFor(view: View, date: Date) {
   return `/schedule?view=${view}&date=${format(date, "yyyy-MM-dd")}`;
@@ -42,16 +44,50 @@ function capitalizeFirst(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+function anchorFor(dateParam: string | undefined) {
+  return dateParam && isValid(parseISO(dateParam)) ? parseISO(dateParam) : new Date();
+}
+
 export default async function SchedulePage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; date?: string }>;
+  searchParams: Promise<{ view?: string; date?: string; all?: string }>;
 }) {
-  const { view: viewParam, date: dateParam } = await searchParams;
+  const { view: viewParam, date: dateParam, all } = await searchParams;
   const user = await requireUser();
 
-  const view: View = viewParam === "week" || viewParam === "day" ? viewParam : "month";
-  const anchor = dateParam && isValid(parseISO(dateParam)) ? parseISO(dateParam) : new Date();
+  const view: View = viewParam === "week" || viewParam === "day" || viewParam === "plan" ? viewParam : "month";
+  const viewTabs = (
+    <div className="flex gap-1 rounded-[var(--radius-sm)] bg-surface-2 p-1">
+      {(["plan", "day", "week", "month"] as const).map((v) => (
+        <Link
+          key={v}
+          href={v === "plan" ? "/schedule?view=plan" : urlFor(v, view === "plan" ? new Date() : anchorFor(dateParam))}
+          className={cn(
+            "rounded-[var(--radius-sm)] px-2.5 py-1 text-xs font-medium transition-[background-color,color,box-shadow] duration-150",
+            view === v ? "bg-surface text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {v === "plan" ? "Plano" : v === "day" ? "Dia" : v === "week" ? "Semana" : "Mês"}
+        </Link>
+      ))}
+    </div>
+  );
+
+  if (view === "plan") {
+    const now = new Date();
+    const plan = await getAutoPlan(user.id, now);
+    return (
+      <div className="mx-auto max-w-4xl px-4 py-6 md:px-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-xl font-semibold tracking-tight">Plano automático</h1>
+          {viewTabs}
+        </div>
+        <PlanView plan={plan} today={now} showAll={all === "1"} />
+      </div>
+    );
+  }
+  const anchor = anchorFor(dateParam);
 
   let rangeStart: Date;
   let rangeEnd: Date;
@@ -102,22 +138,7 @@ export default async function SchedulePage({
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold tracking-tight">{capitalizeFirst(title)}</h1>
         <div className="flex items-center gap-2">
-          <div className="flex gap-1 rounded-[var(--radius-sm)] bg-surface-2 p-1">
-            {(["day", "week", "month"] as const).map((v) => (
-              <Link
-                key={v}
-                href={urlFor(v, anchor)}
-                className={cn(
-                  "rounded-[var(--radius-sm)] px-2.5 py-1 text-xs font-medium transition-[background-color,color,box-shadow] duration-150",
-                  view === v
-                    ? "bg-surface text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {v === "day" ? "Dia" : v === "week" ? "Semana" : "Mês"}
-              </Link>
-            ))}
-          </div>
+          {viewTabs}
           <div className="flex items-center gap-1">
             <Link href={prevUrl} className="rounded-[var(--radius-sm)] p-1.5 text-muted-foreground transition-colors duration-150 hover:bg-surface-2 hover:text-foreground" aria-label="Anterior">
               <ChevronLeft className="h-4 w-4" />

@@ -7,10 +7,12 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth/session";
 import { requestOrigin } from "@/lib/request-origin";
 import { getFileStorage } from "@/server/storage";
+import { MAX_SUMMARY_LENGTH } from "@/lib/summary-topics";
 import {
   addLessonLink,
   confirmLessonUpload,
   createLesson,
+  createTopicsFromSummary,
   deleteLesson,
   deleteLessonAttachment,
   prepareLessonUpload,
@@ -60,16 +62,35 @@ export async function createLessonAction(subjectId: string, formData: FormData) 
 export async function updateLessonAction(lessonId: string, formData: FormData) {
   const user = await requireUser();
   const parsed = z
-    .object({ title: titleSchema, date: dateSchema, notes: z.string().max(5000) })
-    .safeParse({ title: formData.get("title"), date: formData.get("date"), notes: formData.get("notes") ?? "" });
+    .object({ title: titleSchema, date: dateSchema })
+    .safeParse({ title: formData.get("title"), date: formData.get("date") });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
-  await updateLesson(user.id, lessonId, {
-    title: parsed.data.title,
-    date: parseISO(parsed.data.date),
-    notes: parsed.data.notes.trim() || null,
-  });
+  await updateLesson(user.id, lessonId, { title: parsed.data.title, date: parseISO(parsed.data.date) });
   revalidateLesson(lessonId);
   return { error: null };
+}
+
+/** The lesson's summary ("Resumo"), stored in Lesson.notes. */
+export async function saveLessonSummaryAction(lessonId: string, summary: string) {
+  const user = await requireUser();
+  const parsed = z
+    .string()
+    .max(MAX_SUMMARY_LENGTH, "Resumo longo demais (máximo 50 mil caracteres)")
+    .safeParse(summary);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Resumo inválido." };
+  await updateLesson(user.id, lessonId, { notes: parsed.data.trim() || null });
+  revalidateLesson(lessonId);
+  return { error: null };
+}
+
+export async function createTopicsFromSummaryAction(lessonId: string, names: string[]) {
+  const user = await requireUser();
+  const parsed = z.array(z.string().trim().min(1).max(120)).min(1, "Marque pelo menos um tópico").max(40).safeParse(names);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Tópicos inválidos." };
+  const result = await createTopicsFromSummary(user.id, lessonId, parsed.data);
+  revalidateLesson(lessonId, result.subjectId);
+  revalidatePath("/topics", "layout");
+  return { error: null, created: result.created, linked: result.linked };
 }
 
 export async function deleteLessonAction(lessonId: string) {

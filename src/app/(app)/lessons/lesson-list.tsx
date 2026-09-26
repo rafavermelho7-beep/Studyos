@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { format, isToday, isYesterday } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Paperclip } from "lucide-react";
+import { NotebookPen, Paperclip } from "lucide-react";
 import { SubjectMark } from "@/components/ui/subject-mark";
 
 type LessonRow = {
   id: string;
   title: string;
   date: Date;
+  notes?: string | null;
   _count: { attachments: number };
   subject?: { name: string; color: string; emoji: string | null };
 };
@@ -38,6 +39,11 @@ export function LessonList({ lessons }: { lessons: LessonRow[] }) {
                 </span>
               )}
             </span>
+            {lesson.notes && (
+              <span title="Tem resumo" className="shrink-0 text-muted-foreground">
+                <NotebookPen className="h-3.5 w-3.5" aria-label="Tem resumo" />
+              </span>
+            )}
             {lesson._count.attachments > 0 && (
               <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
                 <Paperclip className="h-3.5 w-3.5" />

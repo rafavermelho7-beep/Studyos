@@ -12,6 +12,7 @@ import { LessonDetailsForm } from "./lesson-details-form";
 import { LessonFiles } from "./lesson-files";
 import { LessonLinks } from "./lesson-links";
 import { LessonTopics } from "./lesson-topics";
+import { LessonSummary } from "./lesson-summary";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -60,6 +61,16 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
       </div>
 
       <section className="mt-6">
+        <h2 className="mb-2 text-sm font-semibold text-foreground">Resumo da aula</h2>
+        <LessonSummary
+          lessonId={lesson.id}
+          initialSummary={lesson.notes ?? ""}
+          subjectTopics={lesson.subject.topics}
+          linkedTopicIds={lesson.topics.map((t) => t.topicId)}
+        />
+      </section>
+
+      <section className="mt-6">
         <h2 className="mb-2 text-sm font-semibold text-foreground">Slides e arquivos</h2>
         <LessonFiles
           lessonId={lesson.id}
@@ -90,7 +101,6 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
             id: lesson.id,
             title: lesson.title,
             dateValue: format(lesson.date, "yyyy-MM-dd"),
-            notes: lesson.notes,
           }}
         />
       </section>

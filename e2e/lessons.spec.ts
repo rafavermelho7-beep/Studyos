@@ -110,3 +110,55 @@ test("rejects file types that aren't class material", async ({ page }) => {
   });
   await expect(page.getByRole("alert").filter({ hasText: "Tipo de arquivo não suportado" })).toBeVisible();
 });
+
+test("a class summary: # lines become topics of the subject, and it shows under Resumos", async ({ page }) => {
+  await register(page, "lessons-summary");
+  await page.goto("/subjects");
+  await page.getByPlaceholder("Nome da matéria (ex: Cardiologia)").fill("Saúde da Mulher");
+  await page.getByRole("button", { name: "Adicionar" }).click();
+  await page.getByRole("link", { name: /Saúde da Mulher/ }).click();
+  // One topic already exists — the summary must reuse it, not duplicate it.
+  await page.getByPlaceholder("Novo tópico (ex: Insuficiência cardíaca)").fill("Sífilis");
+  await page.getByRole("button", { name: "Adicionar tópico" }).click();
+  await expect(page.getByRole("link", { name: "Sífilis", exact: true })).toBeVisible();
+
+  await page.getByLabel("Título da aula").fill("Aula de IST");
+  await page.getByRole("button", { name: "Nova aula" }).click();
+  await expect(page).toHaveURL(/\/lessons\/.+/);
+  const lessonUrl = page.url();
+
+  await page
+    .getByLabel("Resumo da aula")
+    .fill("# Sífilis\nVDRL rastreia, FTA-Abs confirma.\n\n# HPV\nSubtipos 16 e 18 oncogênicos.\n\nAnotação solta, não é tópico.");
+  await expect(page.getByText("Alterações não salvas")).toBeVisible();
+  await expect(page.getByText("· já existe")).toBeVisible();
+  await expect(page.getByText("· novo")).toBeVisible();
+
+  // One click saves the text and creates/links the topics.
+  await page.getByRole("button", { name: "Criar e ligar 2 tópicos" }).click();
+  await expect(page.getByText("✓ 1 tópico criado e ligado à aula")).toBeVisible();
+  await expect(page.getByText("Alterações não salvas")).toBeHidden();
+  await page.waitForLoadState("networkidle");
+
+  // The summary stuck, and both topics are now linked to the class.
+  await page.reload();
+  await expect(page.getByLabel("Resumo da aula")).toHaveValue(/Subtipos 16 e 18/);
+  await expect(page.getByRole("button", { name: "HPV", pressed: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sífilis", pressed: true })).toBeVisible();
+
+  // No duplicate "Sífilis" in the subject.
+  await page.getByRole("link", { name: /Saúde da Mulher/ }).first().click();
+  await expect(page.getByRole("link", { name: "Sífilis", exact: true })).toHaveCount(1);
+  await expect(page.getByRole("link", { name: "HPV", exact: true })).toBeVisible();
+
+  // Findable from the Resumos tab, with search.
+  await page.goto("/lessons");
+  await page.getByRole("link", { name: "Resumos", exact: true }).click();
+  await expect(page.getByRole("link", { name: /Aula de IST/ })).toBeVisible();
+  await page.getByLabel("Buscar nos resumos").fill("oncogênicos");
+  await page.getByLabel("Buscar nos resumos").press("Enter");
+  await expect(page.getByRole("link", { name: /Aula de IST/ })).toHaveAttribute("href", new URL(lessonUrl).pathname);
+  await page.getByLabel("Buscar nos resumos").fill("cardiologia");
+  await page.getByLabel("Buscar nos resumos").press("Enter");
+  await expect(page.getByText('Nenhum resumo com "cardiologia".')).toBeVisible();
+});

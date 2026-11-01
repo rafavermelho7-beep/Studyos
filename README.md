@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LIFE ENGINE
 
-## Getting Started
+Sistema de inteligência pessoal, privado e de usuário único. O **JARVIS** é um conselheiro estratégico — racional, crítico e direto — que
+conecta os onze domínios da sua vida com o objetivo de **equilíbrio em 1–3 anos**, não de produtividade máxima.
 
-First, run the development server:
+- Next.js 16 (App Router) + TypeScript + Tailwind v4 · Supabase (Postgres + Auth + RLS) · Vercel
+- IA na nuvem (Anthropic e OpenAI) via **AI Router** com teto rígido de **R$50/mês**
+- Interface **Ambient Intelligence**: presença dinâmica do JARVIS, Intelligence Spaces, sinais, equilíbrio
+
+## Começar
 
 ```bash
+npm install
+cp .env.example .env.local     # preencha as variáveis
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Implantação, Supabase e checklist: **[docs/IMPLEMENTATION-HANDOFF.md](docs/IMPLEMENTATION-HANDOFF.md)**.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Testes
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm test                 # unitários (roteador, orçamento, memória, regras, contexto)
+npm run test:db          # migrations + RLS num Postgres 16 descartável
+bash scripts/e2e/start-stack.sh && bash scripts/e2e/restart-app.sh && node scripts/e2e/run-e2e.mjs   # E2E (Docker)
+```
 
-## Learn More
+## Documentos
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Documento | Conteúdo |
+|---|---|
+| [MASTER-VISION](docs/MASTER-VISION.md) | Visão consolidada |
+| [PRODUCT-SPECIFICATION](docs/PRODUCT-SPECIFICATION.md) | Requisitos e comportamento |
+| [SYSTEM-ARCHITECTURE](docs/SYSTEM-ARCHITECTURE.md) | Arquitetura, custos, limites |
+| [AI-MEMORY-DESIGN](docs/AI-MEMORY-DESIGN.md) | Inteligência central, identidade, memória, roteador |
+| [SECURITY-GOVERNANCE](docs/SECURITY-GOVERNANCE.md) | Ameaças, permissões, autonomia |
+| [DEVELOPMENT-ROADMAP](docs/DEVELOPMENT-ROADMAP.md) | Fases e critérios de aceite |
+| [DECISION-REGISTER](docs/DECISION-REGISTER.md) | Decisões (DEC-xxx) |
+| [RISK-ASSESSMENT](docs/RISK-ASSESSMENT.md) | Revisão crítica e riscos |
+| [CHANGELOG](docs/CHANGELOG.md) | Histórico |
+| [IMPLEMENTATION-HANDOFF](docs/IMPLEMENTATION-HANDOFF.md) | Estado atual e como continuar |

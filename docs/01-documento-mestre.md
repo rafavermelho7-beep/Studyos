@@ -1,6 +1,6 @@
 # LIFE ENGINE — 01 · Documento Mestre de Produto (Prompt 1)
 
-> **Status: RASCUNHO v0.1 — aguardando revisão e aprovação do usuário.**
+> **Status: CONSOLIDADO em `MASTER-VISION.md` e `DECISION-REGISTER.md` (01/11/2026). Mantido como histórico.**
 > Base: `docs/00-contexto.md` (aprovado). Este documento **não cria requisitos
 > novos**: organiza as decisões existentes. Onde falta decisão, está marcado
 > **PENDENTE** com o motivo. Rótulos usados: **DEC** (decisão confirmada),

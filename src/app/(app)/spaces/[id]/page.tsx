@@ -30,6 +30,12 @@ export default async function SpacePage({ params }: { params: Promise<{ id: stri
         </div>
         <SpaceControls id={space.id} pinned={space.pinned} archived={space.status === "archived"} />
       </div>
+      {space.summary && (
+        <details className="glass mb-6 rounded-2xl px-5 py-4" open={messages.length > 12}>
+          <summary className="label cursor-pointer hover:text-text-2">Onde paramos</summary>
+          <p className="mt-3 whitespace-pre-line text-[14px] leading-relaxed text-text-2">{space.summary}</p>
+        </details>
+      )}
       <Conversation spaceId={space.id} initialMessages={messages as Msg[]} placeholder="Continue a investigação…" />
     </div>
   );

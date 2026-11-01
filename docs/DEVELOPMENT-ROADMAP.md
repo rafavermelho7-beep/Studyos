@@ -16,7 +16,10 @@ UC-01) e Estudos (provas).
 Antecipada da Fase 4 após DEC-038: leitura, detecção de provas, criação com confirmação. Aceite: 51 unitários, 21 de banco, 22 E2E (✅).
 Falta: credenciais OAuth do Google (⛔ usuário).
 
-## Fase 2 — Acompanhamento e memória mais inteligentes · M
+## Fase 2 — Acompanhamento e memória mais inteligentes · M · **parte 1 CONCLUÍDA (código)**
+Entregue: UC-03, resumo de espaços, substituição de memória, MFA, PWA (60 unit, 22 banco, 26 E2E ✅).
+Pendente: embeddings (DEC-T36), tema claro, importação do StudyOS, calibração com IA real.
+
 - UC-03 energia × estudo: sessões de estudo por disciplina (manual rápido) + correlação com n.
 - Resumo automático de espaços (modelo leve a cada ~10 mensagens) e retomada com "onde paramos".
 - Embeddings (pgvector) para busca semântica, com custo medido.

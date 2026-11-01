@@ -1,6 +1,6 @@
 "use client";
 import { useState, useTransition } from "react";
-import { deleteStudyEvent } from "@/app/actions";
+import { deleteStudyEvent, deleteStudySession } from "@/app/actions";
 
 export function RatingSlider({ name, label, hue, initial }: { name: string; label: string; hue: number; initial?: number }) {
   const [v, setV] = useState<number | null>(initial ?? null);
@@ -32,6 +32,15 @@ export function DeleteEventButton({ id }: { id: string }) {
   const [pending, start] = useTransition();
   return (
     <button disabled={pending} onClick={() => start(async () => void (await deleteStudyEvent(id)))} className="text-text-3 hover:text-danger" aria-label="Remover">
+      ×
+    </button>
+  );
+}
+
+export function DeleteSessionButton({ id }: { id: string }) {
+  const [pending, start] = useTransition();
+  return (
+    <button disabled={pending} onClick={() => start(async () => void (await deleteStudySession(id)))} className="text-text-3 hover:text-danger" aria-label="Remover sessão">
       ×
     </button>
   );

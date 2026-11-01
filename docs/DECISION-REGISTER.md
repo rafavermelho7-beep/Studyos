@@ -61,6 +61,11 @@ desenvolvimento pelo usuário com o Claude (031).
 | DEC-T28 | Sincronização ao abrir o Ambiente (no máximo a cada 30 min) e por botão; sem cron | DEC-T13 | Sem infraestrutura extra |
 | DEC-T29 | Provas detectadas por título (prova, P1–P4, exame, avaliação, simulado…) alimentam UC-01 e conflitos | PEN-03 parcial | Aproveita a agenda sem registro manual |
 | DEC-T30 | Criação de evento só por proposta aceita ou formulário do usuário; auditada como ação do usuário; nunca no passado; 5–600 min | DEC-T20 | Ação externa sempre confirmada |
+| DEC-T32 | UC-03 por regras com n mínimo (4 por grupo) e diferença ≥0,7 na escala 1–5; dedupe mensal | PEN-04 | Hipótese honesta, custo zero |
+| DEC-T33 | Resumo de espaço incremental a cada 10 mensagens (modelo leve, ≤120 palavras) | — | Retomada sem reler tudo; custo ~R$0,001 |
+| DEC-T34 | Substituição de memória só por declaração explícita; antiga vira "desatualizada" (restaurável) | R-08 | Memória acompanha mudanças sem perder histórico |
+| DEC-T35 | MFA TOTP opcional; quando ativo, AAL2 exigido na DAL (páginas e APIs) | R-35 | Conta é o único portão de dados sensíveis |
+| DEC-T36 | Embeddings adiados: Anthropic não oferece API de embeddings; exigiria OpenAI ou outro serviço | — | Reavaliar quando FTS mostrar limitação real |
 | DEC-T31 | Desconectar revoga o token no Google e apaga a cópia local | PEN-14 | Controle total do usuário |
 
 ## Pendências que dependem do usuário

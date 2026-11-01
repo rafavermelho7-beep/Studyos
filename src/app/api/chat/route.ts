@@ -6,6 +6,7 @@ import { EXTRACTION_SYSTEM, extractionJsonSchema, parseExtraction } from "@/lib/
 import { loadContext } from "@/lib/services/context-loader";
 import { applyExtraction } from "@/lib/services/memory-writer";
 import { getAmbientSpace, getSpace, listMessages } from "@/lib/services/spaces";
+import { maybeSummarizeSpace } from "@/lib/services/space-summary";
 import type { ChatMessage } from "@/lib/ai/providers/types";
 
 export const maxDuration = 60;
@@ -101,7 +102,7 @@ export async function POST(req: Request) {
             messages: [
               {
                 role: "user",
-                content: `Hoje: ${input.today} (${new Date(input.today + "T12:00:00Z").toLocaleDateString("pt-BR", { weekday: "long", timeZone: "UTC" })}). Título atual do espaço: "${space.title}"\n\n<conversa>\nUSUÁRIO: ${body.message}\n\nJARVIS: ${text}\n</conversa>`,
+                content: `${memoryTexts.length ? `MEMÓRIAS EXISTENTES:\n${memoryTexts.slice(0, 30).map((t, i) => `[${i + 1}] ${t}`).join("\n")}\n\n` : ""}Hoje: ${input.today} (${new Date(input.today + "T12:00:00Z").toLocaleDateString("pt-BR", { weekday: "long", timeZone: "UTC" })}). Título atual do espaço: "${space.title}"\n\n<conversa>\nUSUÁRIO: ${body.message}\n\nJARVIS: ${text}\n</conversa>`,
               },
             ],
             jsonSchema: extractionJsonSchema,
@@ -113,12 +114,18 @@ export async function POST(req: Request) {
               spaceId: space.id,
               messageId: userMsg.id,
               existingTexts: memoryTexts,
+              existingIds: memoryIds,
               renameSpace: history.length <= 2 && space.kind !== "ambient",
             });
             if (applied.memories.length || applied.proposals.length) send("memory", applied);
           }
         } catch (e) {
           console.error("[chat] extração falhou:", (e as Error).message);
+        }
+        try {
+          await maybeSummarizeSpace(supabase, owner, space.id);
+        } catch (e) {
+          console.error("[chat] resumo falhou:", (e as Error).message);
         }
       } catch (e) {
         const message =

@@ -242,6 +242,13 @@ await test("proposta de evento de agenda é um tipo válido; tipo desconhecido n
   await expectError(() => as(A, () => client.query(`insert into proposals(type, payload) values ('send_email', '{}'::jsonb)`)));
 });
 
+await test("sessões de estudo isoladas e validadas", async () => {
+  await asCommit(A, () => client.query(`insert into study_sessions(day, subject, minutes) values (current_date, 'Cálculo', 90)`));
+  const r = await as(B, () => client.query(`select count(*)::int n from study_sessions`));
+  assert(r.rows[0].n === 0, "vazamento de sessões de estudo");
+  await expectError(() => as(A, () => client.query(`insert into study_sessions(day, subject, minutes) values (current_date, 'X', 2)`)));
+});
+
 await client.end();
 console.log(`\n${passed} passaram, ${failed} falharam`);
 process.exit(failed ? 1 : 0);

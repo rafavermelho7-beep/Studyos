@@ -6,6 +6,7 @@ import { saveProfile, signOut } from "@/app/actions";
 import { ActionForm, Badge, Card, Field, SectionTitle } from "@/components/ui";
 import { TokenManager } from "./token-manager";
 import { CalendarCard } from "./calendar-card";
+import { MfaCard } from "./mfa-card";
 import { calendarStatus } from "@/lib/services/calendar";
 
 export const metadata = { title: "Ajustes · LIFE ENGINE" };
@@ -40,6 +41,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const { google } = await searchParams;
   const { supabase, owner } = await requireOwner();
   const calStatus = await calendarStatus(supabase);
+  const { data: factors } = await supabase.auth.mfa.listFactors();
+  const mfaEnabled = !!factors?.totp.some((f) => f.status === "verified");
   const [{ data: tokens }, { data: auditRows }] = await Promise.all([
     supabase.from("ingest_tokens").select("id, name, created_at, last_used_at, revoked_at").order("created_at", { ascending: false }),
     supabase.from("audit_log").select("created_at, actor, action, entity").order("created_at", { ascending: false }).limit(15),
@@ -98,6 +101,11 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             })}
           </ul>
           <p className="mt-3 text-[12px] text-text-3">Preço por milhão de tokens (entrada / saída). Chaves de API ficam só no servidor e nunca são exibidas.</p>
+        </Card>
+
+        <Card>
+          <SectionTitle eyebrow="Segundo fator (TOTP)" />
+          <MfaCard enabled={mfaEnabled} />
         </Card>
 
         <Card>

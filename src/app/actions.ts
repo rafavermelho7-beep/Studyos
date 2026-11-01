@@ -6,7 +6,7 @@ import crypto from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { requireOwner } from "@/lib/auth";
+import { needsMfa, requireOwner } from "@/lib/auth";
 import { audit } from "@/lib/governance/audit";
 import { DOMAIN_KEYS } from "@/lib/domains";
 import { MEMORY_KINDS, SENSITIVITY } from "@/lib/memory/policy";
@@ -56,6 +56,7 @@ export async function signIn(_: unknown, form: FormData): Promise<ActionResult> 
     await supabase.auth.signOut();
     return { ok: false, error: "Esta conta não tem acesso a este sistema." };
   }
+  if (await needsMfa(supabase)) redirect("/mfa");
   redirect("/");
 }
 
@@ -63,6 +64,69 @@ export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+// ------------------------------------------------------------------ segundo fator (TOTP)
+const totpCode = z.string().trim().regex(/^\d{6}$/, "Código de 6 dígitos");
+
+/** Etapa de login: verifica o código do app autenticador e eleva a sessão para AAL2. */
+export async function verifyMfaLogin(_: unknown, form: FormData): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user || !isOwner(u.user.email)) redirect("/login");
+  const code = totpCode.safeParse(form.get("code"));
+  if (!code.success) return { ok: false, error: "Informe o código de 6 dígitos." };
+  const { data: factors } = await supabase.auth.mfa.listFactors();
+  const factor = factors?.totp.find((f) => f.status === "verified");
+  if (!factor) redirect("/");
+  const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: factor.id, code: code.data });
+  if (error) return { ok: false, error: "Código inválido ou expirado." };
+  redirect("/");
+}
+
+export async function startMfaEnroll(): Promise<ActionResult> {
+  try {
+    const { supabase } = await requireOwner();
+    const { data: factors } = await supabase.auth.mfa.listFactors();
+    if (factors?.totp.some((f) => f.status === "verified")) return { ok: false, error: "Segundo fator já está ativo." };
+    // Remove tentativas anteriores não concluídas.
+    for (const f of factors?.all ?? []) if (f.status === "unverified") await supabase.auth.mfa.unenroll({ factorId: f.id });
+    const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "LIFE ENGINE" });
+    if (error || !data) throw new Error(error?.message ?? "Falha ao iniciar");
+    return { ok: true, data: { factorId: data.id, qr: data.totp.qr_code, secret: data.totp.secret } };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function confirmMfaEnroll(factorId: string, code: string): Promise<ActionResult> {
+  try {
+    const { supabase } = await requireOwner();
+    const c = totpCode.parse(code);
+    const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: z.string().min(1).parse(factorId), code: c });
+    if (error) return { ok: false, error: "Código inválido. Confira a hora do celular e tente de novo." };
+    await audit(supabase, "user", "mfa.enable", "auth");
+    refresh("/settings");
+    return { ok: true, message: "Segundo fator ativado." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function disableMfa(): Promise<ActionResult> {
+  try {
+    const { supabase } = await requireOwner(); // já em AAL2 se o fator existe
+    const { data: factors } = await supabase.auth.mfa.listFactors();
+    for (const f of factors?.all ?? []) {
+      const { error } = await supabase.auth.mfa.unenroll({ factorId: f.id });
+      if (error) throw new Error(error.message);
+    }
+    await audit(supabase, "user", "mfa.disable", "auth");
+    refresh("/settings");
+    return { ok: true, message: "Segundo fator desativado." };
+  } catch (e) {
+    return fail(e);
+  }
 }
 
 // ------------------------------------------------------------------ objetivos
@@ -448,6 +512,44 @@ export async function deleteStudyEvent(id: string): Promise<ActionResult> {
     const { error } = await supabase.from("study_events").delete().eq("id", id);
     if (error) throw new Error(error.message);
     await audit(supabase, "user", "study_event.delete", "study_event", id);
+    refresh("/context");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+const studySessionSchema = z.object({
+  subject: z.string().trim().min(1).max(80),
+  minutes: z.coerce.number().int().min(5).max(720),
+  focus: z.coerce.number().int().min(1).max(5).nullable().optional(),
+  day: optDate,
+});
+
+export async function addStudySession(_: unknown, form: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, owner } = await requireOwner();
+    const v = studySessionSchema.parse(fd(form));
+    const today = localDate(new Date(), owner.timezone);
+    const day = v.day ?? today;
+    if (day > today) return { ok: false, error: "Sessão de estudo não pode ser no futuro." };
+    const { data, error } = await supabase.from("study_sessions").insert({ ...v, day }).select("id").single();
+    if (error) throw new Error(error.message);
+    await audit(supabase, "user", "study_session.add", "study_session", data.id);
+    refresh("/context", "/");
+    return { ok: true, message: "Sessão registrada." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function deleteStudySession(id: string): Promise<ActionResult> {
+  try {
+    const { supabase } = await requireOwner();
+    z.string().uuid().parse(id);
+    const { error } = await supabase.from("study_sessions").delete().eq("id", id);
+    if (error) throw new Error(error.message);
+    await audit(supabase, "user", "study_session.delete", "study_session", id);
     refresh("/context");
     return { ok: true };
   } catch (e) {

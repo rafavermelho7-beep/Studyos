@@ -25,13 +25,19 @@ http
     const last = p.messages.at(-1)?.content ?? "";
     const lastText = typeof last === "string" ? last : JSON.stringify(last);
     let text;
-    if (p.output_config?.format) {
+    if (/resumo de um espaço/.test(sys)) {
+      text = "Questão: organizar a semana de estudos\nAté aqui: prefere manhãs.\nEm aberto: horário de treino.\nPróximo passo: montar a grade de segunda.";
+    } else if (p.output_config?.format) {
       const memories = [];
       const proposals = [];
       if (/prefiro/i.test(lastText)) memories.push({ kind: "preference", content: "Prefere estudar de manhã cedo", domain: "estudos", sensitivity: "normal", confidence: 0.9, stated: true });
       if (/ansios/i.test(lastText)) memories.push({ kind: "fact", content: "Sente ansiedade antes de provas", domain: "saude", sensitivity: "sensitive", confidence: 0.8, stated: true });
       if (/rende mais/i.test(lastText)) memories.push({ kind: "inference", content: "Parece render mais quando dorme bem", domain: "saude", sensitivity: "normal", confidence: 0.9, stated: false });
       if (/quero .*objetivo|meu objetivo/i.test(lastText)) proposals.push({ type: "create_goal", title: "Correr uma meia maratona", description: "", domain: "saude", why: "Saúde e disciplina", horizon: "year", rationale: "O usuário declarou a intenção explicitamente." });
+      if (/agora prefiro estudar à noite/i.test(lastText)) {
+        const idx = /\[(\d+)\] Prefere estudar de manhã cedo/.exec(lastText)?.[1];
+        memories.push({ kind: "preference", content: "Prefere estudar à noite", domain: "estudos", sensitivity: "normal", confidence: 0.9, stated: true, supersedes: idx ? Number(idx) : null });
+      }
       if (/agende/i.test(lastText)) {
         const today = /Hoje: (\d{4}-\d{2}-\d{2})/.exec(lastText)?.[1];
         const d = new Date(today + "T12:00:00Z");

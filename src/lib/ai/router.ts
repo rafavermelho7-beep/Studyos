@@ -10,7 +10,8 @@ export type AITask =
   | "extract" // extração de memória/propostas após uma conversa
   | "daily_synthesis"
   | "weekly_review"
-  | "title";
+  | "title"
+  | "summarize"; // resumo incremental de espaço
 
 export type Effort = "low" | "medium" | "high";
 
@@ -74,6 +75,7 @@ export function classifyChat(text: string): { tier: Tier; reason: string } {
 const TASK_BASE: Record<Exclude<AITask, "chat">, Tier> = {
   extract: "light",
   title: "light",
+  summarize: "light",
   daily_synthesis: "standard",
   weekly_review: "standard",
 };
@@ -82,6 +84,7 @@ const TASK_OUTPUT: Record<AITask, number> = {
   chat: 1_800,
   extract: 1_200,
   title: 200,
+  summarize: 700,
   daily_synthesis: 900,
   weekly_review: 2_200,
 };
@@ -94,7 +97,7 @@ export function capTierForBudget(tier: Tier, budget: BudgetState): Tier {
 }
 
 function effortFor(tier: Tier, task: AITask): Effort {
-  if (task === "extract" || task === "title") return "low";
+  if (task === "extract" || task === "title" || task === "summarize") return "low";
   if (tier === "deep") return "medium";
   return "low";
 }

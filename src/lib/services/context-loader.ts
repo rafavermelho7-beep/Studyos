@@ -16,7 +16,7 @@ export async function loadContext(
   opts: { query: string; space?: ContextInput["space"] },
 ): Promise<{ input: ContextInput; memoryIds: string[]; memoryTexts: string[] }> {
   const today = localDate(new Date(), owner.timezone);
-  const [relevant, core, goals, projects, checkins, exams, ratings, insights, agenda] = await Promise.all([
+  const [relevant, core, goals, projects, checkins, exams, ratings, insights, agenda, study] = await Promise.all([
     supabase.rpc("match_memories", { p_query: opts.query.slice(0, 2000), p_limit: 12 }),
     // Núcleo de identidade: fixadas e valores/preferências de alta confiança.
     supabase
@@ -55,7 +55,16 @@ export async function loadContext(
       .lte("day", addDays(today, 30))
       .order("start_at")
       .limit(60),
+    supabase.from("study_sessions").select("day, subject, minutes").gte("day", addDays(today, -6)),
   ]);
+  const loadMap = new Map<string, { subject: string; minutes: number; days: Set<string> }>();
+  for (const s of study.data ?? []) {
+    const k = s.subject.trim().toLowerCase();
+    const cur = loadMap.get(k) ?? { subject: s.subject, minutes: 0, days: new Set<string>() };
+    cur.minutes += s.minutes;
+    cur.days.add(s.day);
+    loadMap.set(k, cur);
+  }
   const agendaRows = agenda.data ?? [];
   const timeFmt = new Intl.DateTimeFormat("pt-BR", { timeZone: owner.timezone, hour: "2-digit", minute: "2-digit" });
   // Provas vindas da agenda somam-se às registradas manualmente (sem duplicar por dia+título).
@@ -91,6 +100,10 @@ export async function loadContext(
         .filter((e) => e.day <= addDays(today, 7))
         .slice(0, 25)
         .map((e) => ({ title: e.title, day: e.day, time: e.all_day ? null : timeFmt.format(new Date(e.start_at)) })),
+      studyLoad: [...loadMap.values()]
+        .sort((a, b) => b.minutes - a.minutes)
+        .slice(0, 8)
+        .map((v) => ({ subject: v.subject, minutes: v.minutes, days: v.days.size })),
       balance: bal.rated ? { index: bal.index, lowest: bal.lowest } : null,
       openInsights: insights.data ?? [],
     },

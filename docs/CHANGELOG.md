@@ -1,5 +1,16 @@
 # LIFE ENGINE — CHANGELOG
 
+## 0.3.0 — 01/11/2026 · Fase 2 (parte 1): acompanhamento e memória
+- **UC-03**: sessões de estudo (disciplina, minutos, foco) e regra de energia × disciplina, × carga (≥3h vs <1h30) e × sono
+  da noite anterior (<6h vs ≥7h); n mínimo 4 por grupo, diferença ≥0,7, n exibido.
+- Carga de estudo dos últimos 7 dias no contexto do JARVIS.
+- **Resumo automático de espaços** ("Onde paramos") a cada 10 mensagens novas, com modelo leve.
+- **Substituição de memória**: declaração explícita que contradiz memória existente marca a antiga como desatualizada
+  (reversível, auditada); inferências nunca substituem; memórias fixadas nunca são substituídas automaticamente.
+- **Segundo fator (TOTP)** via Supabase Auth MFA: ativar/desativar em Ajustes; com fator ativo, páginas e APIs exigem AAL2.
+- **PWA**: manifesto para instalar na tela inicial.
+- Testes: 60 unitários, 22 de banco, 26 E2E.
+
 ## 0.2.0 — 01/11/2026 · Fase 1.1: Google Agenda
 - DEC-038: agenda = Google. OAuth 2.0 (escopo `calendar.events`), tokens cifrados AES-256-GCM, `state` anti-CSRF.
 - Sincronização ao abrir (no máximo a cada 30 min) e manual; cópia mínima (título + horário); renovação automática do acesso.

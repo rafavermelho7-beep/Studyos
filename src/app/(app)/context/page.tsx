@@ -2,10 +2,10 @@ import { requireOwner } from "@/lib/auth";
 import { availableProviders, loadBudget } from "@/lib/ai/engine";
 import { addDays, localDate, weekStart } from "@/lib/dates";
 import { DOMAINS } from "@/lib/domains";
-import { addStudyEvent, saveRatings } from "@/app/actions";
+import { addStudyEvent, addStudySession, saveRatings } from "@/app/actions";
 import { ActionForm, Card, SectionTitle } from "@/components/ui";
 import { Synthesis } from "@/components/synthesis";
-import { RatingSlider, DeleteEventButton } from "./controls";
+import { RatingSlider, DeleteEventButton, DeleteSessionButton } from "./controls";
 
 export const metadata = { title: "Contexto · LIFE ENGINE" };
 
@@ -16,7 +16,7 @@ export default async function ContextPage() {
   const { supabase, owner } = await requireOwner();
   const today = localDate(new Date(), owner.timezone);
   const week = weekStart(today);
-  const [budget, ratings, health, events, checkins, usage, weekly] = await Promise.all([
+  const [budget, ratings, health, events, checkins, usage, weekly, sessions] = await Promise.all([
     loadBudget(supabase, owner.timezone),
     supabase.from("domain_ratings").select("domain, score").eq("week_start", week),
     supabase.from("health_daily").select("*").gte("day", addDays(today, -13)).order("day", { ascending: false }),
@@ -28,7 +28,10 @@ export default async function ContextPage() {
       .order("created_at", { ascending: false })
       .limit(12),
     supabase.from("syntheses").select("content, model").eq("kind", "weekly").eq("period_start", week).maybeSingle(),
+    supabase.from("study_sessions").select("id, day, subject, minutes, focus").gte("day", addDays(today, -6)).order("day", { ascending: false }).order("created_at", { ascending: false }),
   ]);
+  const subjects = [...new Set((sessions.data ?? []).map((s) => s.subject))];
+  const weekMinutes = (sessions.data ?? []).reduce((a, s) => a + s.minutes, 0);
   const current = Object.fromEntries((ratings.data ?? []).map((r) => [r.domain, r.score]));
   const providers = availableProviders();
   const aiAvailable = (providers.anthropic || providers.openai) && budget.mode !== "blocked";
@@ -135,6 +138,35 @@ export default async function ContextPage() {
             </ActionForm>
           </Card>
         </div>
+
+        <Card>
+          <SectionTitle eyebrow="Estudo · últimos 7 dias" title={weekMinutes ? `${Math.round(weekMinutes / 6) / 10}h estudadas` : undefined} />
+          <p className="-mt-2 mb-4 text-[13px] text-text-3">Registrar o que estudou permite cruzar com sua energia (UC-03). Leva 5 segundos.</p>
+          <ActionForm action={addStudySession} submitLabel="Registrar sessão">
+            <div className="grid grid-cols-[1fr_96px] gap-3">
+              <input name="subject" required maxLength={80} list="subjects" placeholder="Disciplina" className="field" aria-label="Disciplina" />
+              <input name="minutes" type="number" min={5} max={720} step={5} required placeholder="min" className="field" aria-label="Minutos" />
+            </div>
+            <datalist id="subjects">{subjects.map((s) => <option key={s} value={s} />)}</datalist>
+            <div className="grid grid-cols-2 gap-3">
+              <select name="focus" defaultValue="" className="field" aria-label="Foco">
+                <option value="">Foco (opcional)</option>
+                {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>Foco {n}</option>)}
+              </select>
+              <input name="day" type="date" max={today} defaultValue={today} className="field" aria-label="Dia" />
+            </div>
+          </ActionForm>
+          {sessions.data?.length ? (
+            <ul className="mt-4 space-y-1.5 text-[13.5px]">
+              {sessions.data.slice(0, 10).map((s) => (
+                <li key={s.id} className="flex items-center justify-between gap-2">
+                  <span className="text-text-2">{s.subject} <span className="text-text-3">· {s.minutes} min{s.focus ? ` · foco ${s.focus}` : ""}</span></span>
+                  <span className="flex items-center gap-3"><span className="label">{s.day.split("-").reverse().slice(0, 2).join("/")}</span><DeleteSessionButton id={s.id} /></span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </Card>
 
         <Card>
           <SectionTitle eyebrow="Saúde · últimos 14 dias" />

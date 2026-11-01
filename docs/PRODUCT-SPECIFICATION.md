@@ -52,7 +52,7 @@
 | RF-43 | Ingestão de saúde (Atalho iOS) | E | Token Bearer; até 400 dias; inválido/revogado → 401 | ✅ E2E · 🟡 iPhone real |
 | RF-44 | UC-02 treino parado | E | Aviso quando pausa ≥ max(5, 2,5× intervalo típico), com ≥14 dias de dados | ✅ unit + E2E |
 | RF-45 | UC-01 sono × semanas de prova | E | Diferença ≥30 min com ≥4 noites de prova e ≥7 normais; mostra n | ✅ unit |
-| RF-46 | UC-03 energia × estudo | I | Requer sessões de estudo por disciplina | ⬜ Fase 2 |
+| RF-46 | UC-03 energia × estudo | I | Sessões de estudo + energia; padrão por disciplina, carga e sono com n | ✅ unit + E2E |
 | RF-47 | Painel de orçamento e uso | E | Gasto mês/dia, teto diário, últimas chamadas | ✅ E2E |
 
 ### Agenda (Google)
@@ -71,7 +71,9 @@
 | RF-50 | Criar, fixar, arquivar, reativar espaços | E | — | ✅ (criar no E2E) |
 | RF-51 | Histórico persistente; retomar investigação | E | Recarregar mostra conversa | ✅ E2E |
 | RF-52 | Título automático na 1ª troca | I | — | ✅ E2E |
-| RF-53 | Resumo automático do espaço | I | — | ⬜ Fase 2 |
+| RF-53 | Resumo automático do espaço | I | A cada 10 mensagens novas; "Onde paramos" | ✅ E2E |
+| RF-54 | Segundo fator (TOTP) | I | Com fator ativo, login exige código; APIs 401 sem AAL2 | ✅ E2E |
+| RF-55 | Memória substituída em mudança de opinião | I | Antiga desatualizada, nova aponta a anterior, auditado | ✅ unit + E2E |
 
 ## 2. Fluxos principais
 1. **Abrir o app** → regras rodam → ambiente mostra síntese (gerada se faltar), sinais, equilíbrio, foco, registro.

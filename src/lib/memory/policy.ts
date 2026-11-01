@@ -29,6 +29,8 @@ export const memoryCandidateSchema = z.object({
   confidence: z.number().min(0).max(1).default(0.6),
   /** true se o usuário disse isso explicitamente nesta conversa. */
   stated: z.boolean().default(false),
+  /** Índice (1-based) de uma memória existente que esta substitui (mudança de opinião/fato). */
+  supersedes: z.number().int().min(1).max(50).nullable().optional(),
 });
 export type MemoryCandidate = z.infer<typeof memoryCandidateSchema>;
 
@@ -97,3 +99,20 @@ export function decideMemory(c: MemoryCandidate, existing: string[] = []): Memor
 }
 
 export const MAX_MEMORIES_PER_TURN = 5;
+
+/**
+ * Substituição (mudança de opinião ou de fato). Só uma declaração explícita do usuário
+ * substitui; inferências nunca derrubam memórias. Memória fixada não é substituída
+ * automaticamente (as duas ficam, e o usuário decide).
+ */
+export function decideSupersede(input: {
+  newSource: "user_stated" | "agent_inferred";
+  newStatus: "active" | "proposed";
+  old: { status: string; pinned: boolean } | null;
+}): { action: "supersede" | "keep_both"; reason: string } {
+  if (!input.old || input.old.status !== "active") return { action: "keep_both", reason: "memória antiga inexistente ou inativa" };
+  if (input.newSource !== "user_stated") return { action: "keep_both", reason: "inferência não substitui memória" };
+  if (input.newStatus !== "active") return { action: "keep_both", reason: "nova memória aguarda confirmação" };
+  if (input.old.pinned) return { action: "keep_both", reason: "memória fixada: decisão do usuário" };
+  return { action: "supersede", reason: "declaração explícita mais recente" };
+}

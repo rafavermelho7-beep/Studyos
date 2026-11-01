@@ -26,7 +26,7 @@ await db.connect();
 // estado limpo
 await db.query(`truncate public.memories, public.goals, public.projects, public.life_decisions, public.spaces,
   public.checkins, public.domain_ratings, public.study_events, public.health_daily, public.insights, public.syntheses,
-  public.proposals, public.ai_usage, public.audit_log, public.ingest_tokens, public.integrations, public.calendar_events cascade`);
+  public.proposals, public.ai_usage, public.audit_log, public.ingest_tokens, public.integrations, public.calendar_events, public.study_sessions cascade`);
 
 let passed = 0;
 let failed = 0;
@@ -43,6 +43,19 @@ async function step(name, fn) {
     console.log("  ✗", name, "\n     ", e.message.split("\n")[0]);
   }
 }
+// TOTP (RFC 6238) para testar o segundo fator.
+function totp(secret, t = Date.now()) {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let bits = "";
+  for (const ch of secret.replace(/=+$/, "").toUpperCase()) bits += alphabet.indexOf(ch).toString(2).padStart(5, "0");
+  const key = Buffer.from(bits.match(/.{8}/g).map((b) => parseInt(b, 2)));
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(Math.floor(t / 1000 / 30)));
+  const h = crypto.createHmac("sha1", key).update(counter).digest();
+  const o = h[h.length - 1] & 0xf;
+  return String(((h.readUInt32BE(o) & 0x7fffffff) % 1_000_000)).padStart(6, "0");
+}
+const nextWindow = () => new Promise((r) => setTimeout(r, 30_500 - (Date.now() % 30_000)));
 const assert = (c, m) => {
   if (!c) throw new Error(m);
 };
@@ -173,6 +186,22 @@ await step("memória restrita nunca é enviada à IA", async () => {
   assert(log.includes("Prefere estudar de manhã cedo"), "memórias normais deveriam estar no contexto");
 });
 
+await step("mudança de opinião substitui a memória antiga (com auditoria)", async () => {
+  await page.goto(BASE + "/");
+  const box = page.getByLabel("Mensagem para o JARVIS");
+  await box.fill("Mudei: agora prefiro estudar à noite, depois do treino.");
+  await box.press("Enter");
+  await page.getByText(/memória\(s\) registrada\(s\)/).waitFor({ timeout: 15000 });
+  const r = await db.query(`select content, status, supersedes from memories where content like 'Prefere estudar%' order by created_at`);
+  const oldM = r.rows.find((x) => x.content === "Prefere estudar de manhã cedo");
+  const newM = r.rows.find((x) => x.content === "Prefere estudar à noite");
+  assert(oldM?.status === "outdated", "memória antiga não foi marcada obsoleta: " + JSON.stringify(r.rows));
+  assert(newM?.status === "active" && newM.supersedes, "nova memória não aponta a substituída");
+  const a = await db.query(`select count(*)::int n from audit_log where action='memory.supersede' and actor='agent'`);
+  assert(a.rows[0].n === 1, "substituição não auditada");
+  await page.getByLabel("Recolher conversa").click();
+});
+
 await step("registro rápido do dia é salvo", async () => {
   await page.getByLabel("Recolher conversa").click().catch(() => {});
   await page.getByLabel("Energia 4").click();
@@ -220,6 +249,26 @@ await step("ingestão de saúde por token (Atalho do iPhone) e aviso de treino p
   await page.screenshot({ path: `${SHOTS}/06-sinais.png`, fullPage: true });
 });
 
+await step("sessão de estudo registrada e padrão UC-03 (energia × disciplina) detectado", async () => {
+  const uid = (await db.query(`select id from auth.users where email='owner@life.test'`)).rows[0].id;
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  for (let i = 1; i <= 20; i++) {
+    const d = new Date(Date.parse(today + "T12:00:00Z") - i * 86400000).toISOString().slice(0, 10);
+    await db.query(`insert into checkins(user_id, day, energy) values ($1,$2,$3) on conflict (user_id, day) do update set energy = excluded.energy`, [uid, d, i % 2 === 0 ? 2 : 4]);
+    await db.query(`insert into study_sessions(user_id, day, subject, minutes) values ($1,$2,$3,$4)`, [uid, d, i % 2 === 0 ? "Cálculo" : "História", i % 2 === 0 ? 200 : 60]);
+  }
+  await page.goto(BASE + "/context");
+  await page.getByLabel("Disciplina", { exact: true }).fill("Cálculo");
+  await page.getByLabel("Minutos", { exact: true }).fill("45");
+  await page.click('button:has-text("Registrar sessão")');
+  await page.getByText("Sessão registrada").waitFor();
+  const n = (await db.query(`select count(*)::int n from study_sessions where minutes = 45`)).rows[0].n;
+  assert(n === 1, "sessão do formulário não gravada");
+  await page.getByText(/estudadas/).waitFor();
+  await page.goto(BASE + "/");
+  await page.getByText("Energia mais baixa em dias de Cálculo").waitFor();
+});
+
 await step("espaço de investigação: criação, conversa e título automático", async () => {
   await page.goto(BASE + "/spaces");
   await page.fill('input[name="title"]', "Nova investigação");
@@ -236,6 +285,25 @@ await step("espaço de investigação: criação, conversa e título automático
   await page.reload();
   await page.getByText("Resposta simulada do dublê de teste").waitFor(); // histórico persistido
   await page.screenshot({ path: `${SHOTS}/07-espaco.png`, fullPage: true });
+});
+
+await step("espaço ganha resumo automático (onde paramos) após 10 mensagens novas", async () => {
+  const spaceId = page.url().split("/spaces/")[1];
+  const uid = (await db.query(`select id from auth.users where email='owner@life.test'`)).rows[0].id;
+  for (let i = 0; i < 10; i++) {
+    await db.query(`insert into messages(user_id, space_id, role, content) values ($1,$2,$3,$4)`, [uid, spaceId, i % 2 ? "assistant" : "user", `mensagem de teste ${i}`]);
+  }
+  const box = page.getByLabel("Mensagem para o JARVIS");
+  await box.fill("E o treino, onde encaixo?");
+  await box.press("Enter");
+  await page.getByText("Resposta simulada do dublê de teste").last().waitFor({ timeout: 15000 });
+  await page.waitForTimeout(2000);
+  const s = await db.query(`select summary, summary_msg_count from spaces where id=$1`, [spaceId]);
+  assert(s.rows[0].summary.includes("Próximo passo"), "resumo não gerado");
+  const u = await db.query(`select model from ai_usage where task='summarize'`);
+  assert(u.rows.length === 1 && u.rows[0].model === "claude-haiku-5-5", "resumo deveria usar modelo leve");
+  await page.reload();
+  await page.getByText("Onde paramos").waitFor();
 });
 
 await step("revisão semanal sob demanda", async () => {
@@ -265,6 +333,7 @@ await step("objetivos: progresso persistido", async () => {
 
 await step("Google Agenda: conectar (OAuth), ler eventos, propor e criar evento só após aceite, desconectar", async () => {
   const G = "http://127.0.0.1:4020/__state";
+  const base0 = (await (await fetch(G)).json()).inserts.length; // dublê guarda estado entre execuções
   await page.goto(BASE + "/settings");
   await page.click("text=Conectar Google Agenda");
   await page.waitForURL(/\/settings\?google=connected/);
@@ -286,15 +355,15 @@ await step("Google Agenda: conectar (OAuth), ler eventos, propor e criar evento 
   await box.press("Enter");
   await page.getByText(/proposta\(s\) para você decidir/).waitFor({ timeout: 15000 });
   let st = await (await fetch(G)).json();
-  assert(st.inserts.length === 0, "evento criado sem confirmação!");
+  assert(st.inserts.length === base0, "evento criado sem confirmação!");
   await page.getByLabel("Recolher conversa").click();
   await page.reload();
   await page.getByText("será criado na sua Google Agenda ao aceitar").waitFor();
   await page.locator("li", { hasText: "Revisão de Física" }).getByRole("button", { name: "Aceitar" }).click();
   await page.waitForTimeout(1200);
   st = await (await fetch(G)).json();
-  assert(st.inserts.length === 1, "evento não criado após aceite");
-  const ins = st.inserts[0];
+  assert(st.inserts.length === base0 + 1, "evento não criado após aceite");
+  const ins = st.inserts[st.inserts.length - 1];
   assert(ins.summary === "Revisão de Física" && /T14:00:00$/.test(ins.start.dateTime) && ins.start.timeZone === "America/Sao_Paulo", "corpo do evento: " + JSON.stringify(ins));
   assert(/T15:30:00$/.test(ins.end.dateTime), "duração não respeitada");
   const a = await db.query(`select count(*)::int n from audit_log where action='calendar.create_event' and actor='user'`);
@@ -342,6 +411,37 @@ await step("layout móvel (390px) sem rolagem horizontal", async () => {
     await p.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: true });
   }
   await m.close();
+});
+
+await step("segundo fator (TOTP): ativar, exigir no login, desativar", async () => {
+  await page.goto(BASE + "/settings");
+  await page.click('button:has-text("Ativar segundo fator")');
+  const secret = (await page.getByTestId("totp-secret").textContent({ timeout: 10000 })).trim();
+  await page.getByLabel("Código do autenticador").fill(totp(secret));
+  await page.click('button:has-text("Confirmar")');
+  await page.getByText("Segundo fator ativado.").waitFor();
+  await nextWindow();
+  // Nova sessão: senha correta não basta.
+  await ctx.clearCookies();
+  await page.goto(BASE + "/login");
+  await page.fill('input[name="email"]', "owner@life.test");
+  await page.fill('input[name="password"]', "senha-forte-123");
+  await page.click('button:has-text("Entrar")');
+  await page.waitForURL(/\/mfa/);
+  const api = await page.evaluate(async () => (await fetch("/api/chat", { method: "POST", body: "{}" })).status);
+  assert(api === 401, "API acessível sem segundo fator: " + api);
+  await page.goto(BASE + "/memory");
+  await page.waitForURL(/\/mfa/);
+  await page.getByLabel("Código de verificação").fill("000000");
+  await page.click('button:has-text("Verificar")');
+  await page.getByText("Código inválido").waitFor();
+  await page.getByLabel("Código de verificação").fill(totp(secret));
+  await page.click('button:has-text("Verificar")');
+  await page.waitForURL(BASE + "/");
+  await page.goto(BASE + "/settings");
+  page.once("dialog", (d) => d.accept());
+  await page.locator("button", { hasText: "Desativar" }).first().click();
+  await page.getByText("Segundo fator desativado.").waitFor();
 });
 
 await step("sair encerra a sessão", async () => {

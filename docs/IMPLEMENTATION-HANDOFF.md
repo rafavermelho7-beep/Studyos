@@ -7,7 +7,7 @@
 
 | Área | Estado |
 |---|---|
-| Fase 1 (fundação) | Código completo (+ Fase 1.1 Google Agenda); testes: 51 unitários, 21 de banco, 22 E2E |
+| Fase 1 (fundação) | Fases 1, 1.1 e 2 (parte 1) completas; testes: 60 unitários, 22 de banco, 26 E2E |
 | Integração com IA real | 🟡 Implementada; testada com dublê da Anthropic (formato SSE oficial). **Nenhuma chamada real feita** (sem chave) |
 | Ingestão Apple Saúde | 🟡 Endpoint e Atalho documentados; testado via HTTP; não testado com iPhone real |
 | Google Agenda | 🟡 Implementada; testada com dublê fiel aos endpoints oficiais; não testada com sua conta Google |
@@ -16,7 +16,7 @@
 ## 2. O que você precisa fazer (só o necessário)
 
 1. **Supabase** (plano Free, sem custo): criar projeto (região São Paulo, se disponível).
-   - SQL Editor → executar, em ordem, os arquivos de `supabase/migrations/` (`20261101…_init.sql`, depois `20261102…_google_calendar.sql`).
+   - SQL Editor → executar, em ordem, os arquivos de `supabase/migrations/` (`20261101…_init.sql`, `20261102…_google_calendar.sql`, `20261103…_phase2.sql`); depois, em Authentication, deixe MFA/TOTP habilitado (padrão).
    - Authentication → Sign In / Providers: manter **Email** ativo e **desativar "Allow new users to sign up"**.
    - Authentication → Users → **Add user** (seu e-mail + senha forte, marcar como confirmado).
    - Project Settings → API: copiar URL e chave *publishable* (ou *anon*).
@@ -76,11 +76,10 @@ scripts/                         test-db, e2e/ (stack local, dublê, Playwright)
 - Nova tabela: `user_id default auth.uid()`, RLS `owner_all`, teste em `scripts/test-db.mjs`, incluir em `/api/export`.
 - Documentar decisões em `DECISION-REGISTER.md` e mudanças em `CHANGELOG.md`.
 
-## 6. Próximo ciclo sugerido (Fase 2, início)
+## 6. Próximo ciclo sugerido
 1. Primeira validação com IA real: ajustar persona e prompt de extração a partir de conversas reais; medir custo/turno.
-2. UC-03 (sessões de estudo + energia).
-3. Resumo automático de espaços.
-4. MFA.
+2. Ativar MFA em Ajustes e instalar como app (Compartilhar → Adicionar à Tela de Início).
+3. Fase 3: pesquisa externa com citações e Opportunity Radar (precisa de PEN-12/PEN-18: onde procurar oportunidades).
 
 ## 7. Prompt de continuidade (nova sessão)
 > Estamos desenvolvendo o LIFE ENGINE. Leia `docs/IMPLEMENTATION-HANDOFF.md`, `docs/DECISION-REGISTER.md` e `docs/DEVELOPMENT-ROADMAP.md`

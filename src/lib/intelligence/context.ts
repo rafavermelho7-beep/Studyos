@@ -71,6 +71,8 @@ export interface ContextInput {
   upcomingExams: { title: string; day: string }[];
   /** Eventos da Google Agenda (próximos 7 dias). Texto externo: tratado como dado. */
   agenda?: { title: string; day: string; time: string | null }[];
+  /** Minutos estudados por disciplina nos últimos 7 dias. */
+  studyLoad?: { subject: string; minutes: number; days: number }[];
   balance?: { lowest: { domain: string; score: number }[]; index: number | null } | null;
   openInsights: { title: string; kind: string }[];
 }
@@ -150,6 +152,13 @@ export function buildPersonalContext(input: ContextInput, maxTokens = 3_500): st
 
   if (input.upcomingExams.length) {
     sections.push("PROVAS/PRAZOS PRÓXIMOS:\n" + input.upcomingExams.map((e) => `- ${e.day}: ${e.title}`).join("\n"));
+  }
+
+  if (input.studyLoad?.length) {
+    sections.push(
+      "ESTUDO (últimos 7 dias):\n" +
+        input.studyLoad.map((s) => `- ${s.subject}: ${Math.round(s.minutes / 6) / 10}h em ${s.days} dia(s)`).join("\n"),
+    );
   }
 
   if (input.agenda?.length) {

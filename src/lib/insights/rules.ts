@@ -22,7 +22,11 @@ export interface RulesInput {
   projects: { id: string; title: string; status: string; updated_at: string; next_action: string }[];
   ratings: { domain: string; week_start: string; score: number }[];
   checkins: { day: string; energy: number | null }[];
+  studySessions?: { day: string; subject: string; minutes: number }[];
 }
+
+const mean = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length;
+const r1 = (n: number) => Math.round(n * 10) / 10;
 
 /** UC-02: avisar quando parar de treinar. */
 export function ruleTrainingStopped(input: RulesInput): InsightDraft[] {
@@ -167,8 +171,87 @@ export function ruleBalance(input: RulesInput): InsightDraft[] {
     }));
 }
 
+/**
+ * UC-03: energia × o que está estudando. Compara a energia (check-in 1–5) em dias com
+ * cada disciplina vs. demais dias; e dias de carga alta (≥180 min) vs. leves. Também
+ * energia após noites curtas (<6h) vs. noites ≥7h. Exige n mínimo e diferença ≥0,7.
+ */
+export function ruleEnergyStudy(input: RulesInput): InsightDraft[] {
+  const energy = new Map<string, number>();
+  for (const c of input.checkins) if (c.energy != null && daysBetween(c.day, input.today) <= 60) energy.set(c.day, c.energy);
+  if (energy.size < 8) return [];
+  const out: InsightDraft[] = [];
+  const month = input.today.slice(0, 7);
+  const sessions = (input.studySessions ?? []).filter((s) => daysBetween(s.day, input.today) <= 60);
+
+  // Por disciplina
+  const bySubject = new Map<string, Set<string>>();
+  for (const s of sessions) {
+    const key = s.subject.trim().toLowerCase();
+    if (!bySubject.has(key)) bySubject.set(key, new Set());
+    bySubject.get(key)!.add(s.day);
+  }
+  const candidates: { subject: string; diff: number; nIn: number; nOut: number; inAvg: number; outAvg: number }[] = [];
+  for (const [subject, days] of bySubject) {
+    const inE = [...energy].filter(([d]) => days.has(d)).map(([, e]) => e);
+    const outE = [...energy].filter(([d]) => !days.has(d)).map(([, e]) => e);
+    if (inE.length < 4 || outE.length < 4) continue;
+    const diff = mean(inE) - mean(outE);
+    if (Math.abs(diff) >= 0.7) candidates.push({ subject, diff, nIn: inE.length, nOut: outE.length, inAvg: mean(inE), outAvg: mean(outE) });
+  }
+  candidates.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
+  for (const c of candidates.slice(0, 2)) {
+    const label = sessions.find((s) => s.subject.trim().toLowerCase() === c.subject)?.subject ?? c.subject;
+    out.push({
+      kind: "pattern",
+      title: c.diff < 0 ? `Energia mais baixa em dias de ${label}` : `Energia mais alta em dias de ${label}`,
+      body: `Energia média ${r1(c.inAvg)} em dias com ${label} (${c.nIn} dias) vs. ${r1(c.outAvg)} nos demais (${c.nOut}). Hipótese — pode ser o horário, a carga ou outra coisa que acontece nesses dias.`,
+      domain: "estudos",
+      evidence: { subject: label, n_in: c.nIn, n_out: c.nOut, diff: r1(c.diff) },
+      confidence: Math.min(0.8, 0.3 + (c.nIn + c.nOut) / 60),
+      dedupe_key: `energy_subject:${c.subject}:${month}`,
+    });
+  }
+
+  // Carga de estudo
+  const load = new Map<string, number>();
+  for (const s of sessions) load.set(s.day, (load.get(s.day) ?? 0) + s.minutes);
+  const heavy = [...energy].filter(([d]) => (load.get(d) ?? 0) >= 180).map(([, e]) => e);
+  const light = [...energy].filter(([d]) => (load.get(d) ?? 0) > 0 && (load.get(d) ?? 0) < 90).map(([, e]) => e);
+  if (heavy.length >= 4 && light.length >= 4 && Math.abs(mean(heavy) - mean(light)) >= 0.7) {
+    const d = mean(heavy) - mean(light);
+    out.push({
+      kind: "pattern",
+      title: d < 0 ? "Dias de estudo pesado coincidem com energia baixa" : "Energia mais alta em dias de estudo intenso",
+      body: `Energia ${r1(mean(heavy))} em dias com ≥3h de estudo (${heavy.length} dias) vs. ${r1(mean(light))} em dias com <1h30 (${light.length}). Hipótese, não causa.`,
+      domain: "estudos",
+      evidence: { heavy: heavy.length, light: light.length, diff: r1(d) },
+      confidence: Math.min(0.75, 0.3 + (heavy.length + light.length) / 60),
+      dedupe_key: `energy_load:${month}`,
+    });
+  }
+
+  // Sono da noite anterior (registrado no dia) × energia
+  const sleep = new Map(input.health.filter((h) => h.sleep_minutes).map((h) => [h.day, h.sleep_minutes!]));
+  const short = [...energy].filter(([d]) => (sleep.get(d) ?? 999) < 360).map(([, e]) => e);
+  const good = [...energy].filter(([d]) => (sleep.get(d) ?? 0) >= 420).map(([, e]) => e);
+  if (short.length >= 4 && good.length >= 4 && mean(good) - mean(short) >= 0.7) {
+    out.push({
+      kind: "pattern",
+      title: "Noites curtas, energia menor no dia seguinte",
+      body: `Energia ${r1(mean(short))} após noites <6h (${short.length}) vs. ${r1(mean(good))} após ≥7h (${good.length}). Hipótese baseada em ${short.length + good.length} dias.`,
+      domain: "saude",
+      evidence: { short: short.length, good: good.length },
+      confidence: Math.min(0.8, 0.35 + (short.length + good.length) / 60),
+      dedupe_key: `energy_sleep:${month}`,
+    });
+  }
+  return out;
+}
+
 export function runRules(input: RulesInput): InsightDraft[] {
   return [
+    ...ruleEnergyStudy(input),
     ...ruleTrainingStopped(input),
     ...ruleSleepExamWeeks(input),
     ...ruleGoalConflicts(input),

@@ -23,6 +23,8 @@ export const requireOwner = cache(async () => {
   if (error || !data.user || !isOwner(data.user.email)) {
     redirect("/login");
   }
+  // Segundo fator: com TOTP cadastrado, a sessão precisa estar em AAL2.
+  if (await needsMfa(supabase)) redirect("/mfa");
   const { data: profile } = await supabase
     .from("profiles")
     .select("display_name, timezone, preferred_provider")
@@ -43,6 +45,7 @@ export async function ownerOrNull() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
   if (!data.user || !isOwner(data.user.email)) return null;
+  if (await needsMfa(supabase)) return null;
   const { data: profile } = await supabase
     .from("profiles")
     .select("display_name, timezone, preferred_provider")
@@ -56,4 +59,11 @@ export async function ownerOrNull() {
     preferredProvider: (profile?.preferred_provider as Owner["preferredProvider"]) ?? null,
   };
   return { supabase, owner };
+}
+
+/** true quando há fator TOTP verificado e a sessão ainda não passou por ele. */
+export async function needsMfa(supabase: Awaited<ReturnType<typeof createClient>>): Promise<boolean> {
+  const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (error || !data) return false;
+  return data.nextLevel === "aal2" && data.currentLevel !== "aal2";
 }

@@ -17,7 +17,7 @@
 | R-32 | Mudanças de API dos provedores (modelos/params) | M | M | `ai_usage.ok=false` | Fallback entre provedores; IDs centralizados no catálogo | Monitorar |
 | R-33 | Estimativa de tokens (chars/3,5) imprecisa | B | M | Custos reais vs. estimados | Custo real registrado com tokens do provedor; margem no pior caso | Aceito |
 | R-34 | Sem backups automáticos no Free | A | B | — | Exportação JSON; pg_dump manual | Usuário exportar semanalmente |
-| R-35 | Senha única sem MFA | M | B | Logins estranhos | Senha forte; MFA na Fase 2 | Planejado |
+| R-35 | Senha única sem MFA | M | B | Logins estranhos | MFA TOTP disponível (DEC-T35) | **Ative em Ajustes** |
 | R-36 | Falha de auditoria/uso silenciosa (insert falha) | M | B | Logs `[ai_usage]` | Log de erro; gasto subestimado só nesse caso | Monitorar |
 | R-37 | Painel virar "dashboard que exige manutenção" | M | M | Seções vazias | Ambiente mostra só sinais e 3 toques; nada obrigatório | Manter minimalismo |
 | R-38 | Extração grava memórias de baixa qualidade | M | M | Aba Memória | Máx. 5/turno, deduplicação, revisão fácil | Ajustar prompt com uso real |

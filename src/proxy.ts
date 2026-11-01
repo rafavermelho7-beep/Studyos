@@ -4,7 +4,8 @@ import { isOwner, supabaseConfig } from "@/lib/env";
 
 // Proxy (antigo middleware): renova a sessão Supabase e faz a checagem otimista
 // de acesso. A autorização definitiva ocorre na camada de dados (requireOwner) e no RLS.
-const PUBLIC_PATHS = ["/login", "/setup", "/api/ingest"];
+const PUBLIC_PATHS = ["/login", "/setup", "/api/ingest", "/manifest.webmanifest"];
+// /mfa exige sessão do dono, mas ainda não AAL2 (a verificação acontece lá).
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

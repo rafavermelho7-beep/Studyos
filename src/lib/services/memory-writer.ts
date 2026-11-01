@@ -4,7 +4,7 @@ import "server-only";
 
 import type { Supabase } from "@/lib/supabase/server";
 import { audit } from "@/lib/governance/audit";
-import { decideMemory, MAX_MEMORIES_PER_TURN } from "@/lib/memory/policy";
+import { decideMemory, decideSupersede, MAX_MEMORIES_PER_TURN } from "@/lib/memory/policy";
 import type { Extraction } from "@/lib/intelligence/extraction";
 
 export interface AppliedExtraction {
@@ -16,13 +16,17 @@ export interface AppliedExtraction {
 export async function applyExtraction(
   supabase: Supabase,
   ex: Extraction,
-  ctx: { spaceId: string; messageId: string; existingTexts: string[]; renameSpace: boolean },
+  ctx: { spaceId: string; messageId: string; existingTexts: string[]; existingIds?: string[]; renameSpace: boolean },
 ): Promise<AppliedExtraction> {
   const out: AppliedExtraction = { memories: [], proposals: [], skipped: 0 };
   const known = [...ctx.existingTexts];
 
   for (const c of ex.memories.slice(0, MAX_MEMORIES_PER_TURN)) {
-    const d = decideMemory(c, known);
+    const oldIdx = c.supersedes ? c.supersedes - 1 : -1;
+    const oldId = oldIdx >= 0 ? ctx.existingIds?.[oldIdx] : undefined;
+    const oldText = oldIdx >= 0 ? ctx.existingTexts[oldIdx] : undefined;
+    // A memória que será substituída não conta como duplicata da nova.
+    const d = decideMemory(c, oldText ? known.filter((k) => k !== oldText) : known);
     if (d.action === "skip") {
       out.skipped++;
       continue;
@@ -47,6 +51,15 @@ export async function applyExtraction(
     }
     known.push(c.content);
     out.memories.push(data);
+    if (oldId) {
+      const { data: old } = await supabase.from("memories").select("status, pinned").eq("id", oldId).maybeSingle();
+      const sup = decideSupersede({ newSource: d.source!, newStatus: d.status!, old: old ?? null });
+      if (sup.action === "supersede") {
+        await supabase.from("memories").update({ status: "outdated", valid_until: new Date().toISOString().slice(0, 10) }).eq("id", oldId);
+        await supabase.from("memories").update({ supersedes: oldId }).eq("id", data.id);
+        await audit(supabase, "agent", "memory.supersede", "memory", oldId, { by: data.id, reason: sup.reason });
+      }
+    }
     await audit(supabase, "agent", d.status === "active" ? "memory.save" : "memory.propose", "memory", data.id, {
       reason: d.reason,
       kind: d.kind,

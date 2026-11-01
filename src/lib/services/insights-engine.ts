@@ -10,7 +10,7 @@ import { isExamTitle } from "@/lib/google/calendar";
 
 export async function refreshInsights(supabase: Supabase, today: string): Promise<number> {
   const since = addDays(today, -60);
-  const [health, exams, goals, projects, ratings, checkins, calendar] = await Promise.all([
+  const [health, exams, goals, projects, ratings, checkins, calendar, study] = await Promise.all([
     supabase.from("health_daily").select("day, sleep_minutes, workouts, workout_minutes").gte("day", since),
     supabase.from("study_events").select("day, title").gte("day", since),
     supabase.from("goals").select("id, title, domain, status, target_date, horizon, updated_at").eq("status", "active"),
@@ -18,6 +18,7 @@ export async function refreshInsights(supabase: Supabase, today: string): Promis
     supabase.from("domain_ratings").select("domain, week_start, score").gte("week_start", addDays(today, -21)),
     supabase.from("checkins").select("day, energy").gte("day", since),
     supabase.from("calendar_events").select("day, title").gte("day", since),
+    supabase.from("study_sessions").select("day, subject, minutes").gte("day", since),
   ]);
   const examRows = [...(exams.data ?? []), ...(calendar.data ?? []).filter((e) => isExamTitle(e.title))];
 
@@ -29,6 +30,7 @@ export async function refreshInsights(supabase: Supabase, today: string): Promis
     projects: projects.data ?? [],
     ratings: ratings.data ?? [],
     checkins: checkins.data ?? [],
+    studySessions: study.data ?? [],
   });
   if (!drafts.length) return 0;
 

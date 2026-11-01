@@ -111,7 +111,7 @@ export async function runAI(p: RunAIParams): Promise<RunAIResult> {
           maxOutputTokens: cand.maxOutputTokens,
           effort: cand.effort,
           jsonSchema: p.jsonSchema,
-          minimalReasoning: p.task === "extract" || p.task === "title",
+          minimalReasoning: p.task === "extract" || p.task === "title" || p.task === "summarize",
           signal: p.signal,
         },
         p.onText

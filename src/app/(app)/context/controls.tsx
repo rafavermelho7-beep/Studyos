@@ -13,11 +13,14 @@ export function RatingSlider({ name, label, hue, initial }: { name: string; labe
         max={10}
         value={v ?? 5}
         onChange={(e) => setV(Number(e.target.value))}
+        // Sem avaliação, o polegar fica em 5: tocar/soltar já registra o valor exibido.
+        onPointerUp={(e) => v === null && setV(Number(e.currentTarget.value))}
+        onKeyUp={(e) => v === null && e.key !== "Tab" && setV(Number(e.currentTarget.value))}
         className="range"
         style={{ opacity: v === null ? 0.35 : 1, accentColor: `hsl(${hue} 70% 65%)` }}
         aria-label={label}
       />
-      <span className="text-right font-mono text-[12px]" style={{ color: v === null ? "var(--text-3)" : `hsl(${hue} 70% 72%)` }}>
+      <span aria-hidden className="text-right font-mono text-[12px]" style={{ color: v === null ? "var(--text-3)" : `hsl(${hue} 70% 72%)` }}>
         {v ?? "–"}
       </span>
       {v !== null && <input type="hidden" name={name} value={v} />}

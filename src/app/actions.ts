@@ -12,6 +12,7 @@ import { DOMAIN_KEYS } from "@/lib/domains";
 import { MEMORY_KINDS, SENSITIVITY } from "@/lib/memory/policy";
 import { localDate, weekStart } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
+import { isOwner } from "@/lib/env";
 
 export type ActionResult = { ok: true; message?: string; data?: Record<string, unknown> } | { ok: false; error: string };
 
@@ -45,8 +46,13 @@ export async function signIn(_: unknown, form: FormData): Promise<ActionResult> 
   const password = String(form.get("password") ?? "");
   if (!email || !password) return { ok: false, error: "Informe e-mail e senha." };
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { ok: false, error: "Credenciais inválidas." };
+  if (!isOwner(data.user?.email)) {
+    // Conta válida no Supabase, mas não é o dono: encerra a sessão imediatamente.
+    await supabase.auth.signOut();
+    return { ok: false, error: "Esta conta não tem acesso a este sistema." };
+  }
   redirect("/");
 }
 

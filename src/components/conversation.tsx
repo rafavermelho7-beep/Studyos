@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { usePresence } from "./presence";
+import { PresenceOrb, usePresence } from "./presence";
 import { RichText } from "./rich-text";
 
 export interface Msg {
@@ -306,10 +306,17 @@ export function Conversation({
   return (
     <>
       {showThread && (
-        <div className="fixed inset-x-0 top-[56px] bottom-[150px] z-20 px-3 sm:px-8 fade-in">
-          <div className="glass mx-auto flex h-full max-w-3xl flex-col rounded-3xl">
+        <>
+        {/* Véu: o ambiente recua (desfocado) enquanto a investigação ocupa o primeiro plano. */}
+        <div
+          className="fixed inset-0 z-20 bg-[rgba(6,7,11,0.72)] backdrop-blur-md fade-in"
+          onClick={() => !busy && setExpanded(false)}
+          aria-hidden
+        />
+        <div className="pointer-events-none fixed inset-x-0 top-[56px] bottom-[150px] z-20 px-3 sm:px-8 fade-in">
+          <div className="pointer-events-auto mx-auto flex h-full max-w-3xl flex-col rounded-3xl border border-line bg-[rgba(12,14,21,0.94)] shadow-[0_30px_80px_rgba(0,0,0,0.6)]">
             <div className="flex items-center justify-between border-b border-line px-5 py-3">
-              <span className="label">Conversa contínua</span>
+              <span className="flex items-center gap-3"><PresenceOrb size={26} /><span className="label">{presence.state === "standby" ? "Conversa contínua" : presence.label}</span></span>
               <div className="flex items-center gap-1">
                 <Link href="/spaces" className="rounded-full px-3 py-1 text-[12px] text-text-3 hover:text-text-2">
                   Abrir em espaço
@@ -327,6 +334,7 @@ export function Conversation({
             <div className="scrollbar-none flex-1 overflow-y-auto px-5 py-5">{thread}</div>
           </div>
         </div>
+        </>
       )}
       <div className="fixed inset-x-0 bottom-[78px] z-30 px-3 sm:px-8">
         <div className="mx-auto max-w-3xl">

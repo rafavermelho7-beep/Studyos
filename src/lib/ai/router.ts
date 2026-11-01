@@ -54,7 +54,7 @@ const TIER_ORDER: Tier[] = ["light", "standard", "deep"];
 
 const DEEP_TRIGGERS = /(^|\s)\/profundo\b|pense (com )?profundidade|an[aá]lise profunda/i;
 const COMPLEX_HINTS =
-  /decis|decid|estrat[eé]g|planej|plano|conflit|objetiv|carreira|prioriz|compar|analis|revis|dilema|trade-?off|equil[ií]brio|por que|porqu[eê]|devo\b|vale a pena/i;
+  /decis|decid|estrat[eé]g|planej|plano|conflit|objetiv|carreira|prioriz|compar|analis|revis|dilema|trade-?off|equil[ií]brio|por que|porqu[eê]|devo\b|vale a pena|organiz|como (eu )?(devo|posso|fa[cç]o)|ajud/i;
 const TRIVIAL = /^(oi|ol[aá]|bom dia|boa tarde|boa noite|obrigad[oa]|valeu|ok|beleza|tudo bem\??)[\s!.?]*$/i;
 
 /** Classifica a complexidade de uma mensagem de chat em um nível. */

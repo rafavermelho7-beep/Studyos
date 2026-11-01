@@ -4,7 +4,8 @@ import { DOMAINS } from "@/lib/domains";
 
 export function BalanceConstellation({ scores, size = 260 }: { scores: Partial<Record<string, number>>; size?: number }) {
   const c = size / 2;
-  const R = size / 2 - 34;
+  const R = size / 2 - 30;
+  const pad = 46; // margem para rótulos laterais
   const pts = DOMAINS.map((d, i) => {
     const a = (i / DOMAINS.length) * Math.PI * 2 - Math.PI / 2;
     const s = scores[d.key];
@@ -25,7 +26,7 @@ export function BalanceConstellation({ scores, size = 260 }: { scores: Partial<R
   const poly = rated.length >= 3 ? rated.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ") : null;
 
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} className="h-auto w-full max-w-[300px]" role="img" aria-label="Equilíbrio entre domínios">
+    <svg viewBox={`${-pad} -8 ${size + pad * 2} ${size + 16}`} className="h-auto w-full max-w-[340px]" role="img" aria-label="Equilíbrio entre domínios">
       {[0.33, 0.66, 1].map((k) => (
         <circle key={k} cx={c} cy={c} r={R * k} fill="none" stroke="rgba(255,255,255,0.06)" strokeDasharray={k === 1 ? "" : "2 4"} />
       ))}
@@ -52,11 +53,11 @@ export function BalanceConstellation({ scores, size = 260 }: { scores: Partial<R
             y={p.ly}
             textAnchor={Math.abs(Math.cos(p.a)) < 0.2 ? "middle" : Math.cos(p.a) > 0 ? "start" : "end"}
             dominantBaseline="middle"
-            fontSize="9"
+            fontSize="8.5"
             fill={p.s !== undefined && p.s <= 3 ? "var(--warm)" : "var(--text-3)"}
             fontFamily="var(--font-mono)"
           >
-            {p.d.label.slice(0, 5).toUpperCase()}
+            {p.d.label}
           </text>
         </g>
       ))}

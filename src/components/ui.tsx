@@ -1,5 +1,5 @@
 "use client";
-import { useActionState, useEffect, useRef } from "react";
+import { startTransition, useActionState, useEffect, useRef } from "react";
 import type { ActionResult } from "@/app/actions";
 
 export function Card({ children, className = "", as: As = "section" }: { children: React.ReactNode; className?: string; as?: "section" | "div" | "article" }) {
@@ -87,7 +87,17 @@ export function ActionForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
   return (
-    <form ref={ref} action={formAction} className={`space-y-3 ${className}`}>
+    <form
+      ref={ref}
+      // onSubmit + startTransition (em vez de action=) evita o reset automático do
+      // React 19 quando a action devolve erro: o usuário não perde o que digitou.
+      onSubmit={(e) => {
+        e.preventDefault();
+        const data = new FormData(e.currentTarget);
+        startTransition(() => formAction(data));
+      }}
+      className={`space-y-3 ${className}`}
+    >
       {children}
       <div className="flex items-center gap-3 pt-1">
         <Button type="submit" variant="primary" disabled={pending}>

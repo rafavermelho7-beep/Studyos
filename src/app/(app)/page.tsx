@@ -53,7 +53,7 @@ export default async function AmbientPage() {
           {greetingFor(new Date(), owner.timezone)}
           {name}.
         </h1>
-        <p className="mt-1.5 text-[13px] capitalize text-text-3">{formatDatePt(today)}</p>
+        <p className="mt-1.5 text-[13px] text-text-3 first-letter:uppercase">{formatDatePt(today)}</p>
         {(pendingMem.count ?? 0) > 0 && (
           <Link href="/memory?tab=review" className="mt-3 text-[12.5px] text-[hsl(262_80%_78%)] hover:underline">
             {pendingMem.count} memória(s) aguardando sua confirmação
@@ -61,7 +61,7 @@ export default async function AmbientPage() {
         )}
       </section>
 
-      <div className="mt-10 grid gap-4 lg:grid-cols-[1.35fr_1fr]">
+      <div className="mt-10 grid items-start gap-4 lg:grid-cols-[1.35fr_1fr]">
         <Card className="rise">
           <SectionTitle eyebrow="Síntese de hoje" />
           <Synthesis kind="daily" initial={synthesis.data ?? null} autoGenerate aiAvailable={aiAvailable} />
@@ -73,7 +73,7 @@ export default async function AmbientPage() {
         </Card>
       </div>
 
-      <div className="mt-4 grid gap-4 md:grid-cols-3">
+      <div className="mt-4 grid items-start gap-4 md:grid-cols-3">
         <Card className="rise">
           <SectionTitle eyebrow="Equilíbrio" action={<Link href="/context#equilibrio" className="label hover:text-text-2">Avaliar</Link>} />
           <div className="flex flex-col items-center">

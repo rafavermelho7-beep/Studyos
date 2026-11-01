@@ -1,5 +1,5 @@
 "use client";
-import { useActionState, useTransition } from "react";
+import { startTransition, useActionState, useSyncExternalStore, useTransition } from "react";
 import { createIngestToken, revokeIngestToken, type ActionResult } from "@/app/actions";
 
 interface Token { id: string; name: string; created_at: string; last_used_at: string | null; revoked_at: string | null }
@@ -8,7 +8,12 @@ export function TokenManager({ tokens }: { tokens: Token[] }) {
   const [state, action, pending] = useActionState(createIngestToken, null as ActionResult | null);
   const [revoking, start] = useTransition();
   const token = state?.ok ? (state.data?.token as string | undefined) : undefined;
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  // Origem só existe no navegador; useSyncExternalStore evita divergência de hidratação.
+  const origin = useSyncExternalStore(
+    () => () => {},
+    () => window.location.origin,
+    () => "",
+  );
 
   return (
     <div className="space-y-4 text-[13.5px]">
@@ -16,7 +21,14 @@ export function TokenManager({ tokens }: { tokens: Token[] }) {
         O Apple Saúde não oferece API web. Um Atalho no iPhone lê os agregados do dia e os envia para o LIFE ENGINE com um token exclusivo
         (só escrita de saúde; revogável a qualquer momento).
       </p>
-      <form action={action} className="flex gap-2">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const data = new FormData(e.currentTarget);
+          startTransition(() => action(data));
+        }}
+        className="flex gap-2"
+      >
         <input name="name" placeholder="Nome do dispositivo" defaultValue="iPhone" className="field" />
         <button disabled={pending} className="shrink-0 rounded-full bg-text px-4 text-[13px] font-medium text-bg disabled:opacity-50">
           Gerar token
@@ -26,7 +38,7 @@ export function TokenManager({ tokens }: { tokens: Token[] }) {
       {token && (
         <div className="rounded-2xl border border-warm/30 bg-warm/[0.04] p-4">
           <div className="label mb-2 text-warm">Copie agora — não será exibido de novo</div>
-          <code className="block break-all font-mono text-[12px] text-text">{token}</code>
+          <code data-testid="new-token" className="block break-all font-mono text-[12px] text-text">{token}</code>
         </div>
       )}
       {tokens.length > 0 && (

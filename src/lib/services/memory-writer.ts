@@ -54,6 +54,8 @@ export async function applyExtraction(
   }
 
   for (const p of ex.proposals) {
+    // Evento sem data válida não vira proposta (evita botão "Aceitar" que falharia).
+    if (p.type === "create_calendar_event" && !p.start) continue;
     const { data, error } = await supabase
       .from("proposals")
       .insert({
@@ -64,6 +66,7 @@ export async function applyExtraction(
           domain: p.domain ?? null,
           why: p.why,
           horizon: p.horizon ?? null,
+          ...(p.type === "create_calendar_event" ? { start: p.start ?? null, duration_minutes: p.duration_minutes ?? null } : {}),
         },
         rationale: p.rationale,
         space_id: ctx.spaceId,

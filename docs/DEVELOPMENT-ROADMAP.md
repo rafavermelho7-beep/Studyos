@@ -12,6 +12,10 @@ UC-01) e Estudos (provas).
 **Aceite**: 40 testes unitários, 19 de banco, 21 E2E passando (✅). Falta: implantação real (⛔ depende de contas/chaves do usuário).
 **Avançar quando**: o usuário usar por ~2 semanas com IA real e os custos ficarem dentro do esperado.
 
+## Fase 1.1 — Google Agenda · **CONCLUÍDA (código)** · M
+Antecipada da Fase 4 após DEC-038: leitura, detecção de provas, criação com confirmação. Aceite: 51 unitários, 21 de banco, 22 E2E (✅).
+Falta: credenciais OAuth do Google (⛔ usuário).
+
 ## Fase 2 — Acompanhamento e memória mais inteligentes · M
 - UC-03 energia × estudo: sessões de estudo por disciplina (manual rápido) + correlação com n.
 - Resumo automático de espaços (modelo leve a cada ~10 mensagens) e retomada com "onde paramos".
@@ -28,7 +32,7 @@ UC-01) e Estudos (provas).
 **Aceite**: toda pesquisa citada; teste de injeção em página maliciosa não altera comportamento; custo por pesquisa registrado.
 
 ## Fase 4 — Agenda e multimodalidade · G
-- Agenda (⛔ PEN-02 iCloud/Google): leitura; escrita **com confirmação** (DEC-T20); texto de convites tratado como dado.
+- Agenda: ✅ entregue na Fase 1.1.
 - Voz (entrada), imagens e documentos na conversa, com custo controlado.
 **Aceite**: nenhuma escrita na agenda sem clique de confirmação; anexos não ultrapassam limites de custo.
 

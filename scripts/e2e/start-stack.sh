@@ -34,12 +34,21 @@ docker run -d --name le-gotrue --network host \
   supabase/gotrue:v2.177.0 >/dev/null
 for i in $(seq 1 30); do curl -sf http://127.0.0.1:9999/health >/dev/null && break; sleep 1; done
 
-if ! $PSQL -tAc "select 1 from pg_tables where schemaname='public' and tablename='memories'" | grep -q 1; then
-  $PSQL -f "$HERE/post-auth.sql"
-  for f in "$ROOT"/supabase/migrations/*.sql; do $PSQL -f "$f"; done
-  $PSQL -f "$ROOT/supabase/test/grants.sql"
-  $PSQL -c "grant usage on schema public to service_role; grant all on all tables in schema public to service_role;"
-fi
+# Migrations idempotentes: registra as já aplicadas em e2e.applied.
+$PSQL -c "create schema if not exists e2e; create table if not exists e2e.applied(name text primary key)"
+if ! $PSQL -tAc "select 1 from pg_proc where proname='uid' and pronamespace='auth'::regnamespace" | grep -q 1; then echo "GoTrue não criou auth.uid()"; exit 1; fi
+$PSQL -f "$HERE/post-auth.sql"
+for f in "$ROOT"/supabase/migrations/*.sql; do
+  n=$(basename "$f")
+  if ! $PSQL -tAc "select 1 from e2e.applied where name='$n'" | grep -q 1; then
+    if [ "$n" != "20261101000000_init.sql" ] || ! $PSQL -tAc "select 1 from pg_tables where schemaname='public' and tablename='memories'" | grep -q 1; then
+      $PSQL -f "$f"
+    fi
+    $PSQL -c "insert into e2e.applied values ('$n')"
+  fi
+done
+$PSQL -f "$ROOT/supabase/test/grants.sql"
+$PSQL -c "grant usage on schema public to service_role; grant all on all tables in schema public to service_role;"
 
 docker run -d --name le-postgrest --network host \
   -e PGRST_DB_URI="postgres://authenticator:localpw@127.0.0.1:$PORT/postgres" \
@@ -47,10 +56,10 @@ docker run -d --name le-postgrest --network host \
   -e PGRST_SERVER_PORT=3000 -e PGRST_SERVER_HOST=127.0.0.1 \
   postgrest/postgrest:v12.2.12 >/dev/null
 
-pkill -f "e2e/gateway.mjs" 2>/dev/null || true
-pkill -f "e2e/mock-anthropic.mjs" 2>/dev/null || true
+for p in $(ps -eo pid,args | grep -E "e2e/(gateway|mock-anthropic|mock-google)\.mjs" | grep -v grep | awk '{print $1}'); do kill "$p" 2>/dev/null || true; done
 nohup node "$HERE/gateway.mjs" > "$STATE/gateway.log" 2>&1 &
 nohup node "$HERE/mock-anthropic.mjs" > "$STATE/mock.log" 2>&1 &
+nohup node "$HERE/mock-google.mjs" > "$STATE/mock-google.log" 2>&1 &
 sleep 1
 
 ANON=$(node "$HERE/jwt.mjs" "$SECRET" anon)
@@ -62,6 +71,12 @@ SERVICE_KEY=$SERVICE
 OWNER_EMAIL=owner@life.test
 ANTHROPIC_API_KEY=mock-key
 ANTHROPIC_BASE_URL=http://127.0.0.1:4010
+GOOGLE_CLIENT_ID=mock-client
+GOOGLE_CLIENT_SECRET=mock-secret
+GOOGLE_TEST_BASE_URL=http://127.0.0.1:4020
+E2E_ALLOW_GOOGLE_MOCK=1
+TOKEN_ENCRYPTION_KEY=$(node -e 'console.log(require("crypto").randomBytes(32).toString("base64"))')
+APP_URL=http://localhost:3100
 ENV
 # Usuários de teste: o dono e um intruso (conta válida no Supabase, mas não autorizada).
 for u in owner@life.test intruso@life.test; do

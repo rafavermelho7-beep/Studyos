@@ -55,6 +55,16 @@
 | RF-46 | UC-03 energia × estudo | I | Requer sessões de estudo por disciplina | ⬜ Fase 2 |
 | RF-47 | Painel de orçamento e uso | E | Gasto mês/dia, teto diário, últimas chamadas | ✅ E2E |
 
+### Agenda (Google)
+| ID | Requisito | Pri. | Critério | Estado |
+|---|---|---|---|---|
+| RF-60 | Conectar/desconectar Google Agenda (OAuth) | E | Tokens cifrados; desconectar revoga e apaga cópia | ✅ E2E (dublê) · 🟡 Google real |
+| RF-61 | Ler eventos (−30/+60 dias), só título e horário | E | Cancelados ignorados; títulos sanitizados; fuso local | ✅ unit + E2E |
+| RF-62 | Agenda no contexto do JARVIS e no Ambiente | E | Próximos 7 dias no contexto; "Agenda de hoje" no Foco | ✅ E2E |
+| RF-63 | Provas detectadas na agenda | I | Alimentam "Próximas provas", UC-01 e conflitos | ✅ unit + E2E |
+| RF-64 | Criar evento só com confirmação | E | Nada é criado até "Aceitar"; auditado | ✅ E2E |
+| RF-65 | Renovação automática do acesso | E | Token expirado renovado com refresh token | ✅ E2E |
+
 ### Intelligence Spaces
 | ID | Requisito | Pri. | Critério | Estado |
 |---|---|---|---|---|

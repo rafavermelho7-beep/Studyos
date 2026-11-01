@@ -13,6 +13,9 @@ import { MEMORY_KINDS, SENSITIVITY } from "@/lib/memory/policy";
 import { localDate, weekStart } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
 import { isOwner } from "@/lib/env";
+import { createCalendarEvent, syncCalendar } from "@/lib/services/calendar";
+import { googleConfig, revokeToken } from "@/lib/google/calendar";
+import { encryptionKey, unseal } from "@/lib/crypto";
 
 export type ActionResult = { ok: true; message?: string; data?: Record<string, unknown> } | { ok: false; error: string };
 
@@ -197,11 +200,11 @@ export async function createDecision(_: unknown, form: FormData): Promise<Action
 // ------------------------------------------------------------------ propostas do agente
 export async function resolveProposal(id: string, accept: boolean): Promise<ActionResult> {
   try {
-    const { supabase } = await requireOwner();
+    const { supabase, owner } = await requireOwner();
     z.string().uuid().parse(id);
     const { data: p, error } = await supabase.from("proposals").select("*").eq("id", id).eq("status", "pending").single();
     if (error || !p) throw new Error("Proposta não encontrada ou já resolvida.");
-    const payload = p.payload as Record<string, string | null>;
+    const payload = p.payload as Record<string, string | number | null>;
     let createdId: string | null = null;
     if (accept) {
       if (p.type === "create_goal") {
@@ -214,6 +217,11 @@ export async function resolveProposal(id: string, accept: boolean): Promise<Acti
         const r = await supabase.from("projects").insert({ ...v, description: v.description ?? "", next_action: "" }).select("id").single();
         if (r.error) throw new Error(r.error.message);
         createdId = r.data.id;
+      } else if (p.type === "create_calendar_event") {
+        // Ação externa: só acontece aqui, após o clique "Aceitar" (DEC-T20).
+        const v = calendarEventSchema.parse({ title: payload.title, start: payload.start, duration_minutes: payload.duration_minutes ?? null });
+        const r = await createCalendarEvent(supabase, owner.timezone, { title: v.title, start: v.start, durationMinutes: v.duration_minutes });
+        createdId = r.id;
       } else if (p.type === "record_decision") {
         const r = await supabase
           .from("life_decisions")
@@ -231,6 +239,61 @@ export async function resolveProposal(id: string, accept: boolean): Promise<Acti
     await audit(supabase, "user", accept ? "proposal.accept" : "proposal.reject", "proposal", id, { type: p.type, created: createdId });
     refresh("/", "/goals");
     return { ok: true, message: accept ? "Proposta aceita." : "Proposta descartada." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+// ------------------------------------------------------------------ agenda (Google)
+const calendarEventSchema = z.object({
+  title: z.string().trim().min(1).max(120),
+  start: z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/),
+  duration_minutes: z.coerce.number().int().min(5).max(600).nullable().optional(),
+});
+
+export async function syncCalendarNow(): Promise<ActionResult> {
+  try {
+    const { supabase, owner } = await requireOwner();
+    const r = await syncCalendar(supabase, owner.timezone, { force: true });
+    refresh("/", "/settings", "/context");
+    return r.ok ? { ok: true, message: `Agenda sincronizada (${r.count} eventos).` } : { ok: false, error: r.error };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function disconnectCalendar(): Promise<ActionResult> {
+  try {
+    const { supabase } = await requireOwner();
+    const { data } = await supabase.from("integrations").select("refresh_token_enc").eq("provider", "google_calendar").maybeSingle();
+    const cfg = googleConfig();
+    const key = encryptionKey();
+    if (data && cfg && key) {
+      try {
+        await revokeToken(cfg, unseal(data.refresh_token_enc, key)); // revoga no Google também
+      } catch {
+        /* segue com a remoção local */
+      }
+    }
+    await supabase.from("calendar_events").delete().gte("day", "1900-01-01");
+    await supabase.from("integrations").delete().eq("provider", "google_calendar");
+    await audit(supabase, "user", "integration.disconnect", "google_calendar");
+    refresh("/", "/settings", "/context");
+    return { ok: true, message: "Agenda desconectada e cópia local apagada." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function addCalendarEvent(_: unknown, form: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, owner } = await requireOwner();
+    const raw = fd(form);
+    const start = raw.time ? `${raw.date}T${raw.time}` : String(raw.date ?? "");
+    const v = calendarEventSchema.parse({ title: raw.title, start, duration_minutes: raw.duration_minutes ?? null });
+    await createCalendarEvent(supabase, owner.timezone, { title: v.title, start: v.start, durationMinutes: v.duration_minutes });
+    refresh("/", "/context");
+    return { ok: true, message: "Evento criado na Google Agenda." };
   } catch (e) {
     return fail(e);
   }

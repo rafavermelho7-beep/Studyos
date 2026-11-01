@@ -5,6 +5,8 @@ import { balanceSnapshot } from "@/lib/balance";
 import { addDays, formatDatePt, greetingFor, localDate } from "@/lib/dates";
 import { domainLabel } from "@/lib/domains";
 import { refreshInsights } from "@/lib/services/insights-engine";
+import { syncCalendar } from "@/lib/services/calendar";
+import { isExamTitle } from "@/lib/google/calendar";
 import { getAmbientSpace, listMessages } from "@/lib/services/spaces";
 import { PresenceOrb } from "@/components/presence";
 import { Conversation, type Msg } from "@/components/conversation";
@@ -18,10 +20,12 @@ export default async function AmbientPage() {
   const { supabase, owner } = await requireOwner();
   const today = localDate(new Date(), owner.timezone);
 
+  // Agenda: sincroniza no máximo a cada 30 min ao abrir (falhas não bloqueiam a página).
+  await syncCalendar(supabase, owner.timezone).catch(() => null);
   // Regras determinísticas rodam a cada abertura (custo zero de IA).
   await refreshInsights(supabase, today).catch(() => 0);
 
-  const [space, synthesis, insights, proposals, ratings, goals, checkin, exams, pendingMem, budget] = await Promise.all([
+  const [space, synthesis, insights, proposals, ratings, goals, checkin, exams, pendingMem, budget, agenda] = await Promise.all([
     getAmbientSpace(supabase),
     supabase.from("syntheses").select("content, model").eq("kind", "daily").eq("period_start", today).maybeSingle(),
     supabase
@@ -37,7 +41,13 @@ export default async function AmbientPage() {
     supabase.from("study_events").select("title, day").gte("day", today).lte("day", addDays(today, 14)).order("day").limit(3),
     supabase.from("memories").select("id", { count: "exact", head: true }).eq("status", "proposed"),
     loadBudget(supabase, owner.timezone),
+    supabase.from("calendar_events").select("google_id, title, start_at, all_day, day").gte("day", today).lte("day", addDays(today, 14)).order("start_at").limit(80),
   ]);
+  const todayAgenda = (agenda.data ?? []).filter((e) => e.day === today).slice(0, 6);
+  const upcoming = [...(exams.data ?? []), ...(agenda.data ?? []).filter((e) => isExamTitle(e.title)).map((e) => ({ title: e.title, day: e.day }))]
+    .sort((a, b) => a.day.localeCompare(b.day))
+    .slice(0, 4);
+  const timeFmt = new Intl.DateTimeFormat("pt-BR", { timeZone: owner.timezone, hour: "2-digit", minute: "2-digit" });
   const messages = await listMessages(supabase, space.id, 40);
   const bal = balanceSnapshot(ratings.data ?? []);
   const providers = availableProviders();
@@ -108,10 +118,21 @@ export default async function AmbientPage() {
           ) : (
             <p className="text-[14px] text-text-3">Nenhum objetivo ativo. Conte ao JARVIS o que quer construir nos próximos anos — ele propõe, você confirma.</p>
           )}
-          {exams.data?.length ? (
+          {todayAgenda.length ? (
+            <div className="mt-5 border-t border-line pt-4">
+              <div className="label mb-2">Agenda de hoje</div>
+              {todayAgenda.map((e) => (
+                <div key={e.google_id} className="flex justify-between gap-3 text-[13px] text-text-2">
+                  <span className="truncate">{e.title}</span>
+                  <span className="shrink-0 text-text-3">{e.all_day ? "dia todo" : timeFmt.format(new Date(e.start_at))}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {upcoming.length ? (
             <div className="mt-5 border-t border-line pt-4">
               <div className="label mb-2">Próximas provas</div>
-              {exams.data.map((e) => (
+              {upcoming.map((e) => (
                 <div key={e.day + e.title} className="flex justify-between text-[13px] text-text-2">
                   <span>{e.title}</span>
                   <span className="text-text-3">{e.day.split("-").reverse().slice(0, 2).join("/")}</span>

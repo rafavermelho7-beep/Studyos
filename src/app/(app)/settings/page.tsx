@@ -5,6 +5,8 @@ import { MODEL_CATALOG } from "@/lib/ai/pricing";
 import { saveProfile, signOut } from "@/app/actions";
 import { ActionForm, Badge, Card, Field, SectionTitle } from "@/components/ui";
 import { TokenManager } from "./token-manager";
+import { CalendarCard } from "./calendar-card";
+import { calendarStatus } from "@/lib/services/calendar";
 
 export const metadata = { title: "Ajustes · LIFE ENGINE" };
 
@@ -21,7 +23,7 @@ const ACTION_LABEL: Record<string, string> = {
   record_decision: "Registrar decisão",
   update_goal_status: "Mudar status de objetivo",
   promote_hypothesis_to_fact: "Promover hipótese a fato",
-  write_calendar: "Escrever na agenda (futuro)",
+  write_calendar: "Criar evento na Google Agenda",
   save_restricted_memory: "Guardar dado restrito",
   delete_user_data: "Apagar seus dados",
   external_message: "Enviar mensagens externas",
@@ -34,8 +36,10 @@ const ACTION_LABEL: Record<string, string> = {
   web_browse: "Pesquisar na web (Fase 1: desligado)",
 };
 
-export default async function SettingsPage() {
+export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ google?: string }> }) {
+  const { google } = await searchParams;
   const { supabase, owner } = await requireOwner();
+  const calStatus = await calendarStatus(supabase);
   const [{ data: tokens }, { data: auditRows }] = await Promise.all([
     supabase.from("ingest_tokens").select("id, name, created_at, last_used_at, revoked_at").order("created_at", { ascending: false }),
     supabase.from("audit_log").select("created_at, actor, action, entity").order("created_at", { ascending: false }).limit(15),
@@ -94,6 +98,11 @@ export default async function SettingsPage() {
             })}
           </ul>
           <p className="mt-3 text-[12px] text-text-3">Preço por milhão de tokens (entrada / saída). Chaves de API ficam só no servidor e nunca são exibidas.</p>
+        </Card>
+
+        <Card>
+          <SectionTitle eyebrow="Google Agenda" />
+          <CalendarCard status={calStatus} flash={google} />
         </Card>
 
         <Card>

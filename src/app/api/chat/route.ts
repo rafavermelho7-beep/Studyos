@@ -101,7 +101,7 @@ export async function POST(req: Request) {
             messages: [
               {
                 role: "user",
-                content: `Título atual do espaço: "${space.title}"\n\n<conversa>\nUSUÁRIO: ${body.message}\n\nJARVIS: ${text}\n</conversa>`,
+                content: `Hoje: ${input.today} (${new Date(input.today + "T12:00:00Z").toLocaleDateString("pt-BR", { weekday: "long", timeZone: "UTC" })}). Título atual do espaço: "${space.title}"\n\n<conversa>\nUSUÁRIO: ${body.message}\n\nJARVIS: ${text}\n</conversa>`,
               },
             ],
             jsonSchema: extractionJsonSchema,

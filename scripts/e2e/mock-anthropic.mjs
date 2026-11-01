@@ -32,6 +32,12 @@ http
       if (/ansios/i.test(lastText)) memories.push({ kind: "fact", content: "Sente ansiedade antes de provas", domain: "saude", sensitivity: "sensitive", confidence: 0.8, stated: true });
       if (/rende mais/i.test(lastText)) memories.push({ kind: "inference", content: "Parece render mais quando dorme bem", domain: "saude", sensitivity: "normal", confidence: 0.9, stated: false });
       if (/quero .*objetivo|meu objetivo/i.test(lastText)) proposals.push({ type: "create_goal", title: "Correr uma meia maratona", description: "", domain: "saude", why: "Saúde e disciplina", horizon: "year", rationale: "O usuário declarou a intenção explicitamente." });
+      if (/agende/i.test(lastText)) {
+        const today = /Hoje: (\d{4}-\d{2}-\d{2})/.exec(lastText)?.[1];
+        const d = new Date(today + "T12:00:00Z");
+        d.setUTCDate(d.getUTCDate() + 1);
+        proposals.push({ type: "create_calendar_event", title: "Revisão de Física", description: "", domain: "estudos", why: "", horizon: null, rationale: "Pedido explícito para agendar.", start: d.toISOString().slice(0, 10) + "T14:00", duration_minutes: 90 });
+      }
       text = JSON.stringify({ memories, proposals, space_title: "Rotina de estudos" });
     } else if (/SÍNTESE DIÁRIA/.test(lastText)) {
       text = "Dia com dados limitados.\n\n- Hoje: revise a prova de Cálculo II.\n- Equilíbrio: relacionamentos sem registro esta semana.";

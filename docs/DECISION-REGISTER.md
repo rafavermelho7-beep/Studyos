@@ -25,6 +25,7 @@ desenvolvimento pelo usuário com o Claude (031).
 | DEC-035 | Teto de R$50/mês em APIs de IA é **limite rígido**, não meta | Confirmada |
 | DEC-036 | Proibido: pagamentos, assinaturas, expor chaves, deploy público sem proteção, apagar dados sem backup, mensagens externas | Confirmada |
 | DEC-037 | Computador pessoal não é servidor; assinaturas Pro/Plus não contam como crédito de API | Confirmada |
+| DEC-038 | Agenda = **Google Agenda** (resolve PEN-02) | Confirmada (01/11/2026) |
 
 ## Decisões técnicas (Claude) — resolvem pendências
 
@@ -54,12 +55,18 @@ desenvolvimento pelo usuário com o Claude (031).
 | DEC-T22 | Câmbio conservador padrão R$5,60/US$ (configurável) | — | Cotações/projeções 2026 ≈ 5,00–5,20 |
 | DEC-T23 | Interface em modo escuro único na Fase 1 | — | Identidade "ambient"; tema claro futuro |
 | DEC-T24 | Texto do modelo renderizado sem HTML (parser próprio de parágrafos/listas/negrito) | — | Sem XSS por saída do modelo |
+| DEC-T25 | Google Agenda via OAuth 2.0 com escopo único `calendar.events`, fetch puro (sem SDK do Google) | DEC-038 | Escopo mínimo que permite ler e criar; menos dependências |
+| DEC-T26 | Tokens do Google cifrados em repouso (AES-256-GCM, `TOKEN_ENCRYPTION_KEY`); `state` anti-CSRF em cookie httpOnly | — | Vazamento do banco não expõe acesso à agenda |
+| DEC-T27 | Cópia local mínima: só título (sanitizado, ≤120 caracteres) e horário, janela −30/+60 dias; sem participantes/descrição/local | R-17, R-13 | Minimização; títulos tratados como dado no contexto |
+| DEC-T28 | Sincronização ao abrir o Ambiente (no máximo a cada 30 min) e por botão; sem cron | DEC-T13 | Sem infraestrutura extra |
+| DEC-T29 | Provas detectadas por título (prova, P1–P4, exame, avaliação, simulado…) alimentam UC-01 e conflitos | PEN-03 parcial | Aproveita a agenda sem registro manual |
+| DEC-T30 | Criação de evento só por proposta aceita ou formulário do usuário; auditada como ação do usuário; nunca no passado; 5–600 min | DEC-T20 | Ação externa sempre confirmada |
+| DEC-T31 | Desconectar revoga o token no Google e apaga a cópia local | PEN-14 | Controle total do usuário |
 
 ## Pendências que dependem do usuário
 
 | ID | Pendência | Impacto |
 |---|---|---|
-| PEN-02 | Agenda iCloud ou Google | Bloqueia integração de agenda (Fase 4) |
 | PEN-10 | Tempo disponível para evoluir o sistema | Ritmo do roadmap |
 | PEN-12 | Problemas concretos nos demais domínios | Novas regras/módulos além de saúde × estudos |
 | PEN-16 | Dispositivo principal | Prioridade mobile vs desktop (hoje: ambos responsivos) |

@@ -21,6 +21,8 @@
 | R-36 | Falha de auditoria/uso silenciosa (insert falha) | M | B | Logs `[ai_usage]` | Log de erro; gasto subestimado só nesse caso | Monitorar |
 | R-37 | Painel virar "dashboard que exige manutenção" | M | M | Seções vazias | Ambiente mostra só sinais e 3 toques; nada obrigatório | Manter minimalismo |
 | R-38 | Extração grava memórias de baixa qualidade | M | M | Aba Memória | Máx. 5/turno, deduplicação, revisão fácil | Ajustar prompt com uso real |
+| R-39 | App OAuth do Google em modo "Teste": **refresh token expira em 7 dias** | M | A | Agenda com status "erro" | Publicar o app como "Em produção" (uso pessoal; aviso de app não verificado aparece uma vez) | Usuário publicar |
+| R-40 | `TOKEN_ENCRYPTION_KEY` perdida/trocada | M | B | Erro ao sincronizar | Reconectar a agenda | Guardar a chave no gerenciador de senhas |
 | R-12 | Manutenção em 1–3 anos | B | M | Dependências desatualizadas | Stack mainstream, testes automatizados, docs | Manter |
 
 ## Cortes de escopo que preservam a essência

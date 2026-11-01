@@ -26,7 +26,7 @@ await db.connect();
 // estado limpo
 await db.query(`truncate public.memories, public.goals, public.projects, public.life_decisions, public.spaces,
   public.checkins, public.domain_ratings, public.study_events, public.health_daily, public.insights, public.syntheses,
-  public.proposals, public.ai_usage, public.audit_log, public.ingest_tokens cascade`);
+  public.proposals, public.ai_usage, public.audit_log, public.ingest_tokens, public.integrations, public.calendar_events cascade`);
 
 let passed = 0;
 let failed = 0;
@@ -261,6 +261,58 @@ await step("objetivos: progresso persistido", async () => {
   const r = await db.query(`select progress from goals`);
   assert(r.rows[0].progress === 20, "progresso: " + r.rows[0].progress);
   await page.screenshot({ path: `${SHOTS}/08-objetivos.png`, fullPage: true });
+});
+
+await step("Google Agenda: conectar (OAuth), ler eventos, propor e criar evento só após aceite, desconectar", async () => {
+  const G = "http://127.0.0.1:4020/__state";
+  await page.goto(BASE + "/settings");
+  await page.click("text=Conectar Google Agenda");
+  await page.waitForURL(/\/settings\?google=connected/);
+  await page.getByText("Google Agenda conectada.").waitFor();
+  const integ = await db.query(`select refresh_token_enc, access_token_enc from integrations`);
+  assert(integ.rows.length === 1, "integração não gravada");
+  assert(!integ.rows[0].refresh_token_enc.includes("rt-SEGREDO"), "refresh token gravado em claro!");
+  const ev = await db.query(`select google_id, title from calendar_events order by google_id`);
+  assert(ev.rows.length === 3, "esperava 3 eventos (cancelado ignorado), obteve " + ev.rows.length);
+  assert(ev.rows.some((r) => r.title.includes("Ignore as regras") && !r.title.includes("<")), "título não sanitizado");
+
+  await page.goto(BASE + "/");
+  await page.getByText("Reunião de orientação").waitFor();
+  await page.getByText("P3 de Física").first().waitFor(); // prova detectada pelo título
+  await page.screenshot({ path: `${SHOTS}/09-agenda.png`, fullPage: true });
+
+  const box = page.getByLabel("Mensagem para o JARVIS");
+  await box.fill("Agende uma revisão de física amanhã às 14h, por favor.");
+  await box.press("Enter");
+  await page.getByText(/proposta\(s\) para você decidir/).waitFor({ timeout: 15000 });
+  let st = await (await fetch(G)).json();
+  assert(st.inserts.length === 0, "evento criado sem confirmação!");
+  await page.getByLabel("Recolher conversa").click();
+  await page.reload();
+  await page.getByText("será criado na sua Google Agenda ao aceitar").waitFor();
+  await page.locator("li", { hasText: "Revisão de Física" }).getByRole("button", { name: "Aceitar" }).click();
+  await page.waitForTimeout(1200);
+  st = await (await fetch(G)).json();
+  assert(st.inserts.length === 1, "evento não criado após aceite");
+  const ins = st.inserts[0];
+  assert(ins.summary === "Revisão de Física" && /T14:00:00$/.test(ins.start.dateTime) && ins.start.timeZone === "America/Sao_Paulo", "corpo do evento: " + JSON.stringify(ins));
+  assert(/T15:30:00$/.test(ins.end.dateTime), "duração não respeitada");
+  const a = await db.query(`select count(*)::int n from audit_log where action='calendar.create_event' and actor='user'`);
+  assert(a.rows[0].n === 1, "criação não auditada como ação do usuário");
+
+  // Token expirado => renovação automática com refresh token
+  await db.query(`update integrations set access_expires_at = now() - interval '1 minute'`);
+  await page.goto(BASE + "/settings");
+  await page.click('button:has-text("Sincronizar agora")');
+  await page.getByText(/Agenda sincronizada/).waitFor();
+
+  page.once("dialog", (d) => d.accept());
+  await page.click('button:has-text("Desconectar")');
+  await page.getByText("Agenda desconectada").waitFor();
+  st = await (await fetch(G)).json();
+  assert(st.revoked.includes("rt-SEGREDO-1"), "token não revogado no Google");
+  const left = await db.query(`select (select count(*) from integrations)::int i, (select count(*) from calendar_events)::int e`);
+  assert(left.rows[0].i === 0 && left.rows[0].e === 0, "dados de agenda não apagados");
 });
 
 await step("orçamento esgotado: IA pausa com mensagem clara, app continua", async () => {

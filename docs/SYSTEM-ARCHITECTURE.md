@@ -20,7 +20,7 @@
  └───────────────┬──────────────────────────────────┬─────────────────────────┘
                  │ supabase-js (JWT do usuário)     │ HTTPS (chaves só no servidor)
                  ▼                                  ▼
-       Supabase: Postgres + Auth + RLS        Anthropic API · OpenAI API
+       Supabase: Postgres + Auth + RLS        Anthropic API · OpenAI API · Google Calendar API
 ```
 
 ## 2. Responsabilidades
@@ -51,7 +51,7 @@
 ## 4. Modelo de dados
 `profiles` · `memories` (tipo, conteúdo, domínio, sensibilidade, status, confiança, origem, `source_ref`, validade, `fts`) · `goals` ·
 `projects` · `life_decisions` · `spaces` (1 `ambient` por usuário) · `messages` · `checkins` · `domain_ratings` · `study_events` ·
-`health_daily` (agregados) · `insights` (dedupe) · `syntheses` · `proposals` · `ai_usage` · `audit_log` (append-only) · `ingest_tokens` (hash).
+`health_daily` (agregados) · `integrations` (tokens cifrados) · `calendar_events` (título+horário) · `insights` (dedupe) · `syntheses` · `proposals` · `ai_usage` · `audit_log` (append-only) · `ingest_tokens` (hash).
 Todas com `user_id = auth.uid()` em RLS.
 
 ## 5. Autenticação e autorização
@@ -110,7 +110,7 @@ exige trocar Auth e o cliente de dados, não o modelo de dados.
 | App iOS nativo para HealthKit | Fora do alcance de uma pessoa agora; Atalhos resolvem leitura diária |
 
 ## 14. O que NÃO foi construído de propósito
-Agenda, e-mail, banco, notificações externas, pesquisa web, voz/imagem, multiusuário, cron, módulos autogerados.
+E-mail, banco, notificações externas, pesquisa web, voz/imagem, multiusuário, cron, módulos autogerados.
 
 ## Verificação (01/11/2026)
 Preços Anthropic: tabela oficial (via skill claude-api). OpenAI: anúncio oficial GPT-5.4 mini/nano (painel inacessível desta sessão).

@@ -222,6 +222,26 @@ await test("ai_spend de B não inclui gastos de A", async () => {
   assert(Number(r.rows[0].month_brl) === 0, "gasto de outro usuário contabilizado");
 });
 
+await test("integração Google e eventos isolados por usuário", async () => {
+  await asCommit(A, () =>
+    client.query(`insert into integrations(provider, refresh_token_enc) values ('google_calendar','v1.x.y.z')`),
+  );
+  await asCommit(A, () =>
+    client.query(`insert into calendar_events(google_id, title, start_at, day) values ('ev1','P2 de Cálculo', now(), current_date)`),
+  );
+  const r = await as(B, () =>
+    client.query(`select (select count(*) from integrations)::int i, (select count(*) from calendar_events)::int e`),
+  );
+  assert(r.rows[0].i === 0 && r.rows[0].e === 0, "vazamento de agenda/tokens entre usuários");
+  const anon = await as("anon", () => client.query(`select count(*)::int n from integrations`));
+  assert(anon.rows[0].n === 0, "anônimo leu integrações");
+});
+
+await test("proposta de evento de agenda é um tipo válido; tipo desconhecido não", async () => {
+  await as(A, () => client.query(`insert into proposals(type, payload) values ('create_calendar_event', '{}'::jsonb)`));
+  await expectError(() => as(A, () => client.query(`insert into proposals(type, payload) values ('send_email', '{}'::jsonb)`)));
+});
+
 await client.end();
 console.log(`\n${passed} passaram, ${failed} falharam`);
 process.exit(failed ? 1 : 0);

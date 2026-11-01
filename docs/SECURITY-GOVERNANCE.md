@@ -11,6 +11,8 @@
 | XSS via saída do modelo | Markdown/HTML gerado | Renderizador próprio sem HTML | — |
 | Abuso de custo | Loop, prompt enorme, chave roubada | Teto rígido R$50, teto diário, pior caso pré-checado, `max_tokens`, limite de 8.000 caracteres/mensagem | Chave roubada fora do app (definir limite de gasto também no painel do provedor) |
 | Vazamento de chaves | Commit, cliente | Chaves só no servidor (sem `NEXT_PUBLIC_`), `.env*` no `.gitignore`, nunca exibidas | Logs de terceiros |
+| Acesso à agenda roubado | Vazamento do banco, CSRF no OAuth | Tokens cifrados (AES-256-GCM, chave fora do banco); `state` aleatório comparado em tempo constante; escopo mínimo; revogação ao desconectar | Chave de cifragem vazada junto com o banco |
+| Injeção via títulos de eventos | Convites de terceiros | Títulos sanitizados e truncados; contexto marcado como dado; modelo sem ferramentas; criação só com clique | Texto enganoso no contexto |
 | Token de saúde roubado | iPhone/Atalho | Escopo só-escrita de saúde; hash no banco; revogável; payload limitado | Inserção de dados de saúde falsos até revogar |
 | Inferência errada vira "verdade" | Modelo | Hipóteses rotuladas, teto 0,6, confirmação | — |
 | Perda de dados | Erro humano, pausa do Supabase | Exclusão sempre com confirmação; exportação JSON; auditoria | Free sem backups automáticos garantidos |
@@ -33,7 +35,7 @@ Logout encerra a sessão. Conta não autorizada é deslogada no ato do login.
 | Registrar hipótese (revisável) | Registrar decisão | Enviar mensagens externas |
 | Nomear/resumir espaços | Mudar status de objetivo | Operar contas externas |
 | Gerar síntese/revisão | Promover hipótese a fato | Pagamentos |
-| | Escrever na agenda *(futuro)* | Alterar permissões ou orçamento |
+| | Criar evento na Google Agenda | Alterar permissões ou orçamento |
 | | | Ler segredos · Alterar auditoria · Navegar na web *(Fase 1)* |
 
 Ação não listada = **proibida** (negação por padrão, testado).

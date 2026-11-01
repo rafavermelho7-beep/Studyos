@@ -1,5 +1,13 @@
 # LIFE ENGINE — CHANGELOG
 
+## 0.2.0 — 01/11/2026 · Fase 1.1: Google Agenda
+- DEC-038: agenda = Google. OAuth 2.0 (escopo `calendar.events`), tokens cifrados AES-256-GCM, `state` anti-CSRF.
+- Sincronização ao abrir (no máximo a cada 30 min) e manual; cópia mínima (título + horário); renovação automática do acesso.
+- Agenda dos próximos 7 dias no contexto do JARVIS; "Agenda de hoje" e provas detectadas no Ambiente; provas da agenda nas regras.
+- Nova proposta "Evento na agenda": criado no Google somente após "Aceitar"; auditado.
+- Desconectar revoga no Google e apaga a cópia local.
+- Testes: 51 unitários, 21 de banco, 22 E2E (com dublê de Google OAuth/Calendar).
+
 ## 0.1.0 — 01/11/2026 · Fase 1: fundação
 
 ### Concepção

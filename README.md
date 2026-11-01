@@ -5,6 +5,7 @@ conecta os onze domínios da sua vida com o objetivo de **equilíbrio em 1–3 a
 
 - Next.js 16 (App Router) + TypeScript + Tailwind v4 · Supabase (Postgres + Auth + RLS) · Vercel
 - IA na nuvem (Anthropic e OpenAI) via **AI Router** com teto rígido de **R$50/mês**
+- Integração com **Google Agenda** (leitura; criação de eventos só com sua confirmação)
 - Interface **Ambient Intelligence**: presença dinâmica do JARVIS, Intelligence Spaces, sinais, equilíbrio
 
 ## Começar

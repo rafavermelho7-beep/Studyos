@@ -6,6 +6,7 @@ import type { Owner } from "@/lib/auth";
 import { addDays, localDate } from "@/lib/dates";
 import { balanceSnapshot } from "@/lib/balance";
 import type { ContextInput, ContextMemory } from "@/lib/intelligence/context";
+import { isExamTitle } from "@/lib/google/calendar";
 
 const MEMORY_COLS = "id, kind, content, domain, confidence, source, updated_at, valid_until";
 
@@ -15,7 +16,7 @@ export async function loadContext(
   opts: { query: string; space?: ContextInput["space"] },
 ): Promise<{ input: ContextInput; memoryIds: string[]; memoryTexts: string[] }> {
   const today = localDate(new Date(), owner.timezone);
-  const [relevant, core, goals, projects, checkins, exams, ratings, insights] = await Promise.all([
+  const [relevant, core, goals, projects, checkins, exams, ratings, insights, agenda] = await Promise.all([
     supabase.rpc("match_memories", { p_query: opts.query.slice(0, 2000), p_limit: 12 }),
     // Núcleo de identidade: fixadas e valores/preferências de alta confiança.
     supabase
@@ -47,7 +48,22 @@ export async function loadContext(
       .order("day"),
     supabase.from("domain_ratings").select("domain, score, week_start").gte("week_start", addDays(today, -21)),
     supabase.from("insights").select("title, kind").eq("status", "new").limit(5),
+    supabase
+      .from("calendar_events")
+      .select("title, start_at, all_day, day")
+      .gte("day", today)
+      .lte("day", addDays(today, 30))
+      .order("start_at")
+      .limit(60),
   ]);
+  const agendaRows = agenda.data ?? [];
+  const timeFmt = new Intl.DateTimeFormat("pt-BR", { timeZone: owner.timezone, hour: "2-digit", minute: "2-digit" });
+  // Provas vindas da agenda somam-se às registradas manualmente (sem duplicar por dia+título).
+  const examList = [...(exams.data ?? [])];
+  for (const e of agendaRows) {
+    if (isExamTitle(e.title) && !examList.some((x) => x.day === e.day && x.title === e.title)) examList.push({ title: e.title, day: e.day });
+  }
+  examList.sort((a, b) => a.day.localeCompare(b.day));
 
   const seen = new Set<string>();
   const memories: (ContextMemory & { id: string })[] = [];
@@ -70,7 +86,11 @@ export async function loadContext(
       goals: goals.data ?? [],
       projects: projects.data ?? [],
       checkins: checkins.data ?? [],
-      upcomingExams: exams.data ?? [],
+      upcomingExams: examList,
+      agenda: agendaRows
+        .filter((e) => e.day <= addDays(today, 7))
+        .slice(0, 25)
+        .map((e) => ({ title: e.title, day: e.day, time: e.all_day ? null : timeFmt.format(new Date(e.start_at)) })),
       balance: bal.rated ? { index: bal.index, lowest: bal.lowest } : null,
       openInsights: insights.data ?? [],
     },

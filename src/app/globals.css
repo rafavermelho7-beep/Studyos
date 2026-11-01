@@ -1,26 +1,303 @@
 @import "tailwindcss";
 
+/* LIFE ENGINE — sistema visual "Ambient Intelligence"
+   Escuro, profundo, silencioso. A cor vem da presença do JARVIS, não de cromo. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #06070b;
+  --bg-2: #0b0d14;
+  --surface: rgba(255, 255, 255, 0.035);
+  --surface-2: rgba(255, 255, 255, 0.06);
+  --line: rgba(255, 255, 255, 0.07);
+  --line-2: rgba(255, 255, 255, 0.12);
+  --text: #e9ebf1;
+  --text-2: #a3a9b9;
+  --text-3: #6b7183;
+  --signal: #8be3d6; /* presença / IA */
+  --signal-2: #6aa8ff;
+  --warm: #f2c46d; /* atenção */
+  --danger: #ff8a8a;
+  --ok: #8fe3a6;
+  --presence-hue: 172;
+  --presence-energy: 0.35;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-bg-2: var(--bg-2);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-signal: var(--signal);
+  --color-signal-2: var(--signal-2);
+  --color-warm: var(--warm);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+  --font-sans: var(--font-sans-face), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-face), ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: dark;
+  background: var(--bg);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--signal) 35%, transparent);
+}
+
+/* ---------------------------------------------------------------- campo ambiente */
+.ambient-field {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    radial-gradient(1200px 700px at 50% -10%, hsl(var(--presence-hue) 60% 22% / calc(var(--presence-energy) * 0.9)), transparent 60%),
+    radial-gradient(900px 600px at 110% 110%, hsl(calc(var(--presence-hue) + 50) 60% 18% / 0.35), transparent 60%),
+    radial-gradient(700px 500px at -10% 90%, hsl(calc(var(--presence-hue) - 40) 50% 16% / 0.3), transparent 60%),
+    var(--bg);
+  transition: background 1.2s ease;
+}
+.ambient-field::after {
+  /* grão sutil + grade quase invisível: estética tecnológica discreta */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse at 50% 30%, black 20%, transparent 75%);
+}
+
+/* ---------------------------------------------------------------- presença */
+.presence {
+  --size: 120px;
+  position: relative;
+  width: var(--size);
+  height: var(--size);
+  display: grid;
+  place-items: center;
+}
+.presence .core {
+  width: 38%;
+  height: 38%;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 35% 30%, #fff 0%, hsl(var(--presence-hue) 80% 78%) 25%, hsl(var(--presence-hue) 70% 45%) 70%, transparent 100%);
+  box-shadow:
+    0 0 24px hsl(var(--presence-hue) 80% 60% / 0.55),
+    0 0 80px hsl(var(--presence-hue) 80% 55% / 0.25);
+  animation: breathe 5.5s ease-in-out infinite;
+  transition: box-shadow 0.8s ease;
+}
+.presence .ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 1px solid hsl(var(--presence-hue) 70% 70% / 0.18);
+}
+.presence .ring.r2 {
+  inset: 12%;
+  border-color: hsl(var(--presence-hue) 70% 70% / 0.12);
+}
+.presence .arc {
+  position: absolute;
+  inset: 4%;
+  border-radius: 9999px;
+  border: 1.5px solid transparent;
+  border-top-color: hsl(var(--presence-hue) 85% 72% / 0.75);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.presence .arc.a2 {
+  inset: 18%;
+  border-top-color: transparent;
+  border-bottom-color: hsl(calc(var(--presence-hue) + 40) 85% 72% / 0.6);
+}
+.presence[data-state="listening"] .core {
+  animation: breathe 2.4s ease-in-out infinite;
+}
+.presence[data-state="listening"] .ring {
+  border-color: hsl(var(--presence-hue) 70% 70% / 0.32);
+}
+.presence[data-state="thinking"] .arc,
+.presence[data-state="acting"] .arc {
+  opacity: 1;
+  animation: spin 1.6s linear infinite;
+}
+.presence[data-state="thinking"] .arc.a2 {
+  animation: spin 2.4s linear infinite reverse;
+}
+.presence[data-state="acting"] .arc {
+  animation-duration: 0.9s;
+}
+.presence[data-state="speaking"] .core {
+  animation: speak 0.9s ease-in-out infinite;
+}
+.presence[data-state="error"] .core {
+  background: radial-gradient(circle at 35% 30%, #fff 0%, #ffb4b4 25%, #c2410c 70%, transparent 100%);
+  box-shadow: 0 0 28px rgba(255, 120, 120, 0.5);
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(0.94); opacity: 0.88; }
+  50% { transform: scale(1.04); opacity: 1; }
+}
+@keyframes speak {
+  0%, 100% { transform: scale(0.98); }
+  40% { transform: scale(1.08); }
+  70% { transform: scale(1.01); }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------------------------------------------------------------- superfícies */
+.glass {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--line);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+}
+.label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.fade-in {
+  animation: fadeIn 0.5s ease both;
+}
+.rise {
+  animation: rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.caret::after {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: var(--signal);
+  animation: blink 1s steps(2) infinite;
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+input, textarea, select {
+  font: inherit;
+}
+.field {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+.field:focus {
+  border-color: color-mix(in oklab, var(--signal) 55%, transparent);
+  background: rgba(255, 255, 255, 0.05);
+}
+.field::placeholder {
+  color: var(--text-3);
+}
+select.field option {
+  background: var(--bg-2);
+}
+
+input[type="range"].range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--line-2);
+  outline: none;
+}
+input[type="range"].range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: var(--text);
+  box-shadow: 0 0 0 4px rgba(139, 227, 214, 0.15);
+  cursor: pointer;
+}
+input[type="range"].range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: 9999px;
+  background: var(--text);
+}
+
+.prose-jarvis p + p {
+  margin-top: 0.7em;
+}
+.prose-jarvis ul {
+  margin: 0.5em 0;
+  padding-left: 1.1em;
+  list-style: none;
+}
+.prose-jarvis li {
+  position: relative;
+  margin: 0.25em 0;
+}
+.prose-jarvis li::before {
+  content: "";
+  position: absolute;
+  left: -0.9em;
+  top: 0.65em;
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--signal);
+  opacity: 0.8;
+}
+.prose-jarvis strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  scrollbar-width: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

@@ -5,9 +5,10 @@ import { supabaseConfig } from "@/lib/env";
 
 /** Cliente Supabase por requisição, com a sessão do usuário (RLS aplicada). */
 export async function createClient() {
+  // cookies() primeiro: marca a rota como dinâmica (nunca pré-renderizar dados privados).
+  const cookieStore = await cookies();
   const cfg = supabaseConfig();
   if (!cfg) throw new Error("Supabase não configurado");
-  const cookieStore = await cookies();
   return createServerClient(cfg.url, cfg.key, {
     cookies: {
       getAll() {

@@ -130,7 +130,12 @@ export interface TokenUsage {
   inputTokens: number;
   outputTokens: number;
   cachedInputTokens?: number;
+  /** Buscas na web (ferramenta do servidor da Anthropic). */
+  webSearches?: number;
 }
+
+/** Anthropic web search: US$10 por 1.000 buscas (além dos tokens). */
+export const WEB_SEARCH_USD = 0.01;
 
 /** Custo em USD de uma chamada já realizada (ou estimada). */
 export function costUSD(model: ModelSpec, usage: TokenUsage): number {
@@ -142,7 +147,8 @@ export function costUSD(model: ModelSpec, usage: TokenUsage): number {
   const outRate = long ? (model.longOutputPerMTok ?? model.outputPerMTok) : model.outputPerMTok;
   const cachedRate = model.cachedInputPerMTok ?? inRate;
   const usd =
-    (uncached * inRate + cached * cachedRate + Math.max(0, usage.outputTokens) * outRate) / 1_000_000;
+    (uncached * inRate + cached * cachedRate + Math.max(0, usage.outputTokens) * outRate) / 1_000_000 +
+    Math.max(0, usage.webSearches ?? 0) * WEB_SEARCH_USD;
   return Math.round(usd * 1e6) / 1e6;
 }
 

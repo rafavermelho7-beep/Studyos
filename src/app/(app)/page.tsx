@@ -7,6 +7,9 @@ import { domainLabel } from "@/lib/domains";
 import { refreshInsights } from "@/lib/services/insights-engine";
 import { syncCalendar } from "@/lib/services/calendar";
 import { isExamTitle } from "@/lib/google/calendar";
+import { isRadarStale, lastRadarRun } from "@/lib/services/radar";
+import { OpportunityCard, type OpportunityRow } from "@/components/opportunity-card";
+import { RadarTrigger } from "@/components/radar-trigger";
 import { getAmbientSpace, listMessages } from "@/lib/services/spaces";
 import { PresenceOrb } from "@/components/presence";
 import { Conversation, type Msg } from "@/components/conversation";
@@ -15,6 +18,8 @@ import { Signals, type InsightItem, type ProposalItem } from "@/components/signa
 import { BalanceConstellation } from "@/components/balance-constellation";
 import { QuickCheckin } from "@/components/quick-checkin";
 import { Card, SectionTitle } from "@/components/ui";
+
+const providers0 = availableProviders;
 
 export default async function AmbientPage() {
   const { supabase, owner } = await requireOwner();
@@ -25,7 +30,7 @@ export default async function AmbientPage() {
   // Regras determinísticas rodam a cada abertura (custo zero de IA).
   await refreshInsights(supabase, today).catch(() => 0);
 
-  const [space, synthesis, insights, proposals, ratings, goals, checkin, exams, pendingMem, budget, agenda] = await Promise.all([
+  const [space, synthesis, insights, proposals, ratings, goals, checkin, exams, pendingMem, budget, agenda, opps, lastRadar, integ] = await Promise.all([
     getAmbientSpace(supabase),
     supabase.from("syntheses").select("content, model").eq("kind", "daily").eq("period_start", today).maybeSingle(),
     supabase
@@ -42,7 +47,12 @@ export default async function AmbientPage() {
     supabase.from("memories").select("id", { count: "exact", head: true }).eq("status", "proposed"),
     loadBudget(supabase, owner.timezone),
     supabase.from("calendar_events").select("google_id, title, start_at, all_day, day").gte("day", today).lte("day", addDays(today, 14)).order("start_at").limit(80),
+    supabase.from("opportunities").select("*").eq("status", "new").order("found_at", { ascending: false }).limit(3),
+    lastRadarRun(supabase),
+    supabase.from("integrations").select("status").eq("provider", "google_calendar").maybeSingle(),
   ]);
+  const radarAvailable = providers0().anthropic && (budget.mode === "normal" || budget.mode === "economy");
+  const radarStale = isRadarStale(lastRadar);
   const todayAgenda = (agenda.data ?? []).filter((e) => e.day === today).slice(0, 6);
   const upcoming = [...(exams.data ?? []), ...(agenda.data ?? []).filter((e) => isExamTitle(e.title)).map((e) => ({ title: e.title, day: e.day }))]
     .sort((a, b) => a.day.localeCompare(b.day))
@@ -50,7 +60,7 @@ export default async function AmbientPage() {
   const timeFmt = new Intl.DateTimeFormat("pt-BR", { timeZone: owner.timezone, hour: "2-digit", minute: "2-digit" });
   const messages = await listMessages(supabase, space.id, 40);
   const bal = balanceSnapshot(ratings.data ?? []);
-  const providers = availableProviders();
+  const providers = providers0();
   const aiAvailable = (providers.anthropic || providers.openai) && budget.mode !== "blocked";
   const name = owner.displayName ? `, ${owner.displayName}` : "";
 
@@ -147,6 +157,21 @@ export default async function AmbientPage() {
           <QuickCheckin initial={checkin.data ?? null} />
         </Card>
       </div>
+
+      <Card className="rise mt-4">
+        <SectionTitle eyebrow="Radar · oportunidades" action={<RadarTrigger auto={radarStale} available={radarAvailable} />} />
+        {opps.data?.length ? (
+          <ul className="grid gap-3 md:grid-cols-3">
+            {(opps.data as OpportunityRow[]).map((o) => (
+              <OpportunityCard key={o.id} o={o} calendarConnected={!!integ.data} compact />
+            ))}
+          </ul>
+        ) : (
+          <p className="text-[14px] text-text-3">
+            Nenhuma oportunidade nova. O radar pesquisa cursos, eventos e experiências uma vez por semana. <Link href="/radar" className="text-text-2 hover:underline">Ajustar interesses</Link>
+          </p>
+        )}
+      </Card>
 
       <Conversation spaceId={null} variant="ambient" initialMessages={messages as Msg[]} placeholder="Fale com o JARVIS…  ( / para focar )" />
     </div>

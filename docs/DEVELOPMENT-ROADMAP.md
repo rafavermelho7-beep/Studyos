@@ -28,7 +28,9 @@ Pendente: embeddings (DEC-T36), tema claro, importação do StudyOS, calibraçã
 - Importação do StudyOS (se o usuário quiser).
 **Aceite**: UC-03 mostra hipótese com n; busca semântica supera FTS em casos de teste; custo extra < R$3/mês.
 
-## Fase 3 — Pesquisa e Opportunity Radar · M
+## Fase 3 — Pesquisa e Opportunity Radar · M · **CONCLUÍDA (código), exceto grafo**
+Entregue: radar com busca real e fundamentação, finanças leves, espaços guiados (73 unit, 23 banco, 29 E2E ✅).
+Pendente: grafo de conhecimento explícito; pesquisa livre dentro das conversas (hoje só no radar).
 - Pesquisa externa só-leitura (web search do provedor), fontes oficiais priorizadas, conteúdo externo tratado como dado e citado.
 - Opportunity Radar por domínio (requer PEN-18/PEN-12: o que é oportunidade e onde procurar).
 - Grafo de conhecimento pessoal explícito.

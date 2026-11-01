@@ -7,6 +7,7 @@ const NAV = [
   { href: "/", label: "Ambiente", icon: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm0 5a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z" },
   { href: "/spaces", label: "Espaços", icon: "M4 5h7v7H4zM13 5h7v4h-7zM13 11h7v8h-7zM4 14h7v5H4z" },
   { href: "/goals", label: "Objetivos", icon: "M12 3v4M12 17v4M3 12h4M17 12h4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" },
+  { href: "/radar", label: "Radar", icon: "M12 12 19 5M12 3a9 9 0 1 0 9 9M12 7a5 5 0 1 0 5 5" },
   { href: "/memory", label: "Memória", icon: "M6 4h9l3 3v13H6zM9 10h6M9 14h6M9 18h3" },
   { href: "/context", label: "Contexto", icon: "M4 19V9M10 19V5M16 19v-7M22 19H2" },
   { href: "/settings", label: "Ajustes", icon: "M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm8 3-2-1 .5-2.2-1.6-1.6L14.7 7 14 5h-4l-.7 2-2.2-.8-1.6 1.6L6 11l-2 1 2 1-.5 2.2 1.6 1.6 2.2-.8.7 2h4l.7-2 2.2.8 1.6-1.6L18 13Z" },

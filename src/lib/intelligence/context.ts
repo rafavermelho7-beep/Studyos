@@ -73,6 +73,8 @@ export interface ContextInput {
   agenda?: { title: string; day: string; time: string | null }[];
   /** Minutos estudados por disciplina nos últimos 7 dias. */
   studyLoad?: { subject: string; minutes: number; days: number }[];
+  /** Agregados do mês (nunca lançamentos individuais ou notas). */
+  finance?: { spent: number; budget: number | null; projected: number; top: string[] } | null;
   balance?: { lowest: { domain: string; score: number }[]; index: number | null } | null;
   openInsights: { title: string; kind: string }[];
 }
@@ -158,6 +160,14 @@ export function buildPersonalContext(input: ContextInput, maxTokens = 3_500): st
     sections.push(
       "ESTUDO (últimos 7 dias):\n" +
         input.studyLoad.map((s) => `- ${s.subject}: ${Math.round(s.minutes / 6) / 10}h em ${s.days} dia(s)`).join("\n"),
+    );
+  }
+
+  if (input.finance && input.finance.spent > 0) {
+    const f = input.finance;
+    const fmt = (n: number) => `R$${Math.round(n)}`;
+    sections.push(
+      `FINANÇAS (mês até hoje): gasto ${fmt(f.spent)}${f.budget ? ` de meta ${fmt(f.budget)} (projeção ${fmt(f.projected)})` : " (sem meta definida)"}${f.top.length ? `; maiores categorias: ${f.top.join(", ")}` : ""}.`,
     );
   }
 

@@ -1,5 +1,17 @@
 # LIFE ENGINE — CHANGELOG
 
+## 0.4.0 — 01/11/2026 · Fase 3: Radar de oportunidades, finanças e espaços guiados
+- DEC-039/040 (respostas do usuário): radar para **cursos e eventos** e **experiências**; problemas declarados: carreira sem rumo,
+  dinheiro sem controle, falta de propósito.
+- **Radar**: pesquisa real na web (ferramenta web_search da Anthropic, máx. 5 buscas), automática semanal ao abrir o app e manual
+  (máx. 2/dia); oportunidades só são aceitas se o link apareceu nos resultados da busca; custo das buscas (US$0,01 cada) entra no
+  orçamento; bloqueado em orçamento crítico. Salvar, dispensar, pôr na Google Agenda com um clique.
+- **Finanças leves**: gasto rápido (valor + categoria), meta mensal, projeção do mês, aviso de ritmo/meta estourada; só totais por
+  categoria vão para a IA.
+- **Espaços guiados**: Rumo de carreira, Dinheiro sob controle, Propósito e sentido.
+- Revisão semanal passa a considerar dinheiro e propósito.
+- Testes: 73 unitários, 23 de banco, 29 E2E.
+
 ## 0.3.0 — 01/11/2026 · Fase 2 (parte 1): acompanhamento e memória
 - **UC-03**: sessões de estudo (disciplina, minutos, foco) e regra de energia × disciplina, × carga (≥3h vs <1h30) e × sono
   da noite anterior (<6h vs ≥7h); n mínimo 4 por grupo, diferença ≥0,7, n exibido.

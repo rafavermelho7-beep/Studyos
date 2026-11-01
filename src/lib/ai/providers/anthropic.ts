@@ -17,45 +17,71 @@ export function createAnthropicProvider(apiKey: string): AIProvider {
         else if (p.model.id.startsWith("claude-sonnet"))
           thinking = { type: "between_tools" } as unknown as typeof thinking;
       }
-      try {
-        const stream = client.messages.stream(
-          {
-            model: p.model.id,
-            max_tokens: p.maxOutputTokens,
-            // Prompt de sistema estável primeiro => elegível a cache de prefixo.
-            system: [{ type: "text", text: p.system, cache_control: { type: "ephemeral" } }],
-            messages: p.messages.map((m) => ({ role: m.role, content: m.content })),
-            output_config: {
-              effort: p.effort,
-              ...(p.jsonSchema ? { format: { type: "json_schema", schema: p.jsonSchema } } : {}),
+      const tools: Anthropic.Messages.ToolUnion[] | undefined = p.webSearch
+        ? [
+            {
+              type: "web_search_20250305",
+              name: "web_search",
+              max_uses: p.webSearch.maxUses,
+              ...(p.webSearch.city
+                ? { user_location: { type: "approximate" as const, city: p.webSearch.city, country: "BR", timezone: p.webSearch.timezone ?? null } }
+                : {}),
             },
-            ...(thinking ? { thinking } : {}),
-          },
-          { signal: p.signal },
-        );
-        if (onText) {
-          stream.on("text", (delta) => onText(delta));
+          ]
+        : undefined;
+      try {
+        let messages: Anthropic.Messages.MessageParam[] = p.messages.map((m) => ({ role: m.role, content: m.content }));
+        let msg: Anthropic.Messages.Message | null = null;
+        const sources = new Map<string, string>();
+        let searches = 0;
+        let inTok = 0;
+        let outTok = 0;
+        let cachedTok = 0;
+        const textParts: string[] = [];
+        // pause_turn: o laço do servidor parou; reenviamos para continuar (no máx. 2x).
+        for (let round = 0; round < 3; round++) {
+          const stream = client.messages.stream(
+            {
+              model: p.model.id,
+              max_tokens: p.maxOutputTokens,
+              // Prompt de sistema estável primeiro => elegível a cache de prefixo.
+              system: [{ type: "text", text: p.system, cache_control: { type: "ephemeral" } }],
+              messages,
+              output_config: {
+                effort: p.effort,
+                ...(p.jsonSchema ? { format: { type: "json_schema", schema: p.jsonSchema } } : {}),
+              },
+              ...(thinking ? { thinking } : {}),
+              ...(tools ? { tools } : {}),
+            },
+            { signal: p.signal },
+          );
+          if (onText) stream.on("text", (delta) => onText(delta));
+          msg = await stream.finalMessage();
+          const u = msg.usage;
+          cachedTok += u.cache_read_input_tokens ?? 0;
+          inTok += u.input_tokens + (u.cache_read_input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0);
+          outTok += u.output_tokens;
+          searches += u.server_tool_use?.web_search_requests ?? 0;
+          for (const b of msg.content) {
+            if (b.type === "text") textParts.push(b.text);
+            if (b.type === "web_search_tool_result" && Array.isArray(b.content)) {
+              for (const r of b.content) if (r.type === "web_search_result") sources.set(r.url, r.title);
+            }
+          }
+          if (msg.stop_reason !== "pause_turn") break;
+          messages = [...messages, { role: "assistant", content: msg.content }];
         }
-        const msg = await stream.finalMessage();
+        if (!msg) throw new ProviderError("Anthropic: sem resposta", true);
         if (msg.stop_reason === "refusal") {
           throw new ProviderError("O modelo recusou a solicitação.", false);
         }
-        const text = msg.content
-          .filter((b): b is Anthropic.Messages.TextBlock => b.type === "text")
-          .map((b) => b.text)
-          .join("");
-        const u = msg.usage;
-        const cached = u.cache_read_input_tokens ?? 0;
-        const created = u.cache_creation_input_tokens ?? 0;
         return {
-          text,
+          text: textParts.join(""),
           stopReason: msg.stop_reason ?? "unknown",
-          usage: {
-            // input_tokens exclui tokens de cache; somamos para custo total correto.
-            inputTokens: u.input_tokens + cached + created,
-            cachedInputTokens: cached,
-            outputTokens: u.output_tokens,
-          },
+          // input_tokens exclui tokens de cache; somamos para custo total correto.
+          usage: { inputTokens: inTok, cachedInputTokens: cachedTok, outputTokens: outTok, webSearches: searches },
+          sources: [...sources].map(([url, title]) => ({ url, title })),
         };
       } catch (err) {
         if (err instanceof ProviderError) throw err;

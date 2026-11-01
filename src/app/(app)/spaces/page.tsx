@@ -3,6 +3,7 @@ import { requireOwner } from "@/lib/auth";
 import { domainLabel } from "@/lib/domains";
 import { createSpace } from "@/app/actions";
 import { ActionForm, Card, DomainSelect, Field, SectionTitle } from "@/components/ui";
+import { GuidedSpaces } from "./guided";
 
 export const metadata = { title: "Espaços · LIFE ENGINE" };
 
@@ -32,6 +33,7 @@ export default async function SpacesPage({ searchParams }: { searchParams: Promi
           sair e retomar quando quiser; o JARVIS lembra onde parou.
         </p>
       </div>
+      {!archived && <GuidedSpaces />}
       <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
         <div className="grid content-start gap-3 sm:grid-cols-2">
           {spaces?.length ? (

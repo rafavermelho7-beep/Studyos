@@ -249,6 +249,18 @@ await test("sessões de estudo isoladas e validadas", async () => {
   await expectError(() => as(A, () => client.query(`insert into study_sessions(day, subject, minutes) values (current_date, 'X', 2)`)));
 });
 
+await test("oportunidades, execuções do radar e gastos isolados e validados", async () => {
+  await asCommit(A, () => client.query(`insert into opportunities(category, title, url) values ('experiencias','Show','https://ex.com/a')`));
+  await asCommit(A, () => client.query(`insert into expenses(day, amount, category) values (current_date, 12.5, 'lazer')`));
+  await asCommit(A, () => client.query(`insert into radar_runs(trigger, status) values ('manual','ok')`));
+  const r = await as(B, () => client.query(`select (select count(*) from opportunities)::int o, (select count(*) from expenses)::int e, (select count(*) from radar_runs)::int r`));
+  assert(r.rows[0].o === 0 && r.rows[0].e === 0 && r.rows[0].r === 0, "vazamento entre usuários");
+  await expectError(() => as(A, () => client.query(`insert into opportunities(category, title, url) values ('experiencias','x','javascript:alert(1)')`)));
+  await expectError(() => as(A, () => client.query(`insert into opportunities(category, title, url) values ('experiencias','Dup','https://ex.com/a')`)));
+  await expectError(() => as(A, () => client.query(`insert into expenses(day, amount, category) values (current_date, -5, 'lazer')`)));
+  await expectError(() => as(A, () => client.query(`insert into expenses(day, amount, category) values (current_date, 5, 'cassino')`)));
+});
+
 await client.end();
 console.log(`\n${passed} passaram, ${failed} falharam`);
 process.exit(failed ? 1 : 0);

@@ -7,6 +7,7 @@ import { addDays, localDate } from "@/lib/dates";
 import { balanceSnapshot } from "@/lib/balance";
 import type { ContextInput, ContextMemory } from "@/lib/intelligence/context";
 import { isExamTitle } from "@/lib/google/calendar";
+import { EXPENSE_CATEGORIES, financeBudget, monthSnapshot } from "@/lib/finance";
 
 const MEMORY_COLS = "id, kind, content, domain, confidence, source, updated_at, valid_until";
 
@@ -16,7 +17,7 @@ export async function loadContext(
   opts: { query: string; space?: ContextInput["space"] },
 ): Promise<{ input: ContextInput; memoryIds: string[]; memoryTexts: string[] }> {
   const today = localDate(new Date(), owner.timezone);
-  const [relevant, core, goals, projects, checkins, exams, ratings, insights, agenda, study] = await Promise.all([
+  const [relevant, core, goals, projects, checkins, exams, ratings, insights, agenda, study, expenses, profile] = await Promise.all([
     supabase.rpc("match_memories", { p_query: opts.query.slice(0, 2000), p_limit: 12 }),
     // Núcleo de identidade: fixadas e valores/preferências de alta confiança.
     supabase
@@ -56,7 +57,10 @@ export async function loadContext(
       .order("start_at")
       .limit(60),
     supabase.from("study_sessions").select("day, subject, minutes").gte("day", addDays(today, -6)),
+    supabase.from("expenses").select("day, amount, category").gte("day", today.slice(0, 8) + "01"),
+    supabase.from("profiles").select("settings").eq("id", owner.id).maybeSingle(),
   ]);
+  const fin = monthSnapshot(expenses.data ?? [], today, financeBudget(profile.data?.settings));
   const loadMap = new Map<string, { subject: string; minutes: number; days: Set<string> }>();
   for (const s of study.data ?? []) {
     const k = s.subject.trim().toLowerCase();
@@ -104,6 +108,9 @@ export async function loadContext(
         .sort((a, b) => b.minutes - a.minutes)
         .slice(0, 8)
         .map((v) => ({ subject: v.subject, minutes: v.minutes, days: v.days.size })),
+      finance: fin.spent > 0 || fin.budget
+        ? { spent: fin.spent, budget: fin.budget, projected: fin.projected, top: fin.byCategory.slice(0, 3).map((c) => EXPENSE_CATEGORIES[c.category] ?? c.category) }
+        : null,
       balance: bal.rated ? { index: bal.index, lowest: bal.lowest } : null,
       openInsights: insights.data ?? [],
     },

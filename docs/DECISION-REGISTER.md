@@ -26,6 +26,8 @@ desenvolvimento pelo usuário com o Claude (031).
 | DEC-036 | Proibido: pagamentos, assinaturas, expor chaves, deploy público sem proteção, apagar dados sem backup, mensagens externas | Confirmada |
 | DEC-037 | Computador pessoal não é servidor; assinaturas Pro/Plus não contam como crédito de API | Confirmada |
 | DEC-038 | Agenda = **Google Agenda** (resolve PEN-02) | Confirmada (01/11/2026) |
+| DEC-039 | Radar procura **cursos e eventos** e **experiências** (resolve PEN-18) | Confirmada (01/11/2026) |
+| DEC-040 | Problemas declarados: **carreira sem rumo, dinheiro sem controle, falta de propósito** (resolve PEN-12 em parte) | Confirmada (01/11/2026) |
 
 ## Decisões técnicas (Claude) — resolvem pendências
 
@@ -66,6 +68,11 @@ desenvolvimento pelo usuário com o Claude (031).
 | DEC-T34 | Substituição de memória só por declaração explícita; antiga vira "desatualizada" (restaurável) | R-08 | Memória acompanha mudanças sem perder histórico |
 | DEC-T35 | MFA TOTP opcional; quando ativo, AAL2 exigido na DAL (páginas e APIs) | R-35 | Conta é o único portão de dados sensíveis |
 | DEC-T36 | Embeddings adiados: Anthropic não oferece API de embeddings; exigiria OpenAI ou outro serviço | — | Reavaliar quando FTS mostrar limitação real |
+| DEC-T37 | Radar com `web_search_20250305` (variante básica, custo previsível), máx. 5 buscas, só Anthropic, Sonnet 5.5 | DEC-039 | Única pesquisa web disponível nos provedores com custo conhecido |
+| DEC-T38 | Fundamentação obrigatória: URL do item precisa constar nos resultados reais da busca (normalizada) | R-41 | Impede links inventados |
+| DEC-T39 | Radar automático no máximo semanal; manual no máximo 2/dia; pausado em orçamento crítico | R-05 | ~R$0,50 por busca → ~R$2–6/mês |
+| DEC-T40 | Finanças manuais leves (sem banco, DEC-024); só totais por categoria vão à IA; projeção = média diária × dias | DEC-040 | Controle sem fardo e com privacidade |
+| DEC-T41 | Espaços guiados como modelos de espaço (propósito pré-escrito), sem lógica nova de IA | DEC-040 | Valor imediato, custo zero |
 | DEC-T31 | Desconectar revoga o token no Google e apaga a cópia local | PEN-14 | Controle total do usuário |
 
 ## Pendências que dependem do usuário
@@ -73,6 +80,6 @@ desenvolvimento pelo usuário com o Claude (031).
 | ID | Pendência | Impacto |
 |---|---|---|
 | PEN-10 | Tempo disponível para evoluir o sistema | Ritmo do roadmap |
-| PEN-12 | Problemas concretos nos demais domínios | Novas regras/módulos além de saúde × estudos |
+| PEN-12 | Problemas em relacionamentos, ambiente e conhecimento (não marcados) | Novos módulos se surgirem |
 | PEN-16 | Dispositivo principal | Prioridade mobile vs desktop (hoje: ambos responsivos) |
 | PEN-19 | Confirmar preços da OpenAI no painel oficial | OpenAI marcada "confirmar" no catálogo |

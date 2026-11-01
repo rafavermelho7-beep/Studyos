@@ -23,6 +23,7 @@ export interface RulesInput {
   ratings: { domain: string; week_start: string; score: number }[];
   checkins: { day: string; energy: number | null }[];
   studySessions?: { day: string; subject: string; minutes: number }[];
+  finance?: import("@/lib/finance").MonthSnapshot | null;
 }
 
 const mean = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length;
@@ -249,8 +250,31 @@ export function ruleEnergyStudy(input: RulesInput): InsightDraft[] {
   return out;
 }
 
+/** Dinheiro: ritmo de gasto do mês vs. meta definida pelo usuário. */
+export function ruleFinancePace(input: RulesInput): InsightDraft[] {
+  const f = input.finance;
+  if (!f || !f.budget || f.status === "ok" || f.status === "sem_meta") return [];
+  const fmt = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const top = f.byCategory[0];
+  const month = input.today.slice(0, 7);
+  if (f.status === "estourado") {
+    return [{
+      kind: "problem", title: `Meta do mês estourada: ${fmt(f.spent)} de ${fmt(f.budget)}`,
+      body: `${top ? `Maior categoria: ${top.category} (${fmt(top.amount)}). ` : ""}Vale revisar o que foi essencial e o que foi impulso.`,
+      domain: "financas", evidence: { spent: f.spent, budget: f.budget }, confidence: 0.95, dedupe_key: `finance_over:${month}`,
+    }];
+  }
+  return [{
+    kind: "attention", title: `No ritmo atual, o mês fecha em ${fmt(f.projected)}`,
+    body: `Meta: ${fmt(f.budget)}. Gasto até o dia ${f.dayOfMonth}: ${fmt(f.spent)}.${top ? ` Maior categoria: ${top.category} (${fmt(top.amount)}).` : ""} Projeção simples (média diária), não previsão.`,
+    domain: "financas", evidence: { spent: f.spent, projected: f.projected, budget: f.budget }, confidence: 0.7,
+    dedupe_key: `finance_pace:${month}:${Math.floor(f.dayOfMonth / 7)}`,
+  }];
+}
+
 export function runRules(input: RulesInput): InsightDraft[] {
   return [
+    ...ruleFinancePace(input),
     ...ruleEnergyStudy(input),
     ...ruleTrainingStopped(input),
     ...ruleSleepExamWeeks(input),

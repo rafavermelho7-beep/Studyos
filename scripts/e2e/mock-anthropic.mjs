@@ -25,6 +25,34 @@ http
     const last = p.messages.at(-1)?.content ?? "";
     const lastText = typeof last === "string" ? last : JSON.stringify(last);
     let text;
+    if (p.tools?.some((t) => t.type?.startsWith("web_search"))) {
+      // Radar: simula 2 buscas com resultados e responde com JSON (um item inventado).
+      const plus = (n) => { const d = new Date(); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+      const results = [
+        { type: "web_search_result", url: "https://www.sympla.com.br/evento/workshop-carreira-dados/1", title: "Workshop: carreira em dados", encrypted_content: "x", page_age: null },
+        { type: "web_search_result", url: "https://museu.exemplo.org.br/exposicao-noturna/", title: "Exposição noturna no museu", encrypted_content: "x", page_age: null },
+      ];
+      const json = JSON.stringify([
+        { category: "cursos_eventos", title: "Workshop: carreira em dados", summary: "Oficina gratuita de 3h.", why: "Ajuda a explorar caminhos de carreira.", url: "https://sympla.com.br/evento/workshop-carreira-dados/1?utm_source=google", date_start: plus(6), deadline: null, location: "Online", price: "Grátis" },
+        { category: "experiencias", title: "Exposição noturna no museu", summary: "Visita guiada à noite.", why: "Experiência marcante e barata.", url: "https://museu.exemplo.org.br/exposicao-noturna", date_start: plus(9), deadline: null, location: "Centro", price: "R$ 10" },
+        { category: "experiencias", title: "Evento inventado", summary: "", why: "", url: "https://golpe.exemplo.com/evento", date_start: plus(3), deadline: null, location: "", price: "" },
+      ]);
+      const finalText = "Encontrei duas boas opções.\n```json\n" + json + "\n```";
+      const inTok = 30000;
+      res.writeHead(200, { "content-type": "text/event-stream" });
+      sse(res, "message_start", { type: "message_start", message: { id: "msg_radar", type: "message", role: "assistant", model: p.model, content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: inTok, output_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use: { web_search_requests: 2 } } } });
+      sse(res, "content_block_start", { type: "content_block_start", index: 0, content_block: { type: "server_tool_use", id: "srvtoolu_1", name: "web_search", input: {} } });
+      sse(res, "content_block_delta", { type: "content_block_delta", index: 0, delta: { type: "input_json_delta", partial_json: '{"query":"workshop carreira dados"}' } });
+      sse(res, "content_block_stop", { type: "content_block_stop", index: 0 });
+      sse(res, "content_block_start", { type: "content_block_start", index: 1, content_block: { type: "web_search_tool_result", tool_use_id: "srvtoolu_1", content: results } });
+      sse(res, "content_block_stop", { type: "content_block_stop", index: 1 });
+      sse(res, "content_block_start", { type: "content_block_start", index: 2, content_block: { type: "text", text: "" } });
+      sse(res, "content_block_delta", { type: "content_block_delta", index: 2, delta: { type: "text_delta", text: finalText } });
+      sse(res, "content_block_stop", { type: "content_block_stop", index: 2 });
+      sse(res, "message_delta", { type: "message_delta", delta: { stop_reason: "end_turn", stop_sequence: null }, usage: { output_tokens: 600, server_tool_use: { web_search_requests: 2 } } });
+      sse(res, "message_stop", { type: "message_stop" });
+      return res.end();
+    }
     if (/resumo de um espaço/.test(sys)) {
       text = "Questão: organizar a semana de estudos\nAté aqui: prefere manhãs.\nEm aberto: horário de treino.\nPróximo passo: montar a grade de segunda.";
     } else if (p.output_config?.format) {

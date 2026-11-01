@@ -557,6 +557,164 @@ export async function deleteStudySession(id: string): Promise<ActionResult> {
   }
 }
 
+// ------------------------------------------------------------------ radar de oportunidades
+export async function setOpportunityStatus(id: string, status: "saved" | "dismissed" | "new"): Promise<ActionResult> {
+  try {
+    const { supabase } = await requireOwner();
+    z.string().uuid().parse(id);
+    z.enum(["saved", "dismissed", "new"]).parse(status);
+    const { error } = await supabase.from("opportunities").update({ status }).eq("id", id);
+    if (error) throw new Error(error.message);
+    await audit(supabase, "user", `opportunity.${status}`, "opportunity", id);
+    refresh("/radar", "/");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Clique do usuário = confirmação: cria o evento na Google Agenda (dia inteiro). */
+export async function scheduleOpportunity(id: string): Promise<ActionResult> {
+  try {
+    const { supabase, owner } = await requireOwner();
+    z.string().uuid().parse(id);
+    const { data: o } = await supabase.from("opportunities").select("title, date_start, deadline, url").eq("id", id).single();
+    if (!o) throw new Error("Oportunidade não encontrada.");
+    const day = o.date_start ?? o.deadline;
+    if (!day) return { ok: false, error: "Esta oportunidade não tem data definida." };
+    const title = (o.date_start ? o.title : `Prazo: ${o.title}`).slice(0, 120);
+    await createCalendarEvent(supabase, owner.timezone, { title, start: day });
+    await supabase.from("opportunities").update({ status: "scheduled" }).eq("id", id);
+    refresh("/radar", "/");
+    return { ok: true, message: "Adicionado à Google Agenda." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+const radarSettingsSchema = z.object({
+  city: z.string().trim().max(80).nullable().optional(),
+  interests: z.string().trim().max(500).nullable().optional(),
+});
+
+export async function saveRadarSettings(_: unknown, form: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, owner } = await requireOwner();
+    const v = radarSettingsSchema.parse(fd(form));
+    const categories = ["cursos_eventos", "experiencias"].filter((c) => form.get(`cat_${c}`) === "on");
+    if (!categories.length) return { ok: false, error: "Escolha ao menos uma categoria." };
+    const { data: p } = await supabase.from("profiles").select("settings").eq("id", owner.id).single();
+    const settings = { ...((p?.settings as Record<string, unknown>) ?? {}), radar: { categories, city: v.city ?? "", interests: v.interests ?? "" } };
+    const { error } = await supabase.from("profiles").update({ settings }).eq("id", owner.id);
+    if (error) throw new Error(error.message);
+    await audit(supabase, "user", "radar.settings", "profile", owner.id);
+    refresh("/radar", "/settings");
+    return { ok: true, message: "Preferências do radar salvas." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+// ------------------------------------------------------------------ finanças
+const expenseSchema = z.object({
+  amount: z.preprocess((v) => (typeof v === "string" ? Number(v.replace(/\./g, "").replace(",", ".")) : v), z.number().positive().max(999999)),
+  category: z.enum(["alimentacao", "transporte", "moradia", "lazer", "compras", "saude", "educacao", "assinaturas", "outros"]),
+  note: z.string().trim().max(200).nullable().optional(),
+  day: optDate,
+});
+
+export async function addExpense(_: unknown, form: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, owner } = await requireOwner();
+    const raw = fd(form);
+    // Aceita "12,50" e "1.234,56"; ponto simples com 1–2 casas vira decimal ("12.5").
+    if (typeof raw.amount === "string" && /^\d+\.\d{1,2}$/.test(raw.amount)) raw.amount = raw.amount.replace(".", ",");
+    const v = expenseSchema.parse(raw);
+    const today = localDate(new Date(), owner.timezone);
+    const day = v.day ?? today;
+    if (day > today) return { ok: false, error: "Gasto não pode ser no futuro." };
+    const { data, error } = await supabase.from("expenses").insert({ ...v, note: v.note ?? "", day }).select("id").single();
+    if (error) throw new Error(error.message);
+    await audit(supabase, "user", "expense.add", "expense", data.id);
+    refresh("/context", "/");
+    return { ok: true, message: "Gasto registrado." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function deleteExpense(id: string): Promise<ActionResult> {
+  try {
+    const { supabase } = await requireOwner();
+    z.string().uuid().parse(id);
+    const { error } = await supabase.from("expenses").delete().eq("id", id);
+    if (error) throw new Error(error.message);
+    await audit(supabase, "user", "expense.delete", "expense", id);
+    refresh("/context");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function saveFinanceBudget(_: unknown, form: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, owner } = await requireOwner();
+    const raw = String(form.get("monthly_budget") ?? "").replace(/\./g, "").replace(",", ".");
+    const value = raw === "" ? null : z.coerce.number().positive().max(9999999).parse(raw);
+    const { data: p } = await supabase.from("profiles").select("settings").eq("id", owner.id).single();
+    const settings = { ...((p?.settings as Record<string, unknown>) ?? {}), finance: { monthly_budget: value } };
+    const { error } = await supabase.from("profiles").update({ settings }).eq("id", owner.id);
+    if (error) throw new Error(error.message);
+    await audit(supabase, "user", "finance.budget", "profile", owner.id);
+    refresh("/context", "/");
+    return { ok: true, message: value ? "Meta mensal salva." : "Meta removida." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+// ------------------------------------------------------------------ espaços guiados
+const GUIDES = {
+  carreira: {
+    title: "Rumo de carreira",
+    domain: "carreira",
+    purpose:
+      "Guia: sair da indefinição de carreira. Mapear interesses e forças, listar 3 caminhos possíveis, desenhar pequenos experimentos (cursos, eventos, conversas com profissionais) e revisar o que aprendi a cada semana.",
+  },
+  financas: {
+    title: "Dinheiro sob controle",
+    domain: "financas",
+    purpose:
+      "Guia: entender para onde vai o dinheiro, definir uma meta mensal realista, identificar 2 gastos de impulso para cortar e criar uma reserva pequena e automática.",
+  },
+  proposito: {
+    title: "Propósito e sentido",
+    domain: "espiritualidade",
+    purpose:
+      "Guia: clarear valores e o que dá sentido ao dia a dia, escolher uma prática semanal de reflexão (espiritual ou não) e conectar objetivos a esses valores. Sem pressa e sem julgamento.",
+  },
+} as const;
+
+export async function createGuidedSpace(guide: keyof typeof GUIDES): Promise<ActionResult> {
+  let id: string;
+  try {
+    const { supabase } = await requireOwner();
+    const g = GUIDES[z.enum(["carreira", "financas", "proposito"]).parse(guide)];
+    const { data, error } = await supabase
+      .from("spaces")
+      .insert({ title: g.title, purpose: g.purpose, domain: g.domain, kind: "domain" })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    id = data.id;
+    await audit(supabase, "user", "space.create_guided", "space", id, { guide });
+  } catch (e) {
+    return fail(e);
+  }
+  redirect(`/spaces/${id}`);
+}
+
 // ------------------------------------------------------------------ avisos
 export async function setInsightStatus(id: string, status: "seen" | "dismissed" | "acted"): Promise<ActionResult> {
   try {

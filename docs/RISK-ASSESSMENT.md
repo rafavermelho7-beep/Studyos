@@ -23,6 +23,8 @@
 | R-38 | Extração grava memórias de baixa qualidade | M | M | Aba Memória | Máx. 5/turno, deduplicação, revisão fácil | Ajustar prompt com uso real |
 | R-39 | App OAuth do Google em modo "Teste": **refresh token expira em 7 dias** | M | A | Agenda com status "erro" | Publicar o app como "Em produção" (uso pessoal; aviso de app não verificado aparece uma vez) | Usuário publicar |
 | R-40 | `TOKEN_ENCRYPTION_KEY` perdida/trocada | M | B | Erro ao sincronizar | Reconectar a agenda | Guardar a chave no gerenciador de senhas |
+| R-41 | Radar inventar eventos/links | A | M | Links quebrados | Fundamentação obrigatória nos resultados (DEC-T38) | Resolvido; datas/preços ainda podem estar desatualizados na fonte |
+| R-42 | Custo do radar (tokens dos resultados) | M | M | `ai_usage` task radar | Máx. 5 buscas, semanal, 2 manuais/dia, pausa em crítico | Monitorar custo real |
 | R-12 | Manutenção em 1–3 anos | B | M | Dependências desatualizadas | Stack mainstream, testes automatizados, docs | Manter |
 
 ## Cortes de escopo que preservam a essência

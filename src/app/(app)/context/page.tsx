@@ -2,10 +2,11 @@ import { requireOwner } from "@/lib/auth";
 import { availableProviders, loadBudget } from "@/lib/ai/engine";
 import { addDays, localDate, weekStart } from "@/lib/dates";
 import { DOMAINS } from "@/lib/domains";
-import { addStudyEvent, addStudySession, saveRatings } from "@/app/actions";
+import { addExpense, addStudyEvent, addStudySession, saveFinanceBudget, saveRatings } from "@/app/actions";
+import { EXPENSE_CATEGORIES, brl as brlFmt, financeBudget, monthSnapshot } from "@/lib/finance";
 import { ActionForm, Card, SectionTitle } from "@/components/ui";
 import { Synthesis } from "@/components/synthesis";
-import { RatingSlider, DeleteEventButton, DeleteSessionButton } from "./controls";
+import { RatingSlider, DeleteEventButton, DeleteSessionButton, DeleteExpenseButton } from "./controls";
 
 export const metadata = { title: "Contexto · LIFE ENGINE" };
 
@@ -16,7 +17,7 @@ export default async function ContextPage() {
   const { supabase, owner } = await requireOwner();
   const today = localDate(new Date(), owner.timezone);
   const week = weekStart(today);
-  const [budget, ratings, health, events, checkins, usage, weekly, sessions] = await Promise.all([
+  const [budget, ratings, health, events, checkins, usage, weekly, expenses, profile, sessions] = await Promise.all([
     loadBudget(supabase, owner.timezone),
     supabase.from("domain_ratings").select("domain, score").eq("week_start", week),
     supabase.from("health_daily").select("*").gte("day", addDays(today, -13)).order("day", { ascending: false }),
@@ -28,8 +29,12 @@ export default async function ContextPage() {
       .order("created_at", { ascending: false })
       .limit(12),
     supabase.from("syntheses").select("content, model").eq("kind", "weekly").eq("period_start", week).maybeSingle(),
+    supabase.from("expenses").select("id, day, amount, category, note").gte("day", today.slice(0, 8) + "01").order("day", { ascending: false }).order("created_at", { ascending: false }),
+    supabase.from("profiles").select("settings").eq("id", owner.id).single(),
     supabase.from("study_sessions").select("id, day, subject, minutes, focus").gte("day", addDays(today, -6)).order("day", { ascending: false }).order("created_at", { ascending: false }),
   ]);
+  const monthBudget = financeBudget(profile.data?.settings);
+  const fin = monthSnapshot((expenses.data ?? []).map((e) => ({ ...e, amount: Number(e.amount) })), today, monthBudget);
   const subjects = [...new Set((sessions.data ?? []).map((s) => s.subject))];
   const weekMinutes = (sessions.data ?? []).reduce((a, s) => a + s.minutes, 0);
   const current = Object.fromEntries((ratings.data ?? []).map((r) => [r.domain, r.score]));
@@ -138,6 +143,61 @@ export default async function ContextPage() {
             </ActionForm>
           </Card>
         </div>
+
+        <Card>
+          <div id="dinheiro" className="scroll-mt-24" />
+          <SectionTitle eyebrow="Dinheiro · este mês" title={`${brlFmt(fin.spent)}${fin.budget ? ` de ${brlFmt(fin.budget)}` : ""}`} />
+          {fin.budget ? (
+            <>
+              <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+                <div
+                  className={`h-full rounded-full ${fin.status === "ok" ? "bg-signal/70" : fin.status === "estourado" ? "bg-danger" : "bg-warm"}`}
+                  style={{ width: `${Math.min(100, Math.max(1, (fin.spent / fin.budget) * 100))}%` }}
+                />
+              </div>
+              <p className="mt-2 text-[13px] text-text-3">
+                Projeção para o fim do mês: <span className={fin.projected > fin.budget ? "text-warm" : "text-text-2"}>{brlFmt(fin.projected)}</span> (média diária × dias do mês).
+              </p>
+            </>
+          ) : (
+            <p className="-mt-2 text-[13px] text-text-3">Defina uma meta mensal para o JARVIS acompanhar o ritmo.</p>
+          )}
+          {fin.byCategory.length > 0 && (
+            <p className="mt-2 text-[13px] text-text-3">
+              {fin.byCategory.slice(0, 4).map((c) => `${EXPENSE_CATEGORIES[c.category]} ${brlFmt(c.amount)}`).join(" · ")}
+            </p>
+          )}
+          <div className="mt-4">
+            <ActionForm action={addExpense} submitLabel="Registrar gasto">
+              <div className="grid grid-cols-[110px_1fr] gap-3">
+                <input name="amount" inputMode="decimal" required placeholder="R$ 0,00" aria-label="Valor" className="field" />
+                <select name="category" defaultValue="alimentacao" aria-label="Categoria" className="field">
+                  {Object.entries(EXPENSE_CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+              </div>
+              <input name="note" maxLength={200} placeholder="O quê (opcional)" aria-label="Descrição do gasto" className="field" />
+            </ActionForm>
+          </div>
+          <details className="mt-4">
+            <summary className="label cursor-pointer hover:text-text-2">Meta mensal e lançamentos</summary>
+            <div className="mt-3 space-y-4">
+              <ActionForm action={saveFinanceBudget} submitLabel="Salvar meta" resetOnSuccess={false}>
+                <input name="monthly_budget" inputMode="decimal" defaultValue={monthBudget ?? ""} placeholder="Meta mensal (R$)" aria-label="Meta mensal" className="field" />
+              </ActionForm>
+              {expenses.data?.length ? (
+                <ul className="space-y-1.5 text-[13px]">
+                  {expenses.data.slice(0, 15).map((e) => (
+                    <li key={e.id} className="flex items-center justify-between gap-2">
+                      <span className="truncate text-text-2">{EXPENSE_CATEGORIES[e.category as keyof typeof EXPENSE_CATEGORIES]}{e.note ? <span className="text-text-3"> · {e.note}</span> : null}</span>
+                      <span className="flex shrink-0 items-center gap-3"><span className="text-text-2">{brlFmt(Number(e.amount))}</span><span className="label">{e.day.split("-").reverse().slice(0, 2).join("/")}</span><DeleteExpenseButton id={e.id} /></span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          </details>
+          <p className="mt-3 text-[12px] text-text-3">Só totais por categoria vão para a IA; descrições ficam no seu banco.</p>
+        </Card>
 
         <Card>
           <SectionTitle eyebrow="Estudo · últimos 7 dias" title={weekMinutes ? `${Math.round(weekMinutes / 6) / 10}h estudadas` : undefined} />

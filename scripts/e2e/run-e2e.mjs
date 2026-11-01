@@ -26,7 +26,7 @@ await db.connect();
 // estado limpo
 await db.query(`truncate public.memories, public.goals, public.projects, public.life_decisions, public.spaces,
   public.checkins, public.domain_ratings, public.study_events, public.health_daily, public.insights, public.syntheses,
-  public.proposals, public.ai_usage, public.audit_log, public.ingest_tokens, public.integrations, public.calendar_events, public.study_sessions cascade`);
+  public.proposals, public.ai_usage, public.audit_log, public.ingest_tokens, public.integrations, public.calendar_events, public.study_sessions, public.opportunities, public.radar_runs, public.expenses cascade`);
 
 let passed = 0;
 let failed = 0;
@@ -331,6 +331,59 @@ await step("objetivos: progresso persistido", async () => {
   await page.screenshot({ path: `${SHOTS}/08-objetivos.png`, fullPage: true });
 });
 
+await step("radar: busca automática semanal, links validados contra a busca, custo das buscas contabilizado", async () => {
+  const auto = await db.query(`select trigger, status, found, searches from radar_runs order by created_at`);
+  assert(auto.rows[0]?.trigger === "auto" && auto.rows[0].status === "ok", "radar automático não rodou ao abrir: " + JSON.stringify(auto.rows));
+  assert(auto.rows[0].found === 2 && auto.rows[0].searches === 2, "esperava 2 oportunidades e 2 buscas: " + JSON.stringify(auto.rows[0]));
+  const titles = (await db.query(`select title from opportunities`)).rows.map((r) => r.title);
+  assert(!titles.includes("Evento inventado"), "link inventado foi aceito!");
+  const u = await db.query(`select cost_usd from ai_usage where task='radar'`);
+  assert(Number(u.rows[0].cost_usd) >= 0.02, "custo das buscas não somado: " + u.rows[0].cost_usd);
+  await page.goto(BASE + "/radar");
+  await page.fill('input[name="city"]', "Recife");
+  await page.fill('textarea[name="interests"]', "dados, museus, trilhas");
+  await page.locator('form:has(input[name="city"]) button[type="submit"]').click();
+  await page.getByText("Preferências do radar salvas").waitFor();
+  await page.click('button:has-text("Buscar agora")');
+  await page.getByText(/Nada novo|nova\(s\) oportunidade/).waitFor({ timeout: 20000 });
+  const runs = await db.query(`select count(*)::int n from radar_runs where trigger='manual' and status='ok'`);
+  assert(runs.rows[0].n === 1, "busca manual não registrada");
+  const log = fs.readFileSync(REQLOG, "utf8").trim().split("\n").map((l) => JSON.parse(l)).filter((r) => r.tools);
+  const last = log.at(-1);
+  assert(last.tools[0].max_uses === 5 && last.tools[0].user_location?.city === "Recife", "ferramenta de busca mal configurada: " + JSON.stringify(last.tools));
+  await page.locator("li", { hasText: "Exposição noturna no museu" }).getByRole("button", { name: "Salvar" }).click();
+  await page.waitForTimeout(800);
+  const st = await db.query(`select status from opportunities where title like 'Exposição%'`);
+  assert(st.rows[0].status === "saved", "não salvou");
+  await page.screenshot({ path: `${SHOTS}/10-radar.png`, fullPage: true });
+});
+
+await step("finanças: gasto rápido, meta mensal e aviso de meta estourada", async () => {
+  await page.goto(BASE + "/context");
+  await page.getByLabel("Valor", { exact: true }).fill("45,90");
+  await page.click('button:has-text("Registrar gasto")');
+  await page.getByText("Gasto registrado").waitFor();
+  await page.getByLabel("Valor", { exact: true }).fill("20");
+  await page.getByLabel("Categoria", { exact: true }).selectOption("lazer");
+  await page.click('button:has-text("Registrar gasto")');
+  await page.waitForTimeout(800);
+  await page.click("text=Meta mensal e lançamentos");
+  await page.getByLabel("Meta mensal").fill("50");
+  await page.click('button:has-text("Salvar meta")');
+  await page.getByText("Meta mensal salva").waitFor();
+  const e = await db.query(`select sum(amount)::float s from expenses`);
+  assert(e.rows[0].s === 65.9, "soma dos gastos: " + e.rows[0].s);
+  await page.goto(BASE + "/");
+  await page.getByText(/Meta do mês estourada/).waitFor();
+});
+
+await step("espaço guiado de carreira em um clique", async () => {
+  await page.goto(BASE + "/spaces");
+  await page.click("text=Rumo de carreira");
+  await page.waitForURL(/\/spaces\/[0-9a-f-]{36}/);
+  await page.getByText(/Guia: sair da indefinição de carreira/).waitFor();
+});
+
 await step("Google Agenda: conectar (OAuth), ler eventos, propor e criar evento só após aceite, desconectar", async () => {
   const G = "http://127.0.0.1:4020/__state";
   const base0 = (await (await fetch(G)).json()).inserts.length; // dublê guarda estado entre execuções
@@ -368,6 +421,13 @@ await step("Google Agenda: conectar (OAuth), ler eventos, propor e criar evento 
   assert(/T15:30:00$/.test(ins.end.dateTime), "duração não respeitada");
   const a = await db.query(`select count(*)::int n from audit_log where action='calendar.create_event' and actor='user'`);
   assert(a.rows[0].n === 1, "criação não auditada como ação do usuário");
+
+  // Oportunidade do radar vai para a agenda com um clique do usuário
+  await page.goto(BASE + "/radar");
+  await page.locator("li", { hasText: "Workshop: carreira em dados" }).getByRole("button", { name: "Pôr na agenda" }).click();
+  await page.locator("li", { hasText: "Workshop: carreira em dados" }).getByText("na agenda", { exact: true }).waitFor();
+  st = await (await fetch(G)).json();
+  assert(st.inserts.length === base0 + 2 && st.inserts.at(-1).summary === "Workshop: carreira em dados" && st.inserts.at(-1).start.date, "oportunidade não agendada");
 
   // Token expirado => renovação automática com refresh token
   await db.query(`update integrations set access_expires_at = now() - interval '1 minute'`);

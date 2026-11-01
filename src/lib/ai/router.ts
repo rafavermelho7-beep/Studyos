@@ -11,7 +11,8 @@ export type AITask =
   | "daily_synthesis"
   | "weekly_review"
   | "title"
-  | "summarize"; // resumo incremental de espaço
+  | "summarize" // resumo incremental de espaço
+  | "radar"; // pesquisa de oportunidades com busca na web
 
 export type Effort = "low" | "medium" | "high";
 
@@ -24,6 +25,10 @@ export interface RouteRequest {
   /** Força um nível (ex.: comando /profundo). Ainda sujeito ao orçamento. */
   forceTier?: Tier;
   preferredProvider?: Provider;
+  /** Só considerar estes provedores (ex.: busca na web existe apenas na Anthropic). */
+  onlyProviders?: Provider[];
+  /** Custo extra fixo do pior caso, em US$ (ex.: buscas na web). */
+  extraWorstCaseUSD?: number;
   available: Record<Provider, boolean>;
   budget: BudgetState;
   catalog: ModelSpec[];
@@ -76,6 +81,7 @@ const TASK_BASE: Record<Exclude<AITask, "chat">, Tier> = {
   extract: "light",
   title: "light",
   summarize: "light",
+  radar: "standard",
   daily_synthesis: "standard",
   weekly_review: "standard",
 };
@@ -85,6 +91,7 @@ const TASK_OUTPUT: Record<AITask, number> = {
   extract: 1_200,
   title: 200,
   summarize: 700,
+  radar: 3_000,
   daily_synthesis: 900,
   weekly_review: 2_200,
 };
@@ -112,7 +119,9 @@ export function route(req: RouteRequest): RouteDecision | RouteRefusal {
   if (req.budget.mode === "blocked") {
     return { ok: false, code: "budget_blocked", reason: req.budget.message };
   }
-  const providers = (Object.keys(req.available) as Provider[]).filter((p) => req.available[p]);
+  const providers = (Object.keys(req.available) as Provider[]).filter(
+    (p) => req.available[p] && (!req.onlyProviders || req.onlyProviders.includes(p)),
+  );
   if (providers.length === 0) {
     return { ok: false, code: "no_provider", reason: "Nenhuma chave de API de IA configurada." };
   }
@@ -148,7 +157,7 @@ export function route(req: RouteRequest): RouteDecision | RouteRefusal {
       const model = req.catalog.find((m) => m.provider === p && m.tier === t);
       if (!model) continue;
       const maxOut = Math.min(TASK_OUTPUT[req.task], model.maxOutputTokens);
-      const worstUSD = costUSD(model, { inputTokens: req.inputTokens, outputTokens: maxOut });
+      const worstUSD = costUSD(model, { inputTokens: req.inputTokens, outputTokens: maxOut }) + (req.extraWorstCaseUSD ?? 0);
       const worstCaseBRL = worstUSD * req.usdBrl;
       if (!canAfford(req.budget, worstCaseBRL)) continue;
       candidates.push({ model, maxOutputTokens: maxOut, effort: effortFor(t, req.task), worstCaseBRL });

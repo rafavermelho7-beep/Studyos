@@ -6,7 +6,7 @@ import type { Supabase } from "@/lib/supabase/server";
 import { aiKeys } from "@/lib/env";
 import { localDate, monthStart } from "@/lib/dates";
 import { computeBudget, parseCap, type BudgetState } from "./budget";
-import { catalogWithOverrides, costUSD, estimateTokens, usdToBrlRate, type Provider, type Tier } from "./pricing";
+import { catalogWithOverrides, costUSD, estimateTokens, usdToBrlRate, WEB_SEARCH_USD, type Provider, type Tier } from "./pricing";
 import { route, type AITask, type RouteDecision } from "./router";
 import { createAnthropicProvider } from "./providers/anthropic";
 import { createOpenAIProvider } from "./providers/openai";
@@ -58,6 +58,7 @@ export interface RunAIParams {
   forceTier?: Tier;
   preferredProvider?: Provider | null;
   jsonSchema?: Record<string, unknown>;
+  webSearch?: { maxUses: number; city?: string | null };
   onText?: (delta: string) => void;
   onRoute?: (info: { model: string; label: string; tier: Tier; reason: string }) => void;
   signal?: AbortSignal;
@@ -69,6 +70,8 @@ export interface RunAIResult {
   provider: Provider;
   tier: Tier;
   costBRL: number;
+  sources: { url: string; title: string }[];
+  webSearches: number;
   decision: RouteDecision;
   budget: BudgetState;
 }
@@ -77,8 +80,14 @@ export async function runAI(p: RunAIParams): Promise<RunAIResult> {
   const budget = await loadBudget(p.supabase, p.timezone);
   const catalog = catalogWithOverrides();
   const usdBrl = usdToBrlRate();
+  // Resultados de busca entram como tokens de entrada: reservamos ~8k tokens por busca no pior caso.
   const inputTokens =
-    estimateTokens(p.system) + p.messages.reduce((s, m) => s + estimateTokens(m.content), 0);
+    estimateTokens(p.system) +
+    p.messages.reduce((s, m) => s + estimateTokens(m.content), 0) +
+    (p.webSearch ? p.webSearch.maxUses * 8_000 : 0);
+  if (p.webSearch && budget.mode === "critical") {
+    throw new AIUnavailableError("Orçamento crítico: pesquisa na web pausada até o orçamento normalizar.", "budget_insufficient");
+  }
 
   const decision = route({
     task: p.task,
@@ -86,6 +95,8 @@ export async function runAI(p: RunAIParams): Promise<RunAIResult> {
     inputTokens,
     forceTier: p.forceTier,
     preferredProvider: p.preferredProvider ?? undefined,
+    onlyProviders: p.webSearch ? ["anthropic"] : undefined,
+    extraWorstCaseUSD: p.webSearch ? p.webSearch.maxUses * WEB_SEARCH_USD : 0,
     available: availableProviders(),
     budget,
     catalog,
@@ -112,6 +123,7 @@ export async function runAI(p: RunAIParams): Promise<RunAIResult> {
           effort: cand.effort,
           jsonSchema: p.jsonSchema,
           minimalReasoning: p.task === "extract" || p.task === "title" || p.task === "summarize",
+          webSearch: p.webSearch ? { ...p.webSearch, timezone: p.timezone } : undefined,
           signal: p.signal,
         },
         p.onText
@@ -141,6 +153,8 @@ export async function runAI(p: RunAIParams): Promise<RunAIResult> {
         provider: cand.model.provider,
         tier: cand.model.tier,
         costBRL: brl,
+        sources: result.sources ?? [],
+        webSearches: result.usage.webSearches ?? 0,
         decision,
         budget,
       };

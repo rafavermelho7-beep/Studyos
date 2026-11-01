@@ -13,6 +13,7 @@
 | Vazamento de chaves | Commit, cliente | Chaves só no servidor (sem `NEXT_PUBLIC_`), `.env*` no `.gitignore`, nunca exibidas | Logs de terceiros |
 | Acesso à agenda roubado | Vazamento do banco, CSRF no OAuth | Tokens cifrados (AES-256-GCM, chave fora do banco); `state` aleatório comparado em tempo constante; escopo mínimo; revogação ao desconectar | Chave de cifragem vazada junto com o banco |
 | Injeção via títulos de eventos | Convites de terceiros | Títulos sanitizados e truncados; contexto marcado como dado; modelo sem ferramentas; criação só com clique | Texto enganoso no contexto |
+| Injeção via páginas da web (radar) | Conteúdo malicioso em resultados | Modelo sem ferramentas além da busca; saída validada (zod); URL obrigatoriamente dos resultados; nada é executado — o usuário decide | Resumo enganoso de uma página real |
 | Token de saúde roubado | iPhone/Atalho | Escopo só-escrita de saúde; hash no banco; revogável; payload limitado | Inserção de dados de saúde falsos até revogar |
 | Inferência errada vira "verdade" | Modelo | Hipóteses rotuladas, teto 0,6, confirmação | — |
 | Perda de dados | Erro humano, pausa do Supabase | Exclusão sempre com confirmação; exportação JSON; auditoria | Free sem backups automáticos garantidos |
@@ -34,9 +35,9 @@ Logout encerra a sessão. Conta não autorizada é deslogada no ato do login.
 | Guardar o que o usuário declarou | Criar objetivo / projeto | Apagar dados do usuário |
 | Registrar hipótese (revisável) | Registrar decisão | Enviar mensagens externas |
 | Nomear/resumir espaços | Mudar status de objetivo | Operar contas externas |
-| Gerar síntese/revisão | Promover hipótese a fato | Pagamentos |
+| Gerar síntese/revisão · Pesquisar oportunidades (só leitura, DEC-030) | Promover hipótese a fato | Pagamentos |
 | | Criar evento na Google Agenda | Alterar permissões ou orçamento |
-| | | Ler segredos · Alterar auditoria · Navegar na web *(Fase 1)* |
+| | | Ler segredos · Alterar auditoria |
 
 Ação não listada = **proibida** (negação por padrão, testado).
 

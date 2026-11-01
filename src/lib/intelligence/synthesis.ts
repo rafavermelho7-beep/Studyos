@@ -14,6 +14,8 @@ Estrutura (máx. ~350 palavras):
 - Equilíbrio entre domínios: onde a semana pesou e o que ficou de fora. Experiências significativas contam.
 - Padrões observados (sempre como hipótese, com quantos dados os sustentam).
 - Conflitos entre objetivos, se houver.
+- Dinheiro: ritmo de gastos vs. meta, se houver dados (sem julgamento moral).
+- Propósito: uma pergunta ou prática curta ligada a valores/espiritualidade, se o usuário tiver aberto esse tema.
 - No máximo 3 decisões ou ajustes recomendados para a próxima semana.
 - Uma pergunta que desafie uma premissa, com respeito aos limites de questionamento.
 Seja crítico e direto. Não invente dados.`;

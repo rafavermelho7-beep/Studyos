@@ -65,6 +65,16 @@
 | RF-64 | Criar evento só com confirmação | E | Nada é criado até "Aceitar"; auditado | ✅ E2E |
 | RF-65 | Renovação automática do acesso | E | Token expirado renovado com refresh token | ✅ E2E |
 
+### Radar, finanças e guias (Fase 3)
+| ID | Requisito | Pri. | Critério | Estado |
+|---|---|---|---|---|
+| RF-70 | Radar semanal automático e manual | E | Automático ≤ 1x/semana; manual ≤ 2/dia; bloqueado em orçamento crítico | ✅ E2E (dublê) · 🟡 busca real |
+| RF-71 | Só oportunidades com link vindo da busca | E | Item com URL inventada é rejeitado | ✅ unit + E2E |
+| RF-72 | Salvar, dispensar, pôr na agenda | I | Agenda só com clique; requer Google conectado | ✅ E2E |
+| RF-73 | Preferências do radar (categorias, cidade, interesses) | I | Usadas na busca (localização aproximada) | ✅ E2E |
+| RF-74 | Gasto rápido, meta e ritmo do mês | E | Aviso de ritmo (após dia 5) e de meta estourada | ✅ unit + E2E |
+| RF-75 | Espaços guiados (carreira, dinheiro, propósito) | I | Um clique cria o espaço com propósito definido | ✅ E2E |
+
 ### Intelligence Spaces
 | ID | Requisito | Pri. | Critério | Estado |
 |---|---|---|---|---|

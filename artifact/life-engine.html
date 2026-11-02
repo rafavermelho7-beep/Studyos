@@ -199,7 +199,7 @@ nav.dock{transition:transform .25s ease,opacity .25s}
   .card-h{flex-wrap:wrap}
   .row{row-gap:8px}
   .composer textarea{max-height:132px}
-  .hint{display:none}
+  .hint{display:none!important}
   body.typing{--dockh:10px}
   body.typing nav.dock{transform:translateY(160%);opacity:0;pointer-events:none}
   .thread{top:calc(10px + env(safe-area-inset-top,0px))}
@@ -247,7 +247,7 @@ nav.dock{transition:transform .25s ease,opacity .25s}
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
     </button>
   </form>
-  <div class="hint" id="hint">Enter quebra a linha · <span id="sendKey">Ctrl</span>+Enter envia</div>
+  <div class="hint" id="hint">Enter envia · Shift+Enter quebra a linha</div>
 </div>
 
 <nav class="dock" id="dock" aria-label="Navegação principal"></nav>
@@ -1173,8 +1173,8 @@ $("#attachInput").addEventListener("change",async e=>{const fs=[...e.target.file
 $("#chips").addEventListener("click",e=>{const b=e.target.closest("[data-rm]");if(b){S.attach.splice(Number(b.dataset.rm),1);renderChips()}});
 document.addEventListener("paste",e=>{if(e.target!==input)return;const fs=[...(e.clipboardData&&e.clipboardData.files||[])];if(fs.length){e.preventDefault();addAttachments(fs)}});
 input.addEventListener("input",()=>{input.style.height="0";input.style.height=Math.min(input.scrollHeight,170)+"px";$("#send").disabled=!(input.value.trim()||S.attach.length);if(!S.busy)setPresence(input.value?"listening":"standby")});
-input.addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)&&!e.isComposing){e.preventDefault();if(input.value.trim()||S.attach.length)$("#composer").requestSubmit()}});
-if(/Mac|iPhone|iPad/.test(navigator.platform||navigator.userAgent))$("#sendKey").textContent="⌘";
+const isTouch=()=>matchMedia("(pointer:coarse)").matches&&!matchMedia("(pointer:fine)").matches;
+input.addEventListener("keydown",e=>{if(e.key!=="Enter"||e.isComposing)return;const send=isTouch()?(e.ctrlKey||e.metaKey):!e.shiftKey;if(send){e.preventDefault();if(input.value.trim()||S.attach.length)$("#composer").requestSubmit()}});
 input.addEventListener("focus",()=>{clearTimeout(input._bt);document.body.classList.add("typing")});
 input.addEventListener("blur",()=>{clearTimeout(input._bt);input._bt=setTimeout(()=>document.body.classList.remove("typing"),250)});
 new ResizeObserver(()=>document.documentElement.style.setProperty("--cw",$("#composerWrap").offsetHeight+"px")).observe($("#composerWrap"));

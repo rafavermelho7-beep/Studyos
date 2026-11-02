@@ -171,18 +171,18 @@ const KIND_PT={fact:"fato",preference:"preferência",value:"valor",belief:"cren�
 const SOURCE_PT={user_stated:"você disse",user_confirmed:"você confirmou",agent_inferred:"inferido pelo JARVIS"};
 const TZ=(()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||"America/Sao_Paulo"}catch(e){return "America/Sao_Paulo"}})();
 const CAL_SERVER="Google Calendar";
-const COLS=["memories","goals","projects","decisions","spaces","messages","checkins","ratings","study","exams","expenses","insightStatus","proposals","syntheses","opportunities","audit","settings"];
+const COLS=["photos","memories","goals","projects","decisions","spaces","messages","checkins","ratings","study","exams","expenses","insightStatus","proposals","syntheses","opportunities","audit","settings"];
 // Matriz de permissões do JARVIS (o modelo nunca executa: só propõe; a página aplica a matriz).
 const MATRIX={
-  auto:["Criar avisos","Guardar o que você declarou","Registrar hipóteses revisáveis","Nomear e resumir espaços","Gerar síntese e revisão"],
-  confirm:["Guardar dado sensível","Criar objetivo, projeto ou decisão","Criar evento na Google Agenda","Promover hipótese a fato"],
+  auto:["Analisar fotos que você envia","Guardar o que você declarou","Registrar hipóteses revisáveis","Nomear e resumir espaços","Gerar síntese e revisão"],
+  confirm:["Salvar números lidos do app Saúde","Criar objetivo, projeto ou decisão","Criar evento na Google Agenda","Promover hipótese a fato"],
   forbidden:["Guardar dado restrito","Apagar seus dados","Enviar mensagens ou e-mails","Operar contas externas","Pagamentos","Alterar as próprias permissões"]
 };
 
 // ============================================================ estado
 const S={ready:false,offline:null,uid:null,name:"",data:Object.fromEntries(COLS.map(c=>[c,[]])),loaded:new Set(),view:"ambiente",spaceId:null,
   presence:"standby",busy:false,expanded:false,stream:null,memTab:"active",abort:null,confirmKey:null,calendar:{state:"unknown",events:[],error:null},aiCalls:0};
-let db=null,userCap=null,sample=null,mcp=null,downloads=null,capsReady=Promise.resolve();
+let db=null,userCap=null,sample=null,mcp=null,downloads=null,assets=null,imgLimits=null,capsReady=Promise.resolve();
 
 // ============================================================ utilidades
 const $=s=>document.querySelector(s);
@@ -268,7 +268,7 @@ function buildContext(query,space){
   if(projects.length)sec.push("PROJETOS ATIVOS:\n"+projects.map(p=>`- ${p.title}${p.nextAction?" — próxima ação: "+p.nextAction:""}`).join("\n"));
   const bal=balance();if(bal.rated)sec.push(`EQUILÍBRIO (autoavaliação): índice ${bal.index??"sem dados"}; mais baixos: ${bal.lowest.map(l=>dl(l[0])+" "+l[1]+"/10").join(", ")}.`);
   const ck=D("checkins").filter(c=>c.id>=addDays(today,-7)).sort((a,b)=>b.id.localeCompare(a.id));
-  if(ck.length)sec.push("REGISTROS RECENTES (1–5):\n"+ck.map(c=>`- ${c.id}: energia ${c.energy??"–"}, humor ${c.mood??"–"}, sono ${c.sleepH!=null?c.sleepH+"h":c.sleepQ??"–"}${c.workoutMin?", treino "+c.workoutMin+"min":""}${c.note?' — "'+String(c.note).slice(0,140)+'"':""}`).join("\n"));
+  if(ck.length)sec.push("REGISTROS RECENTES (1–5):\n"+ck.map(c=>`- ${c.id}: energia ${c.energy??"–"}, humor ${c.mood??"–"}, sono ${c.sleepH!=null?c.sleepH+"h":c.sleepQ??"–"}${c.workoutMin?", treino "+c.workoutMin+"min":""}${c.steps?", "+c.steps+" passos":""}${c.restingHr?", FC repouso "+c.restingHr:""}${c.note?' — "'+String(c.note).slice(0,140)+'"':""}`).join("\n"));
   const ex=examList(today).slice(0,8);if(ex.length)sec.push("PROVAS/PRAZOS PRÓXIMOS:\n"+ex.map(e=>`- ${e.day}: ${e.title}`).join("\n"));
   const ag=S.calendar.events.filter(e=>e.day>=today&&e.day<=addDays(today,7)).slice(0,25);
   if(ag.length)sec.push("AGENDA (Google, próximos 7 dias):\n"+ag.map(e=>`- ${e.day}${e.time?" "+e.time:""}: ${e.title}`).join("\n"));
@@ -523,8 +523,105 @@ async function exportAll(){
   try{await downloads.save({filename:`life-engine-${localDate()}.json`,data:JSON.stringify(out,null,2)});audit("user","dados exportados")}catch(e){if(!(e&&e.code==="declined"))toast("Não foi possível exportar.")}
 }
 
+// ============================================================ fotos (arrumação, pergunta livre, app Saúde)
+async function shrink(file,max=1280){
+  try{const bmp=await createImageBitmap(file);const k=Math.min(1,max/Math.max(bmp.width,bmp.height));const c=document.createElement("canvas");c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
+    return await new Promise(r=>c.toBlob(b=>r(b||file),"image/jpeg",.82))}catch(e){return file}
+}
+const blobUrl=id=>"/_blob/"+encodeURIComponent(id);
+function imgCap(){return imgLimits?Math.min(imgLimits.maxCount||1,4):0}
+async function analyzePhotos(files,mode,room,question){
+  if(!sample||!imgLimits){toast("Envio de imagens ao Claude indisponível nesta visualização.");return}
+  const max=imgCap();const picked=[...files].slice(0,max);if(!picked.length){toast("Escolha ao menos uma foto.");return}
+  S.photoBusy=true;renderView();setPresence("thinking","fotos");
+  try{
+    const blobs=await Promise.all(picked.map(f=>shrink(f)));
+    const ids=[];
+    if(assets){for(const b of blobs){try{const a=await assets.upload(b);ids.push(a.id)}catch(e){}}}
+    const goals=D("goals").filter(g=>g.status==="active").map(g=>g.title).join("; ")||"—";
+    const prefs=activeMemories().filter(m=>m.sensitivity==="normal"&&["preference","value","context"].includes(m.kind)).slice(0,8).map(m=>m.content).join("; ")||"—";
+    let result;
+    if(mode==="arrumacao"){
+      result=await sample.json(`Você é o JARVIS do LIFE ENGINE (conselheiro direto, prático, sem julgamento). As ${blobs.length} foto(s) mostram o ambiente "${room||"não informado"}" do usuário. ${question?"O que o incomoda: "+question+".":""}
+Contexto: objetivos ${goals}. Preferências: ${prefs}.
+Analise o que se vê (sem inventar o que não aparece) e proponha uma arrumação realista para um estudante, priorizando baixo custo e pouco tempo.
+Devolva SOMENTE JSON: {"diagnostico":"2-3 frases do que está atrapalhando","prioridades":[{"titulo":"ação concreta","porque":"1 frase","minutos":15}],"ganhos_rapidos":["ação de até 5 min"],"organizacao":["ideia de armazenamento/layout usando o que já existe"],"comprar_se_preciso":["item barato e opcional"],"rotina":["hábito semanal curto para manter"],"foco_estudo":"1 frase sobre como o espaço pode ajudar o foco/estudo, se aplicável"}
+Máximo 5 prioridades, ordenadas do maior impacto para o menor. Não identifique pessoas.`,{images:blobs,modelTier:"default"});
+    }else{
+      result={resposta:(await sample(`Você é o JARVIS do LIFE ENGINE. O usuário enviou ${blobs.length} foto(s) e pergunta: "${question||"O que você vê e o que sugere?"}". Contexto: objetivos ${goals}. Responda em português, direto e prático (máx. 180 palavras). Descreva só o que aparece; se não der para saber, diga. Não identifique pessoas.`,{images:blobs,modelTier:"default"})).text};
+    }
+    S.aiCalls++;
+    await put("photos",rid(),{mode,room:room||"",question:question||"",assetIds:ids,result,at:new Date().toISOString()});
+    audit("agent",mode==="arrumacao"?"sugestão de arrumação gerada":"foto analisada",room||question||"");
+    toast("Análise pronta.");
+  }catch(e){toast(e&&e.code==="rate_limited"?"Limite do plano atingido; tente mais tarde.":e&&e.code==="images_unavailable"?"Este acesso não permite enviar imagens.":"Não foi possível analisar: "+(e&&e.message||"erro"))}
+  S.photoBusy=false;setPresence("standby");renderView();
+}
+const num0=v=>{const n=Number(String(v==null?"":v).replace(",","."));return Number.isFinite(n)&&n>=0?n:null};
+async function readHealthShot(files){
+  if(!sample||!imgLimits){toast("Envio de imagens ao Claude indisponível nesta visualização.");return}
+  const picked=[...files].slice(0,Math.min(imgCap(),3));if(!picked.length){toast("Escolha a captura do app Saúde.");return}
+  S.healthBusy=true;renderView();setPresence("thinking","saúde");
+  try{
+    const blobs=await Promise.all(picked.map(f=>shrink(f,1600)));
+    const x=await sample.json(`As imagens são capturas de tela do app Saúde (Apple Health) ou do relógio do usuário. Hoje é ${localDate()} (${TZ}).
+Extraia SOMENTE números que estejam visíveis. Se um valor não aparecer, use null — nunca estime.
+Devolva SOMENTE JSON: {"day":"AAAA-MM-DD da data mostrada ou null se não aparecer","sleep_hours":null,"workout_minutes":null,"steps":null,"resting_hr":null,"active_kcal":null,"observacao":"o que foi lido, em 1 frase","confianca":0.0}
+Sono: converta "7 h 32 min" em 7.53. Treino: minutos de exercício/treino do dia.`,{images:blobs,modelTier:"default"});
+    S.aiCalls++;
+    const d=x&&typeof x==="object"?x:{};
+    S.healthDraft={day:typeof d.day==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(d.day)&&d.day<=localDate()?d.day:localDate(),sleepH:num0(d.sleep_hours),workoutMin:num0(d.workout_minutes),steps:num0(d.steps),restingHr:num0(d.resting_hr),activeKcal:num0(d.active_kcal),obs:String(d.observacao||"").slice(0,200),conf:typeof d.confianca==="number"?d.confianca:null};
+    audit("agent","captura do app Saúde lida (imagem não armazenada)");
+  }catch(e){toast(e&&e.code==="rate_limited"?"Limite do plano atingido; tente mais tarde.":"Não consegui ler a imagem: "+(e&&e.message||"erro"))}
+  S.healthBusy=false;setPresence("standby");renderView();
+}
+function photoResultHTML(p){
+  const r=p.result||{};
+  if(p.mode!=="arrumacao")return richText(r.resposta||"");
+  const li=a=>Array.isArray(a)&&a.length?"<ul>"+a.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>":"";
+  return`<div class="rt">${r.diagnostico?`<p>${esc(r.diagnostico)}</p>`:""}
+  ${Array.isArray(r.prioridades)&&r.prioridades.length?`<p class="label" style="margin-top:12px">Prioridades</p><ul>${r.prioridades.map(x=>`<li><strong>${esc(x.titulo)}</strong>${x.minutos?` <span class="muted">· ~${esc(x.minutos)} min</span>`:""}${x.porque?`<br><span class="muted">${esc(x.porque)}</span>`:""}</li>`).join("")}</ul>`:""}
+  ${r.ganhos_rapidos&&r.ganhos_rapidos.length?`<p class="label" style="margin-top:12px">Em 5 minutos</p>${li(r.ganhos_rapidos)}`:""}
+  ${r.organizacao&&r.organizacao.length?`<p class="label" style="margin-top:12px">Organização</p>${li(r.organizacao)}`:""}
+  ${r.comprar_se_preciso&&r.comprar_se_preciso.length?`<p class="label" style="margin-top:12px">Se precisar comprar</p>${li(r.comprar_se_preciso)}`:""}
+  ${r.rotina&&r.rotina.length?`<p class="label" style="margin-top:12px">Para manter</p>${li(r.rotina)}`:""}
+  ${r.foco_estudo?`<p style="margin-top:10px" class="muted">${esc(r.foco_estudo)}</p>`:""}</div>`;
+}
+function vFotos(){
+  const can=!!(sample&&imgLimits),max=imgCap(),hist=[...D("photos")].sort((a,b)=>String(b.at).localeCompare(String(a.at)));
+  const hd=S.healthDraft;
+  const field=(k,l,step)=>`<label class="fl"><span class="label">${l}</span><input class="f" id="hd-${k}" name="${k}" type="number" min="0" step="${step}" value="${hd&&hd[k]!=null?hd[k]:""}"></label>`;
+  return`<div class="stack" style="margin-top:18px;gap:6px"><span class="label">Fotos</span><h1>O JARVIS olha com você</h1><p class="muted" style="max-width:62ch">Envie fotos de um ambiente para receber um plano de arrumação, faça uma pergunta sobre uma foto, ou envie a captura do app Saúde para registrar sono e treino sem digitar.</p></div>
+  ${can?"":`<section class="card" style="margin-top:16px"><p class="empty">Para analisar fotos, permita que esta página envie imagens ao Claude (menu Permissões do artefato).</p></section>`}
+  <div class="grid g2" style="margin-top:16px;align-items:start">
+    <section class="card"><div class="card-h"><div><div class="label">Arrumação e outras fotos</div><h2 style="margin-top:4px">Envie até ${max||4} foto(s)</h2></div></div>
+      <form class="stack" data-form="photo">
+        <div class="tabs" role="radiogroup" aria-label="Tipo de análise"><label class="tab" style="display:inline-flex;gap:6px;align-items:center"><input type="radio" name="mode" value="arrumacao" checked> Sugestão de arrumação</label><label class="tab" style="display:inline-flex;gap:6px;align-items:center"><input type="radio" name="mode" value="livre"> Pergunta livre</label></div>
+        <input class="f" id="ph-files" type="file" name="files" accept="image/*" multiple ${can?"":"disabled"} aria-label="Fotos">
+        <input class="f" id="ph-room" name="room" maxlength="60" placeholder="Ambiente (ex.: quarto, escrivaninha, armário)">
+        <textarea class="f" id="ph-q" name="question" rows="2" maxlength="400" placeholder="O que te incomoda ou o que quer saber? (opcional)"></textarea>
+        <div class="row"><button class="btn primary" ${can&&!S.photoBusy?"":"disabled"}>${S.photoBusy?"Analisando…":"Analisar"}</button><span class="muted" style="font-size:12px">As fotos ficam guardadas só neste artefato privado; você pode apagar.</span></div>
+      </form></section>
+    <section class="card"><div class="card-h"><div><div class="label">Saúde por foto</div><h2 style="margin-top:4px">Captura do app Saúde</h2></div></div>
+      ${hd?`<form class="stack" data-form="healthsave"><p class="muted" style="font-size:13px">Confira o que foi lido${hd.conf!=null?` (confiança ${Math.round(hd.conf*100)}%)`:""}${hd.obs?": "+esc(hd.obs):""}. Corrija o que precisar e salve.</p>
+        <label class="fl"><span class="label">Dia</span><input class="f" id="hd-day" type="date" name="day" max="${localDate()}" value="${hd.day}"></label>
+        <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">${field("sleepH","Sono (h)","0.1")}${field("workoutMin","Treino (min)","1")}${field("steps","Passos","1")}${field("restingHr","FC repouso","1")}</div>
+        <div class="row"><button class="btn primary">Salvar no registro do dia</button><button class="btn" type="button" data-act="hd-cancel">Descartar</button></div></form>`
+      :`<form class="stack" data-form="healthshot"><p class="muted" style="font-size:13px">Tire um print das telas de Sono, Atividade ou Resumo do app Saúde e envie. O JARVIS lê só os números visíveis e você confirma antes de salvar. A imagem não é guardada.</p>
+        <input class="f" id="hs-files" type="file" name="files" accept="image/*" multiple ${can?"":"disabled"} aria-label="Captura do app Saúde">
+        <div><button class="btn primary" ${can&&!S.healthBusy?"":"disabled"}>${S.healthBusy?"Lendo…":"Ler números"}</button></div></form>`}
+    </section>
+  </div>
+  <section class="card" style="margin-top:14px"><div class="card-h"><span class="label">Análises anteriores</span></div>
+    ${hist.length?`<div class="stack">${hist.map(p=>`<article class="item"><div class="row between" style="margin-bottom:8px"><span class="row" style="gap:8px"><span class="chip ${p.mode==="arrumacao"?"signal":"violet"}">${p.mode==="arrumacao"?"Arrumação":"Pergunta"}</span><span class="t2">${esc(p.room||p.question||"")}</span></span><span class="label">${br(String(p.at).slice(0,10))}</span></div>
+      ${(p.assetIds||[]).length?`<div class="row" style="gap:8px;margin-bottom:10px">${p.assetIds.map(id=>`<img src="${blobUrl(id)}" alt="Foto enviada" style="width:88px;height:88px;object-fit:cover;border-radius:12px;border:1px solid var(--line)">`).join("")}</div>`:""}
+      ${photoResultHTML(p)}
+      <div class="row" style="gap:16px;margin-top:10px">${p.mode==="arrumacao"?`<button class="link warm" data-act="ph-project" data-id="${p.id}">Criar projeto de arrumação</button>`:""}<button class="link" data-act="ph-chat" data-id="${p.id}">Conversar sobre isso</button>${S.confirmKey==="ph-"+p.id?`<span class="confirm">Apagar análise e fotos? <button class="link danger" data-act="ph-del" data-id="${p.id}">Sim</button><button class="link" data-act="cancel-confirm">Não</button></span>`:`<button class="link danger" data-act="ask-confirm" data-k="ph-${p.id}">Apagar</button>`}</div></article>`).join("")}</div>`:`<p class="empty">Nenhuma foto analisada ainda. Comece pela escrivaninha: o lugar onde você estuda tem efeito direto no foco.</p>`}
+  </section>`;
+}
+
 // ============================================================ views
-const NAV=[["ambiente","Ambiente","M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm0 5a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z"],["espacos","Espaços","M4 5h7v7H4zM13 5h7v4h-7zM13 11h7v8h-7zM4 14h7v5H4z"],["objetivos","Objetivos","M12 3v4M12 17v4M3 12h4M17 12h4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"],["radar","Radar","M12 12 19 5M12 3a9 9 0 1 0 9 9M12 7a5 5 0 1 0 5 5"],["memoria","Memória","M6 4h9l3 3v13H6zM9 10h6M9 14h6M9 18h3"],["contexto","Contexto","M4 19V9M10 19V5M16 19v-7M22 19H2"],["ajustes","Ajustes","M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6ZM4 12h2M18 12h2M12 4v2M12 18v2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4"]];
+const NAV=[["ambiente","Ambiente","M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm0 5a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z"],["espacos","Espaços","M4 5h7v7H4zM13 5h7v4h-7zM13 11h7v8h-7zM4 14h7v5H4z"],["objetivos","Objetivos","M12 3v4M12 17v4M3 12h4M17 12h4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"],["radar","Radar","M12 12 19 5M12 3a9 9 0 1 0 9 9M12 7a5 5 0 1 0 5 5"],["fotos","Fotos","M4 8h3l2-2h6l2 2h3v11H4zM12 10.5a3.2 3.2 0 1 0 0 6.4 3.2 3.2 0 0 0 0-6.4Z"],["memoria","Memória","M6 4h9l3 3v13H6zM9 10h6M9 14h6M9 18h3"],["contexto","Contexto","M4 19V9M10 19V5M16 19v-7M22 19H2"],["ajustes","Ajustes","M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6ZM4 12h2M18 12h2M12 4v2M12 18v2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4"]];
 function renderDock(){const cur=S.view==="espaco"?"espacos":S.view;$("#dock").innerHTML=NAV.map(([k,l,d])=>`<a href="#${k}" ${cur===k?'aria-current="page"':""} aria-label="${l}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg><span>${l}</span></a>`).join("")}
 const sel=(name,opts,val,attrs="")=>`<select class="f" name="${name}" id="f-${name}" ${attrs}>${opts.map(([v,l])=>`<option value="${esc(v)}" ${String(val)===String(v)?"selected":""}>${esc(l)}</option>`).join("")}</select>`;
 const domSel=(val="",name="domain")=>sel(name,[["","Geral"],...DOMAINS.map(d=>[d[0],d[1]])],val);
@@ -561,7 +658,7 @@ function vAmbiente(){
     <section class="card"><div class="card-h"><span class="label">Registro do dia</span></div><div class="stack">${dots("energy","Energia")}${dots("mood","Humor")}
       <div class="row between"><label class="t2" style="font-size:13.5px" for="f-sleepH">Sono (h)</label><input class="f" style="width:90px" id="f-sleepH" type="number" min="0" max="16" step="0.5" value="${ck.sleepH??""}" data-ck="sleepH" placeholder="7,5"></div>
       <div class="row between"><label class="t2" style="font-size:13.5px" for="f-workoutMin">Treino (min)</label><input class="f" style="width:90px" id="f-workoutMin" type="number" min="0" max="600" step="5" value="${ck.workoutMin??""}" data-ck="workoutMin" placeholder="0"></div>
-      <input class="f" id="f-note" data-ck="note" maxlength="300" value="${esc(ck.note||"")}" placeholder="Uma linha sobre o dia (opcional)"></div></section>
+      <input class="f" id="f-note" data-ck="note" maxlength="300" value="${esc(ck.note||"")}" placeholder="Uma linha sobre o dia (opcional)"><a class="link" href="#fotos" style="align-self:flex-start">Preencher com foto do app Saúde →</a></div></section>
   </div>
   <section class="card" style="margin-top:14px"><div class="card-h"><span class="label">Radar · sugestões</span><a class="link" href="#radar">Abrir radar</a></div>${oppsHTML(D("opportunities").filter(o=>o.status==="new").slice(0,3),true)}</section>`;
 }
@@ -635,7 +732,7 @@ function vContexto(){
       <form class="stack" data-form="study"><div class="grid" style="grid-template-columns:1fr 96px;gap:10px"><input class="f" id="f-ssub" name="subject" list="subjects" required maxlength="80" placeholder="Disciplina" aria-label="Disciplina"><input class="f" id="f-smin" name="minutes" type="number" min="5" max="720" step="5" required placeholder="min" aria-label="Minutos"></div><datalist id="subjects">${subjects.map(s=>`<option value="${esc(s)}">`).join("")}</datalist><div><button class="btn primary">Registrar sessão</button></div></form>
       ${sess.length?`<ul class="list" style="margin-top:10px;font-size:13px">${sess.slice(0,10).map(s=>`<li class="row between" style="padding:6px 0"><span class="t2">${esc(s.subject)} <span class="muted">· ${s.minutes} min</span></span><span class="row" style="gap:10px"><span class="label">${br(s.day).slice(0,5)}</span><button class="link danger" data-act="del" data-c="study" data-id="${s.id}" aria-label="Remover sessão">×</button></span></li>`).join("")}</ul>`:""}</section>
     <section class="card"><div class="card-h"><span class="label">Provas e prazos</span></div>${exams.length?`<ul class="list" style="font-size:14px;margin-bottom:12px">${exams.map(e=>`<li class="row between" style="padding:6px 0"><span class="${e.day<today?"muted":""}">${esc(e.title)}</span><span class="row" style="gap:10px"><span class="label">${br(e.day)}</span><button class="link danger" data-act="del" data-c="exams" data-id="${e.id}" aria-label="Remover">×</button></span></li>`).join("")}</ul>`:`<p class="muted" style="font-size:13px;margin-bottom:12px">Provas da sua Google Agenda são detectadas pelo título (Prova, P1, Avaliação…). Registre aqui as que não estão lá.</p>`}<form class="grid" data-form="exam" style="grid-template-columns:1fr auto;gap:10px"><input class="f" id="f-xtitle" name="title" required maxlength="200" placeholder="Ex.: P2 de Clínica"><input class="f" id="f-xday" type="date" name="day" required><div><button class="btn primary">Adicionar</button></div></form></section>
-    <section class="card"><div class="card-h"><span class="label">Registros · 14 dias</span></div>${ck.length?`<div class="scroll-x"><table><thead><tr><th>Dia</th><th>Energia</th><th>Humor</th><th>Sono</th><th>Treino</th></tr></thead><tbody>${ck.map(c=>`<tr><td>${br(c.id).slice(0,5)}</td><td>${c.energy??"–"}</td><td>${c.mood??"–"}</td><td>${c.sleepH!=null?c.sleepH+"h":"–"}</td><td>${c.workoutMin?c.workoutMin+" min":"–"}</td></tr>`).join("")}</tbody></table></div>`:`<p class="empty">Use o registro do dia no Ambiente: alguns toques bastam.</p>`}</section>
+    <section class="card"><div class="card-h"><span class="label">Registros · 14 dias</span></div>${ck.length?`<div class="scroll-x"><table><thead><tr><th>Dia</th><th>Energia</th><th>Humor</th><th>Sono</th><th>Treino</th><th>Passos</th></tr></thead><tbody>${ck.map(c=>`<tr><td>${br(c.id).slice(0,5)}</td><td>${c.energy??"–"}</td><td>${c.mood??"–"}</td><td>${c.sleepH!=null?c.sleepH+"h":"–"}</td><td>${c.workoutMin?c.workoutMin+" min":"–"}</td><td>${c.steps?Number(c.steps).toLocaleString("pt-BR"):"–"}</td></tr>`).join("")}</tbody></table></div>`:`<p class="empty">Use o registro do dia no Ambiente: alguns toques bastam.</p>`}</section>
   </div>`;
 }
 function vRadar(){
@@ -665,7 +762,7 @@ function renderView(){
   S.pending=false;
   if(S.offline){el.innerHTML=vOffline();return}
   if(!S.ready){return}
-  const v={ambiente:vAmbiente,espacos:vEspacos,espaco:vEspaco,objetivos:vObjetivos,memoria:vMemoria,contexto:vContexto,radar:vRadar,ajustes:vAjustes}[S.view]||vAmbiente;
+  const v={fotos:vFotos,ambiente:vAmbiente,espacos:vEspacos,espaco:vEspaco,objetivos:vObjetivos,memoria:vMemoria,contexto:vContexto,radar:vRadar,ajustes:vAjustes}[S.view]||vAmbiente;
   el.innerHTML=v();renderDock();
   const msgs=S.view!=="espaco"&&spaceMessages((D("spaces").find(s=>s.kind==="ambient")||{}).id);
   const pk=$("#peek");if(msgs&&msgs.length&&!S.expanded){pk.hidden=false;pk.innerHTML=`<span class="label" style="margin-right:8px">Última troca</span>${esc(msgs.at(-1).content.slice(0,140))}`}else pk.hidden=true;
@@ -674,7 +771,7 @@ function renderView(){
 let rq=0;function scheduleRender(){cancelAnimationFrame(rq);rq=requestAnimationFrame(()=>{renderView();if(S.expanded)renderThread()})}
 
 // ============================================================ eventos
-function route(){const h=(location.hash||"#ambiente").slice(1);if(h.startsWith("espaco-")){S.view="espaco";S.spaceId=h.slice(7)}else{S.view=["ambiente","espacos","objetivos","memoria","contexto","radar","ajustes"].includes(h)?h:"ambiente";S.spaceId=null}
+function route(){const h=(location.hash||"#ambiente").slice(1);if(h.startsWith("espaco-")){S.view="espaco";S.spaceId=h.slice(7)}else{S.view=["ambiente","espacos","objetivos","fotos","memoria","contexto","radar","ajustes"].includes(h)?h:"ambiente";S.spaceId=null}
   expand(false);$("#input").placeholder=S.view==="espaco"?"Continue a investigação…":"Fale com o JARVIS…  ( / para focar )";renderView();window.scrollTo(0,0)}
 window.addEventListener("hashchange",route);
 document.addEventListener("focusout",()=>{if(S.pending)setTimeout(()=>{if(S.pending)renderView()},150)});
@@ -699,6 +796,10 @@ document.addEventListener("click",async e=>{
   else if(A==="ask-confirm"){S.confirmKey=b.dataset.k;renderView()}
   else if(A==="cancel-confirm"){S.confirmKey=null;renderView()}
   else if(A==="del"){await del(b.dataset.c,id)}
+  else if(A==="hd-cancel"){S.healthDraft=null;renderView()}
+  else if(A==="ph-del"){const p=D("photos").find(x=>x.id===id);S.confirmKey=null;if(p&&assets)for(const a of p.assetIds||[])try{await assets.delete(a)}catch(err){}await del("photos",id);audit("user","análise de foto apagada")}
+  else if(A==="ph-project"){const p=D("photos").find(x=>x.id===id);const pr=(p.result&&p.result.prioridades)||[];await put("projects",rid(),{title:"Arrumar "+(p.room||"ambiente"),nextAction:pr[0]?pr[0].titulo:"",domain:"ambiente",status:"active",createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});audit("user","projeto de arrumação criado",p.room);toast("Projeto criado em Objetivos.")}
+  else if(A==="ph-chat"){const p=D("photos").find(x=>x.id===id);const r=p.result||{};input.value=p.mode==="arrumacao"?`Sobre a arrumação do ${p.room||"ambiente"}: ${r.diagnostico||""} Por onde eu começo hoje?`:`Sobre a foto: ${String(r.resposta||"").slice(0,300)}`;input.dispatchEvent(new Event("input"));input.focus()}
   else if(A==="export")exportAll();
   else if(A==="cal-reload")loadCalendar();
   else if(A==="perms"){try{const p=await claude.use("permissions");p&&p.manage&&await p.manage()}catch(err){toast("Abra o menu Permissões do artefato.")}}
@@ -714,6 +815,10 @@ document.addEventListener("change",async e=>{
 document.addEventListener("input",e=>{const t=e.target;if(t.type==="range"&&t.closest('[data-form="ratings"]')){t.dataset.touched="true";t.style.opacity=1;const o=document.getElementById("o-"+t.name);if(o)o.textContent=t.value}});
 document.addEventListener("submit",async e=>{
   const f=e.target.closest("form[data-form]");if(!f)return;e.preventDefault();
+  if(f.dataset.form==="photo"){const files=f.querySelector('input[type="file"]').files;const fd0=new FormData(f);await analyzePhotos(files,fd0.get("mode"),String(fd0.get("room")||"").trim(),String(fd0.get("question")||"").trim());return}
+  if(f.dataset.form==="healthshot"){await readHealthShot(f.querySelector('input[type="file"]').files);return}
+  if(f.dataset.form==="healthsave"){const fd0=Object.fromEntries(new FormData(f).entries());const day=fd0.day&&fd0.day<=localDate()?fd0.day:localDate();const cur=D("checkins").find(c=>c.id===day)||{};const v={};for(const k of ["sleepH","workoutMin","steps","restingHr"]){const n=num0(fd0[k]);if(n!=null&&fd0[k]!=="")v[k]=k==="sleepH"?Math.round(n*10)/10:Math.round(n)}
+    if(!Object.keys(v).length){toast("Nenhum valor para salvar.");return}await put("checkins",day,{...cur,...v,source:"app_saude_foto",updatedAt:new Date().toISOString()});audit("user","saúde registrada por foto",day);S.healthDraft=null;S.pending=false;toast("Registro de "+br(day)+" atualizado.");scheduleRender();return}
   const fd=Object.fromEntries(new FormData(f).entries());const now=new Date().toISOString(),type=f.dataset.form;let ok=true;
   const num=v=>Number(String(v||"").replace(/\./g,"").replace(",","."));
   if(type==="space"){const sid=rid();await put("spaces",sid,{kind:fd.domain?"domain":"investigation",title:fd.title.trim().slice(0,160),purpose:(fd.purpose||"").trim(),domain:fd.domain||null,createdAt:now,lastAt:now,autoTitle:false});audit("user","espaço criado",fd.title);location.hash="espaco-"+sid;return}
@@ -746,7 +851,7 @@ async function boot(){
   try{
     [db,userCap]=await Promise.all([claude.use("db"),claude.use("user")]);
     if(!db||!userCap){S.offline=true;clearTimeout(timer);renderView();return}
-    capsReady=Promise.all([claude.use("sample"),claude.use("mcp"),claude.use("downloads")]).then(r=>{[sample,mcp,downloads]=r});
+    capsReady=Promise.all([claude.use("sample"),claude.use("mcp"),claude.use("downloads"),claude.use("assets")]).then(async r=>{[sample,mcp,downloads,assets]=r;try{imgLimits=sample?(await sample.limits()).images||null:null}catch(e){imgLimits=null}});
     S.uid=await userCap.id();
     if(!S.uid){S.offline=true;clearTimeout(timer);renderView();return}
     try{const me=await userCap.me();S.name=me&&me.name||""}catch(e){}

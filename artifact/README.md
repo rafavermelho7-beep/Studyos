@@ -6,6 +6,7 @@ Página única publicada no claude.ai (privada), sem servidor, sem cadastros e s
 - **Dados**: capability `db`, área privada `data/users/<id>/…` (só o próprio usuário lê).
 - **Agenda**: conector Google Calendar do claude.ai via capability `mcp` (`list_events`, `create_event`; criação só com clique).
 - **Exportação**: capability `downloads` (JSON completo).
+- **Fotos**: `sample` com imagens (arrumação de ambientes, pergunta livre, leitura de capturas do app Saúde com confirmação) e `assets` para guardar as fotos de ambientes (capturas de saúde não são guardadas).
 
 Diferenças em relação à versão Next.js: sem ingestão automática do Apple Saúde (sono/treino registrados à mão),
 Radar sem busca na web (sugere tipos de oportunidade e termos de pesquisa, sem inventar eventos), sem teto em R$

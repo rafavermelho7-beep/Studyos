@@ -11,3 +11,9 @@ Página única publicada no claude.ai (privada), sem servidor, sem cadastros e s
 Diferenças em relação à versão Next.js: sem ingestão automática do Apple Saúde (sono/treino registrados à mão),
 Radar sem busca na web (sugere tipos de oportunidade e termos de pesquisa, sem inventar eventos), sem teto em R$
 (valem os limites do plano). Para publicar uma nova versão, use a ferramenta Artifact com este arquivo.
+
+## Versão 4
+- Documentos (PDF, texto) e imagens anexados na conversa; conteúdo do documento fica no contexto do espaço.
+- Vida: linha do tempo (marcos, decisões, objetivos concluídos, aprendizados), pessoas importantes (lembrete de contato; notas nunca vão à IA) e aprendizado.
+- Elos: o JARVIS cruza itens de domínios diferentes e propõe associações como hipóteses; os confirmados entram no contexto.
+- Tela inicial com layout fixo.

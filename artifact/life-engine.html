@@ -558,22 +558,39 @@ Máximo 5 prioridades, ordenadas do maior impacto para o menor. Não identifique
   S.photoBusy=false;setPresence("standby");renderView();
 }
 const num0=v=>{const n=Number(String(v==null?"":v).replace(",","."));return Number.isFinite(n)&&n>=0?n:null};
+const HEALTH_MAX_FILES=12;
 async function readHealthShot(files){
   if(!sample||!imgLimits){toast("Envio de imagens ao Claude indisponível nesta visualização.");return}
-  const picked=[...files].slice(0,Math.min(imgCap(),3));if(!picked.length){toast("Escolha a captura do app Saúde.");return}
-  S.healthBusy=true;renderView();setPresence("thinking","saúde");
-  try{
-    const blobs=await Promise.all(picked.map(f=>shrink(f,1600)));
-    const x=await sample.json(`As imagens são capturas de tela do app Saúde (Apple Health) ou do relógio do usuário. Hoje é ${localDate()} (${TZ}).
-Extraia SOMENTE números que estejam visíveis. Se um valor não aparecer, use null — nunca estime.
-Devolva SOMENTE JSON: {"day":"AAAA-MM-DD da data mostrada ou null se não aparecer","sleep_hours":null,"workout_minutes":null,"steps":null,"resting_hr":null,"active_kcal":null,"observacao":"o que foi lido, em 1 frase","confianca":0.0}
-Sono: converta "7 h 32 min" em 7.53. Treino: minutos de exercício/treino do dia.`,{images:blobs,modelTier:"default"});
-    S.aiCalls++;
-    const d=x&&typeof x==="object"?x:{};
-    S.healthDraft={day:typeof d.day==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(d.day)&&d.day<=localDate()?d.day:localDate(),sleepH:num0(d.sleep_hours),workoutMin:num0(d.workout_minutes),steps:num0(d.steps),restingHr:num0(d.resting_hr),activeKcal:num0(d.active_kcal),obs:String(d.observacao||"").slice(0,200),conf:typeof d.confianca==="number"?d.confianca:null};
-    audit("agent","captura do app Saúde lida (imagem não armazenada)");
-  }catch(e){toast(e&&e.code==="rate_limited"?"Limite do plano atingido; tente mais tarde.":"Não consegui ler a imagem: "+(e&&e.message||"erro"))}
-  S.healthBusy=false;setPresence("standby");renderView();
+  const all=[...files];if(!all.length){toast("Escolha os prints do app Saúde.");return}
+  const picked=all.slice(0,HEALTH_MAX_FILES);if(all.length>HEALTH_MAX_FILES)toast(`Usando os ${HEALTH_MAX_FILES} primeiros prints.`);
+  const size=Math.max(1,imgCap()),batches=[];for(let i=0;i<picked.length;i+=size)batches.push(picked.slice(i,i+size));
+  S.healthBusy=true;S.healthProgress=`0/${batches.length}`;renderView();setPresence("thinking","saúde");
+  const today=localDate(),byDay=new Map();let failed=0;
+  for(let bi=0;bi<batches.length;bi++){
+    S.healthProgress=`${bi+1}/${batches.length}`;renderView();
+    try{
+      const blobs=await Promise.all(batches[bi].map(f=>shrink(f,1600)));
+      const x=await sample.json(`As ${blobs.length} imagem(ns) são capturas de tela do app Saúde (Apple Health) ou do relógio do usuário. Podem mostrar um dia ou vários (ex.: gráfico semanal de sono). Hoje é ${today} (${TZ}).
+Extraia SOMENTE números visíveis, por dia. Se um valor não aparecer, use null — nunca estime. Se a data não aparecer, use null em "day".
+Devolva SOMENTE JSON: {"days":[{"day":"AAAA-MM-DD ou null","sleep_hours":null,"workout_minutes":null,"steps":null,"resting_hr":null}],"observacao":"o que foi lido, 1 frase","confianca":0.0}
+Sono: "7 h 32 min" vira 7.53. Treino: minutos de exercício do dia. Máximo 31 dias.`,{images:blobs,modelTier:"default"});
+      S.aiCalls++;
+      const days=x&&Array.isArray(x.days)?x.days.slice(0,31):[];
+      for(const d of days){
+        const raw=typeof d.day==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(d.day)&&d.day<=today?d.day:null;
+        const key=raw||"sem-data";
+        const cur=byDay.get(key)||{day:raw||today,noDate:!raw,sleepH:null,workoutMin:null,steps:null,restingHr:null};
+        // Junta prints do mesmo dia: mantém o primeiro valor encontrado de cada campo.
+        for(const[k,src]of[["sleepH","sleep_hours"],["workoutMin","workout_minutes"],["steps","steps"],["restingHr","resting_hr"]]){const n=num0(d[src]);if(cur[k]==null&&n!=null)cur[k]=n}
+        byDay.set(key,cur);
+      }
+    }catch(e){failed++;if(e&&e.code==="rate_limited"){toast("Limite do plano atingido; li só parte dos prints.");break}}
+  }
+  const rows=[...byDay.values()].filter(r=>["sleepH","workoutMin","steps","restingHr"].some(k=>r[k]!=null)).sort((a,b)=>b.day.localeCompare(a.day));
+  S.healthDraft=rows.length?rows:null;
+  if(!rows.length)toast(failed?"Não consegui ler os prints.":"Nenhum número reconhecido nos prints.");
+  else audit("agent",`${picked.length} print(s) do app Saúde lidos (${rows.length} dia(s); imagens não armazenadas)`);
+  S.healthBusy=false;S.healthProgress=null;setPresence("standby");renderView();
 }
 function photoResultHTML(p){
   const r=p.result||{};
@@ -603,13 +620,12 @@ function vFotos(){
         <div class="row"><button class="btn primary" ${can&&!S.photoBusy?"":"disabled"}>${S.photoBusy?"Analisando…":"Analisar"}</button><span class="muted" style="font-size:12px">As fotos ficam guardadas só neste artefato privado; você pode apagar.</span></div>
       </form></section>
     <section class="card"><div class="card-h"><div><div class="label">Saúde por foto</div><h2 style="margin-top:4px">Captura do app Saúde</h2></div></div>
-      ${hd?`<form class="stack" data-form="healthsave"><p class="muted" style="font-size:13px">Confira o que foi lido${hd.conf!=null?` (confiança ${Math.round(hd.conf*100)}%)`:""}${hd.obs?": "+esc(hd.obs):""}. Corrija o que precisar e salve.</p>
-        <label class="fl"><span class="label">Dia</span><input class="f" id="hd-day" type="date" name="day" max="${localDate()}" value="${hd.day}"></label>
-        <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">${field("sleepH","Sono (h)","0.1")}${field("workoutMin","Treino (min)","1")}${field("steps","Passos","1")}${field("restingHr","FC repouso","1")}</div>
-        <div class="row"><button class="btn primary">Salvar no registro do dia</button><button class="btn" type="button" data-act="hd-cancel">Descartar</button></div></form>`
-      :`<form class="stack" data-form="healthshot"><p class="muted" style="font-size:13px">Tire um print das telas de Sono, Atividade ou Resumo do app Saúde e envie. O JARVIS lê só os números visíveis e você confirma antes de salvar. A imagem não é guardada.</p>
+      ${hd?`<form class="stack" data-form="healthsave"><p class="muted" style="font-size:13px">Confira o que foi lido em ${hd.length} dia(s). Corrija, remova o que não quiser e salve.</p>
+        <div class="scroll-x"><table><thead><tr><th>Dia</th><th>Sono (h)</th><th>Treino</th><th>Passos</th><th>FC</th><th></th></tr></thead><tbody>${hd.map((r,i)=>`<tr data-row="${i}"><td><input class="f" style="min-width:128px;padding:6px 8px" type="date" name="day" max="${localDate()}" value="${r.day}" aria-label="Dia">${r.noDate?'<span class="chip warm" title="A data não aparecia no print">sem data</span>':""}</td>${[["sleepH","0.1"],["workoutMin","1"],["steps","1"],["restingHr","1"]].map(([k,st])=>`<td><input class="f" style="width:78px;padding:6px 8px" type="number" min="0" step="${st}" name="${k}" value="${r[k]??""}" aria-label="${k}"></td>`).join("")}<td><button class="link danger" type="button" data-act="hd-remove" data-i="${i}" aria-label="Remover dia">×</button></td></tr>`).join("")}</tbody></table></div>
+        <div class="row"><button class="btn primary">Salvar ${hd.length>1?hd.length+" dias":"no registro do dia"}</button><button class="btn" type="button" data-act="hd-cancel">Descartar</button></div></form>`
+      :`<form class="stack" data-form="healthshot"><p class="muted" style="font-size:13px">Envie um ou vários prints (até ${HEALTH_MAX_FILES}) das telas de Sono, Atividade ou Resumo — inclusive gráficos da semana. O JARVIS lê só os números visíveis, junta por dia e você confirma antes de salvar. As imagens não são guardadas.</p>
         <input class="f" id="hs-files" type="file" name="files" accept="image/*" multiple ${can?"":"disabled"} aria-label="Captura do app Saúde">
-        <div><button class="btn primary" ${can&&!S.healthBusy?"":"disabled"}>${S.healthBusy?"Lendo…":"Ler números"}</button></div></form>`}
+        <div><button class="btn primary" ${can&&!S.healthBusy?"":"disabled"}>${S.healthBusy?"Lendo "+(S.healthProgress||"")+"…":"Ler números"}</button></div></form>`}
     </section>
   </div>
   <section class="card" style="margin-top:14px"><div class="card-h"><span class="label">Análises anteriores</span></div>
@@ -797,6 +813,7 @@ document.addEventListener("click",async e=>{
   else if(A==="cancel-confirm"){S.confirmKey=null;renderView()}
   else if(A==="del"){await del(b.dataset.c,id)}
   else if(A==="hd-cancel"){S.healthDraft=null;renderView()}
+  else if(A==="hd-remove"){S.healthDraft.splice(Number(b.dataset.i),1);if(!S.healthDraft.length)S.healthDraft=null;renderView()}
   else if(A==="ph-del"){const p=D("photos").find(x=>x.id===id);S.confirmKey=null;if(p&&assets)for(const a of p.assetIds||[])try{await assets.delete(a)}catch(err){}await del("photos",id);audit("user","análise de foto apagada")}
   else if(A==="ph-project"){const p=D("photos").find(x=>x.id===id);const pr=(p.result&&p.result.prioridades)||[];await put("projects",rid(),{title:"Arrumar "+(p.room||"ambiente"),nextAction:pr[0]?pr[0].titulo:"",domain:"ambiente",status:"active",createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});audit("user","projeto de arrumação criado",p.room);toast("Projeto criado em Objetivos.")}
   else if(A==="ph-chat"){const p=D("photos").find(x=>x.id===id);const r=p.result||{};input.value=p.mode==="arrumacao"?`Sobre a arrumação do ${p.room||"ambiente"}: ${r.diagnostico||""} Por onde eu começo hoje?`:`Sobre a foto: ${String(r.resposta||"").slice(0,300)}`;input.dispatchEvent(new Event("input"));input.focus()}
@@ -817,8 +834,11 @@ document.addEventListener("submit",async e=>{
   const f=e.target.closest("form[data-form]");if(!f)return;e.preventDefault();
   if(f.dataset.form==="photo"){const files=f.querySelector('input[type="file"]').files;const fd0=new FormData(f);await analyzePhotos(files,fd0.get("mode"),String(fd0.get("room")||"").trim(),String(fd0.get("question")||"").trim());return}
   if(f.dataset.form==="healthshot"){await readHealthShot(f.querySelector('input[type="file"]').files);return}
-  if(f.dataset.form==="healthsave"){const fd0=Object.fromEntries(new FormData(f).entries());const day=fd0.day&&fd0.day<=localDate()?fd0.day:localDate();const cur=D("checkins").find(c=>c.id===day)||{};const v={};for(const k of ["sleepH","workoutMin","steps","restingHr"]){const n=num0(fd0[k]);if(n!=null&&fd0[k]!=="")v[k]=k==="sleepH"?Math.round(n*10)/10:Math.round(n)}
-    if(!Object.keys(v).length){toast("Nenhum valor para salvar.");return}await put("checkins",day,{...cur,...v,source:"app_saude_foto",updatedAt:new Date().toISOString()});audit("user","saúde registrada por foto",day);S.healthDraft=null;S.pending=false;toast("Registro de "+br(day)+" atualizado.");scheduleRender();return}
+  if(f.dataset.form==="healthsave"){const today=localDate(),rows=[...f.querySelectorAll("tr[data-row]")];let n=0;const merged=new Map();
+    for(const tr of rows){const g=k=>tr.querySelector(`[name="${k}"]`).value;const day=g("day")&&g("day")<=today?g("day"):today;const v=merged.get(day)||{};
+      for(const k of["sleepH","workoutMin","steps","restingHr"]){const raw=g(k);const x=num0(raw);if(raw!==""&&x!=null)v[k]=k==="sleepH"?Math.round(x*10)/10:Math.round(x)}merged.set(day,v)}
+    for(const[day,v]of merged){if(!Object.keys(v).length)continue;const cur=D("checkins").find(c=>c.id===day)||{};await put("checkins",day,{...cur,...v,source:"app_saude_foto",updatedAt:new Date().toISOString()});n++}
+    if(!n){toast("Nenhum valor para salvar.");return}audit("user","saúde registrada por foto",n+" dia(s)");S.healthDraft=null;S.pending=false;toast(n+" dia(s) atualizado(s) no registro.");scheduleRender();return}
   const fd=Object.fromEntries(new FormData(f).entries());const now=new Date().toISOString(),type=f.dataset.form;let ok=true;
   const num=v=>Number(String(v||"").replace(/\./g,"").replace(",","."));
   if(type==="space"){const sid=rid();await put("spaces",sid,{kind:fd.domain?"domain":"investigation",title:fd.title.trim().slice(0,160),purpose:(fd.purpose||"").trim(),domain:fd.domain||null,createdAt:now,lastAt:now,autoTitle:false});audit("user","espaço criado",fd.title);location.hash="espaco-"+sid;return}
